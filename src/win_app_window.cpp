@@ -38,7 +38,7 @@
 
 // TEMPORARY
 #define IDRT_MAIN       123338
-#define IDLB_MAIN       123339
+#define IDLV_MAIN       123339
 #define IDCAL_MAIN      123340
 
 
@@ -53,7 +53,7 @@ WinAppWindow* WinAppWindow::p = NULL;
 
 // CONSTRUCTOR
 WinAppWindow::WinAppWindow()
-:   m_seconds_remaining( LOGOUT_COUNTDOWN + 1 ), m_auto_logout_status( 1 )
+:    m_entry_view( NULL ), m_seconds_remaining( LOGOUT_COUNTDOWN + 1 ), m_auto_logout_status( 1 )
 {
     p = this;
 
@@ -158,6 +158,9 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     break;
             }
             break;
+        case WM_NOTIFY:
+            handle_notify( ( int ) wParam, lParam );
+            break;
         case WM_CLOSE:
             if( Lifeograph::p->loginstatus == Lifeograph::LOGGED_IN )
                 if( ! finish_editing( ! lParam ) )
@@ -193,7 +196,7 @@ WinAppWindow::handle_create()
             CreateWindowEx( 0, WC_LISTVIEW, "",
                             WS_CHILD|WS_VISIBLE|WS_VSCROLL|LVS_REPORT,
                             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                            m_hwnd, ( HMENU ) IDLB_MAIN, GetModuleHandle( NULL ), NULL );
+                            m_hwnd, ( HMENU ) IDLV_MAIN, GetModuleHandle( NULL ), NULL );
     SendMessage( m_list, WM_SETFONT,
                  ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
 
@@ -231,6 +234,34 @@ WinAppWindow::handle_resize( short width, short height )
     MoveWindow( m_calendar,
                 EDITOR_WIDTH, height - rc.bottom, width - EDITOR_WIDTH, rc.bottom,
                 TRUE );
+}
+
+void
+WinAppWindow::handle_notify( int id, LPARAM lparam )
+{
+    switch( id )
+    {
+        case IDLV_MAIN:
+            if( ( ( LPNMHDR ) lparam )->code == NM_CLICK )
+            {
+                int iSelect = SendMessage( m_list, LVM_GETNEXTITEM, -1, LVNI_FOCUSED ); // return item selected
+
+                if( iSelect != -1 )
+                {
+                    LVITEM lvi;
+                    lvi.mask        = LVIF_PARAM;
+                    lvi.iItem       = iSelect;
+                    if( ListView_GetItem( m_list, &lvi ) )
+                    {
+                        DiaryElement* elem = Diary::d->get_element( lvi.lParam );
+                        if( elem )
+                            elem->show();
+                    }
+                }
+            }
+            PRINT_DEBUG( "....." );
+            break;
+    }
 }
 
 // LOG OUT
@@ -325,6 +356,11 @@ WinAppWindow::login()
     m_auto_logout_status = ( Lifeograph::settings.autologout && Diary::d->is_encrypted() ) ? 0 : 1;
 
     Lifeograph::m_internaloperation++;
+    
+    if( m_entry_view == NULL )
+    {
+        m_entry_view = new EntryView;
+    }
 
 //    panel_main->handle_login(); // must come before m_diary_view->handle_login() for header bar order
 //    m_view_login->handle_login();
@@ -388,7 +424,7 @@ WinAppWindow::populate()
     
     int i = 0;
     LVITEM lvi;
-    lvi.mask      = LVIF_TEXT | LVIF_IMAGE |LVIF_STATE;
+    lvi.mask      = LVIF_TEXT | LVIF_IMAGE | LVIF_STATE | LVIF_PARAM;
     lvi.stateMask = 0;
     lvi.iSubItem  = 0;
     lvi.state     = 0;
@@ -396,8 +432,9 @@ WinAppWindow::populate()
 
     for( auto& kv : Diary::d->get_entries() )
     {
-        lvi.iItem     = i++;
-        lvi.pszText   = ( char* ) kv.second->get_list_str().c_str();
+        lvi.iItem   = i++;
+        lvi.pszText = ( char* ) kv.second->get_list_str().c_str();
+        lvi.lParam  = ( LPARAM ) kv.second->get_id();
 
         ListView_InsertItem( m_list, &lvi );
     }

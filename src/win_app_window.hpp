@@ -27,6 +27,7 @@
 
 
 #include "win_login.hpp"
+#include "win_entry_view.hpp"
 #include "helpers.hpp"
 #include "settings.hpp"
 
@@ -46,6 +47,7 @@ class WinAppWindow
         LRESULT                     proc( HWND, UINT, WPARAM, LPARAM );
         void                        handle_create();
         void                        handle_resize( short, short );
+        void                        handle_notify( int, LPARAM );
 
         void                        populate();
         void                        sync_entry();
@@ -72,8 +74,9 @@ class WinAppWindow
         // PANELS AND VIEWS
         static WinAppWindow*        p;
         WinLogin*                   m_login;
+        EntryView*                  m_entry_view;
 
-    protected:
+    //protected:
         int                         m_seconds_remaining;
         int                         m_auto_logout_status; // reflects the result of all factors
 

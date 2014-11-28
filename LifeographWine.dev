@@ -11,11 +11,11 @@ ResourceIncludes=
 MakeIncludes=
 Compiler=
 CppCompiler=-DLIFEO_WINDOZE_@@_-DHAVE_CONFIG_H_@@_-I config_@@_-std=c++11_@@_-m32_@@_
-Linker=-lcomctl32_@@_-lgcrypt_@@_-lgpg-error_@@_-m32_@@_
+Linker=-lcomctl32_@@_-lshlwapi_@@_-lgcrypt_@@_-lgpg-error_@@_-m32_@@_
 IsCpp=1
-Icon=LifeographWine.ico
-ExeOutput=
-ObjectOutput=
+Icon=
+ExeOutput=bin
+ObjectOutput=o
 LogOutput=
 LogOutputEnabled=0
 OverrideOutput=1
@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=3
 CompilerSettings=0000000100000000001000000
-UnitCount=23
+UnitCount=25
 
 [VersionInfo]
 Major=1
@@ -261,13 +261,14 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit24]
-FileName=rc\lifeograph\lifeograph.rc
-Folder=Resources
+FileName=src\win_entry_view.hpp
+Folder=
 Compile=1
-Link=0
+Link=1
 Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
+CompileCpp=1
 
 [Unit2]
 FileName=src\diary.cpp
@@ -281,6 +282,16 @@ BuildCmd=
 
 [Unit22]
 FileName=rc\resource.h
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit25]
+FileName=src\win_entry_view.cpp
 CompileCpp=1
 Folder=
 Compile=1
