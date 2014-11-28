@@ -1,0 +1,60 @@
+# Project: LifeographWine
+# Makefile created by Dev-C++ 5.8.3
+
+CPP      = g++.exe -D__DEBUG__
+CC       = gcc.exe -D__DEBUG__
+WINDRES  = windres.exe
+RES      = o/LifeographWine_private.res
+OBJ      = o/main.o o/diary.o o/diarydata.o o/helpers.o o/entry.o o/lifeograph.o o/settings.o o/win_login.o o/win_dialog_password.o o/win_app_window.o $(RES)
+LINKOBJ  = o/main.o o/diary.o o/diarydata.o o/helpers.o o/entry.o o/lifeograph.o o/settings.o o/win_login.o o/win_dialog_password.o o/win_app_window.o $(RES)
+LIBS     = -L"C:/Program Files/Dev-Cpp/MinGW64/lib32" -L"C:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib32" -static-libgcc -L"C:/users/ahmet/Desktop/devel/gpg4win/lib" -mwindows -lcomctl32 -lshlwapi -lgcrypt -lgpg-error -m32 -m32 -g3
+INCS     = -I"C:/Program Files/Dev-Cpp/MinGW64/include" -I"C:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"C:/users/ahmet/Desktop/devel/gpg4win/include"
+CXXINCS  = -I"C:/Program Files/Dev-Cpp/MinGW64/include" -I"C:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"C:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include/c++" -I"C:/users/ahmet/Desktop/devel/gpg4win/include"
+BIN      = bin/lifeograph.exe
+CXXFLAGS = $(CXXINCS) -m32 -g3 -DLIFEO_WINDOZE -DHAVE_CONFIG_H -I config -std=c++11 -m32
+CFLAGS   = $(INCS) -m32 -g3
+RM       = rm.exe -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before $(BIN) all-after
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CPP) $(LINKOBJ) -o $(BIN) $(LIBS)
+
+o/main.o: src/main.cpp
+	$(CPP) -c src/main.cpp -o o/main.o $(CXXFLAGS)
+
+o/diary.o: src/diary.cpp
+	$(CPP) -c src/diary.cpp -o o/diary.o $(CXXFLAGS)
+
+o/diarydata.o: src/diarydata.cpp
+	$(CPP) -c src/diarydata.cpp -o o/diarydata.o $(CXXFLAGS)
+
+o/helpers.o: src/helpers.cpp
+	$(CPP) -c src/helpers.cpp -o o/helpers.o $(CXXFLAGS)
+
+o/entry.o: src/entry.cpp
+	$(CPP) -c src/entry.cpp -o o/entry.o $(CXXFLAGS)
+
+o/lifeograph.o: src/lifeograph.cpp
+	$(CPP) -c src/lifeograph.cpp -o o/lifeograph.o $(CXXFLAGS)
+
+o/settings.o: src/settings.cpp
+	$(CPP) -c src/settings.cpp -o o/settings.o $(CXXFLAGS)
+
+o/win_login.o: src/win_login.cpp
+	$(CPP) -c src/win_login.cpp -o o/win_login.o $(CXXFLAGS)
+
+o/win_dialog_password.o: src/win_dialog_password.cpp
+	$(CPP) -c src/win_dialog_password.cpp -o o/win_dialog_password.o $(CXXFLAGS)
+
+o/win_app_window.o: src/win_app_window.cpp
+	$(CPP) -c src/win_app_window.cpp -o o/win_app_window.o $(CXXFLAGS)
+
+o/LifeographWine_private.res: LifeographWine_private.rc 
+	$(WINDRES) -i LifeographWine_private.rc -F pe-i386 --input-format=rc -o o/LifeographWine_private.res -O coff 
+
