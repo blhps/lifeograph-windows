@@ -10,10 +10,10 @@ PrivateResource=LifeographWine_private.rc
 ResourceIncludes=
 MakeIncludes=
 Compiler=
-CppCompiler=-DLIFEO_WINDOZE_@@_-DHAVE_CONFIG_H_@@_-I config_@@_-std=c++11_@@_-m32_@@_
+CppCompiler=-DLIFEO_WINDOZE_@@_-DHAVE_CONFIG_H_@@_-DUNICODE_@@_-I config_@@_-std=c++11_@@_-m32_@@_
 Linker=-lcomctl32_@@_-lshlwapi_@@_-lgcrypt_@@_-lgpg-error_@@_-m32_@@_
 IsCpp=1
-Icon=
+Icon=LifeographWine.ico
 ExeOutput=bin
 ObjectOutput=o
 LogOutput=

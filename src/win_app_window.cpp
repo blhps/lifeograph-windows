@@ -27,9 +27,18 @@
 #include <windows.h>
 //#define _WIN32_IE 0x0400
 #include <commctrl.h>
+#include <richedit.h>
 #include <string>
 #include <cstdlib>
 #include <cassert>
+
+#ifndef RICHEDIT_CLASS
+    #ifdef UNICODE
+        #define RICHEDIT_CLASS "RichEdit20W"
+    #else
+        #define RICHEDIT_CLASS "RichEdit20A"
+    #endif
+#endif
 
 #include "../rc/resource.h"
 #include "strings.hpp"
@@ -86,19 +95,19 @@ WinAppWindow::run( HINSTANCE hInstance )
     wc.hCursor       = LoadCursor( NULL, IDC_ARROW );
     wc.hbrBackground = ( HBRUSH ) ( COLOR_WINDOW + 1 );
     wc.lpszMenuName  = MAKEINTRESOURCE( IDM_MAIN );
-    wc.lpszClassName = "WindowClass";
-    wc.hIconSm       = LoadIcon( hInstance, "A" ); /* A is name used by project icons */
+    wc.lpszClassName = L"WindowClass";
+    wc.hIconSm       = LoadIcon( hInstance, L"A" ); /* A is name used by project icons */
 
     if( !RegisterClassEx( &wc ) )
     {
-        MessageBox( 0, "Window Registration Failed!", "Error!",
-                    MB_ICONEXCLAMATION|MB_OK|MB_SYSTEMMODAL );
+        MessageBoxA( 0, "Window Registration Failed!", "Error!",
+                     MB_ICONEXCLAMATION|MB_OK|MB_SYSTEMMODAL );
         return 0;
     }
 
     hwnd = CreateWindowEx( WS_EX_CLIENTEDGE,
-                           "WindowClass",
-                           "Lifeograph",
+                           L"WindowClass",
+                           L"Lifeograph",
                            WS_OVERLAPPEDWINDOW,
                            CW_USEDEFAULT, CW_USEDEFAULT,
                            640, 480,
@@ -106,7 +115,7 @@ WinAppWindow::run( HINSTANCE hInstance )
 
     if( hwnd == NULL )
     {
-        MessageBox( 0, "Window Creation Failed!", "Error!",
+        MessageBoxA( 0, "Window Creation Failed!", "Error!",
                     MB_ICONEXCLAMATION|MB_OK|MB_SYSTEMMODAL );
         return 0;
     }
@@ -154,7 +163,7 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     PostMessage( hwnd, WM_CLOSE, 0, 0 );
                     break;
                 case IDMI_ABOUT:
-                    MessageBox( NULL, "Lifeograph 0.0.0", "About...", 0 );
+                    MessageBoxA( NULL, "Lifeograph 0.0.0", "About...", 0 );
                     break;
             }
             break;
@@ -184,31 +193,60 @@ WinAppWindow::handle_create()
     iccx.dwICC  = ICC_LISTVIEW_CLASSES | ICC_DATE_CLASSES;
     InitCommonControlsEx( &iccx );
     
+    static HINSTANCE hlib; //used to link with rich edit control library
+    static TCHAR chCntrlName[ 32 ];
+    
+    //try to load latest version of rich edit control
+    hlib = LoadLibrary( L"RICHED20.DLL" );        //Rich Edit Version 2.0/3.0
+    if( !hlib )
+    {   //can't get latest version so try to get earlier one
+        hlib = LoadLibrary( L"RICHED32.DLL" );    //Rich Edit Version 1.0
+        if( !hlib )
+        {   //can't get this version so inform user
+            MessageBoxA( NULL, "Failed to load Rich Edit", "Error", MB_OK | MB_ICONERROR );
+            return;
+        }
+        else    //version 1.0 is good
+            lstrcpy( chCntrlName, L"RICHEDIT" ); //store the class name for version 1.0
+
+    }
+    else       //version 2.0/3.0 is good
+        lstrcpy( chCntrlName, RICHEDIT_CLASS );  //store the class name for version 2.0/3.0
+
+    // RICH EDIT
     m_richedit =
-            CreateWindow( "EDIT", "",
-                          WS_CHILD|WS_VISIBLE|WS_HSCROLL|WS_VSCROLL|ES_MULTILINE|ES_WANTRETURN,
-                          CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                          m_hwnd, ( HMENU ) IDRT_MAIN, GetModuleHandle( NULL ), NULL );
+            CreateWindowEx( 0, //WS_EX_CLIENTEDGE,
+                            chCntrlName, L"",
+                    	    WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_WANTRETURN,
+                            0, 0, CW_USEDEFAULT, CW_USEDEFAULT,
+                            m_hwnd, ( HMENU ) IDRT_MAIN, GetModuleHandle( NULL ), NULL );
+
     SendMessage( m_richedit, WM_SETFONT,
                  ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
+    SendMessage( m_richedit, EM_SETEVENTMASK, 0,
+                 ( LPARAM ) ENM_CHANGE | ENM_SELCHANGE | ENM_MOUSEEVENTS );
 
+#define _UNICODE
+    // LIST VIEW
     m_list =
-            CreateWindowEx( 0, WC_LISTVIEW, "",
+            CreateWindowExW( 0, WC_LISTVIEWW, L"",
                             WS_CHILD|WS_VISIBLE|WS_VSCROLL|LVS_REPORT,
                             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                             m_hwnd, ( HMENU ) IDLV_MAIN, GetModuleHandle( NULL ), NULL );
     SendMessage( m_list, WM_SETFONT,
                  ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
+    ListView_SetExtendedListViewStyle( m_list, LVS_EX_FULLROWSELECT );
+    ListView_SetUnicodeFormat( m_list, true );
+#undef _UNICODE
 
+    // CALENDAR
     m_calendar =
-            CreateWindowEx( 0, "SysMonthCal32", "",
+            CreateWindowEx( 0, L"SysMonthCal32", L"",
                             WS_CHILD|WS_VISIBLE|WS_BORDER|MCS_DAYSTATE|MCS_NOTODAY,
                             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                             m_hwnd, ( HMENU ) IDCAL_MAIN, Lifeograph::p->hInst, NULL );
     SendMessage( m_calendar, WM_SETFONT,
                  ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
-                 
-    ListView_SetExtendedListViewStyle( m_list, LVS_EX_FULLROWSELECT );
 
     SYSTEMTIME lt;
     GetLocalTime( &lt );
@@ -283,7 +321,7 @@ WinAppWindow::finish_editing( bool opt_save )
         {
             if( Diary::d->write() != SUCCESS )
             {
-                MessageBox( m_hwnd,
+                MessageBoxA( m_hwnd,
                             STRING::CANNOT_WRITE_SUB,
                             STRING::CANNOT_WRITE,
                             MB_OK|MB_ICONERROR );
@@ -292,11 +330,11 @@ WinAppWindow::finish_editing( bool opt_save )
         }
         else
         {
-            if( MessageBox( m_hwnd,
+            if( MessageBoxA( m_hwnd,
                             "Your changes will be backed up .~unsaved~.."
                             "If you exit normally, your diary is saved automatically.",
                             "Are you sure you want to log out without saving?",
-                            MB_YESNO|MB_ICONQUESTION ) != IDYES )
+                            MB_YESNO | MB_ICONQUESTION ) != IDYES )
                 return false;
             // back up changes
             Diary::d->write( Diary::d->get_path() + ".~unsaved~" );
@@ -345,7 +383,7 @@ WinAppWindow::update_title()
             title += " <Read Only>";
     }
 
-    SetWindowText( m_hwnd, title.c_str() );
+    SetWindowTextA( m_hwnd, title.c_str() );
 }
 
 void
@@ -390,7 +428,7 @@ InitListView( HWND hWndListView )
     lvc.mask     = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
     lvc.fmt      = LVCFMT_LEFT;
     lvc.iSubItem = 0;
-    lvc.pszText  = ( char* ) "Entries";
+    lvc.pszText  = ( wchar_t* ) L"Entries";
     lvc.cx       = 100;          // width of column in pixels
 
     ListView_InsertColumn( hWndListView, 0, &lvc );
@@ -421,6 +459,8 @@ void
 WinAppWindow::populate()
 {
     InitListView( m_list );
+
+    ListView_SetUnicodeFormat( m_list, true );
     
     int i = 0;
     LVITEM lvi;
@@ -433,10 +473,12 @@ WinAppWindow::populate()
     for( auto& kv : Diary::d->get_entries() )
     {
         lvi.iItem   = i++;
-        lvi.pszText = ( char* ) kv.second->get_list_str().c_str();
+        lvi.pszText = HELPERS::convert_utf8_to_16( kv.second->get_list_str() );
         lvi.lParam  = ( LPARAM ) kv.second->get_id();
 
-        ListView_InsertItem( m_list, &lvi );
+
+        //ListView_InsertItem( m_list, &lvi );
+        SendMessageW( m_list, LVM_INSERTITEM, 0, ( LPARAM ) &lvi );
     }
 }
 

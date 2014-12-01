@@ -11,7 +11,7 @@ LIBS     = -L"C:/Program Files/Dev-Cpp/MinGW64/lib32" -L"C:/Program Files/Dev-Cp
 INCS     = -I"C:/Program Files/Dev-Cpp/MinGW64/include" -I"C:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"C:/users/ahmet/Desktop/devel/gpg4win/include"
 CXXINCS  = -I"C:/Program Files/Dev-Cpp/MinGW64/include" -I"C:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"C:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include/c++" -I"C:/users/ahmet/Desktop/devel/gpg4win/include"
 BIN      = bin/lifeograph.exe
-CXXFLAGS = $(CXXINCS) -m32 -g3 -DLIFEO_WINDOZE -DHAVE_CONFIG_H -I config -std=c++11 -m32
+CXXFLAGS = $(CXXINCS) -m32 -g3 -DLIFEO_WINDOZE -DHAVE_CONFIG_H -DUNICODE -I config -std=c++11 -m32
 CFLAGS   = $(INCS) -m32 -g3
 RM       = rm.exe -f
 

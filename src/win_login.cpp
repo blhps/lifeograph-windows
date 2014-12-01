@@ -83,20 +83,20 @@ WinLogin::open_selected_diary( bool read_only )
         case LIFEO::SUCCESS:
             break;
         case FILE_NOT_FOUND:
-            MessageBox( WinAppWindow::p->get_hwnd(), STRING::DIARY_NOT_FOUND, "",
-                        MB_OK|MB_ICONERROR );
+            MessageBoxA( WinAppWindow::p->get_hwnd(), STRING::DIARY_NOT_FOUND, "",
+                         MB_OK|MB_ICONERROR );
             break;
         case FILE_NOT_READABLE:
-        	MessageBox( WinAppWindow::p->get_hwnd(), STRING::DIARY_NOT_READABLE, "",
-                        MB_OK|MB_ICONERROR );
+        	MessageBoxA( WinAppWindow::p->get_hwnd(), STRING::DIARY_NOT_READABLE, "",
+                         MB_OK|MB_ICONERROR );
             break;
         case FILE_LOCKED:
             // TODO: to be improved
-            MessageBox( WinAppWindow::p->get_hwnd(), "Diary LOCKED!", "", MB_OK|MB_ICONWARNING );
+            MessageBoxA( WinAppWindow::p->get_hwnd(), "Diary LOCKED!", "", MB_OK|MB_ICONWARNING );
             break;
         default:
-            MessageBox( WinAppWindow::p->get_hwnd(), STRING::FAILED_TO_OPEN_DIARY, "",
-                        MB_OK|MB_ICONWARNING );
+            MessageBoxA( WinAppWindow::p->get_hwnd(), STRING::FAILED_TO_OPEN_DIARY, "",
+                         MB_OK|MB_ICONWARNING );
             break;
     }
     if( result != LIFEO::SUCCESS )
@@ -111,20 +111,20 @@ WinLogin::open_selected_diary( bool read_only )
         case LIFEO::SUCCESS:
             break;
         case INCOMPATIBLE_FILE_OLD:
-            MessageBox( WinAppWindow::p->get_hwnd(), STRING::INCOMPATIBLE_DIARY_OLD, "",
-                        MB_OK|MB_ICONERROR );
+            MessageBoxA( WinAppWindow::p->get_hwnd(), STRING::INCOMPATIBLE_DIARY_OLD, "",
+                         MB_OK|MB_ICONERROR );
             break;
         case INCOMPATIBLE_FILE_NEW:
-            MessageBox( WinAppWindow::p->get_hwnd(), STRING::INCOMPATIBLE_DIARY_NEW, "",
-                        MB_OK|MB_ICONERROR );
+            MessageBoxA( WinAppWindow::p->get_hwnd(), STRING::INCOMPATIBLE_DIARY_NEW, "",
+                         MB_OK|MB_ICONERROR );
             break;
         case CORRUPT_FILE:
-            MessageBox( WinAppWindow::p->get_hwnd(), STRING::CORRUPT_DIARY, "",
-                        MB_OK|MB_ICONERROR );
+            MessageBoxA( WinAppWindow::p->get_hwnd(), STRING::CORRUPT_DIARY, "",
+                         MB_OK|MB_ICONERROR );
             break;
         default:
-            MessageBox( WinAppWindow::p->get_hwnd(), STRING::FAILED_TO_OPEN_DIARY, "",
-                        MB_OK|MB_ICONERROR );
+            MessageBoxA( WinAppWindow::p->get_hwnd(), STRING::FAILED_TO_OPEN_DIARY, "",
+                         MB_OK|MB_ICONERROR );
             break;
     }
     if( result != LIFEO::SUCCESS )
@@ -136,10 +136,10 @@ WinLogin::open_selected_diary( bool read_only )
     if( Diary::d->is_old() && read_only == false )
     {
         int response =
-                MessageBox( WinAppWindow::p->get_hwnd(),
-                            STRING::UPGRADE_DIARY_CONFIRM,
-                            "Are You Sure You Want to Upgrade The Diary?",
-                            MB_YESNO|MB_ICONWARNING );
+                MessageBoxA( WinAppWindow::p->get_hwnd(),
+                             STRING::UPGRADE_DIARY_CONFIRM,
+                             "Are You Sure You Want to Upgrade The Diary?",
+                             MB_YESNO | MB_ICONWARNING );
 
         if( response !=  IDYES )
         {
@@ -170,8 +170,8 @@ WinLogin::open_selected_diary( bool read_only )
             m_password_attempt_no++;
             return open_selected_diary( read_only );
         case CORRUPT_FILE:
-            MessageBox( WinAppWindow::p->get_hwnd(), STRING::CORRUPT_DIARY, "",
-                        MB_OK|MB_ICONERROR );
+            MessageBoxA( WinAppWindow::p->get_hwnd(), STRING::CORRUPT_DIARY, "",
+                         MB_OK|MB_ICONERROR );
             // no break
         default:
             return result;
@@ -189,7 +189,7 @@ WinLogin::remove_selected_diary()
 void
 WinLogin::create_new_diary()
 {
-    OPENFILENAME ofn;
+    OPENFILENAMEA ofn;
     char szFileName[ MAX_PATH ];
 
     ZeroMemory( &ofn, sizeof( ofn ) );
@@ -203,7 +203,7 @@ WinLogin::create_new_diary()
     ofn.lpstrDefExt = "diary";
     ofn.Flags = OFN_OVERWRITEPROMPT;
 
-    if( GetSaveFileName( &ofn ) )
+    if( GetSaveFileNameA( &ofn ) )
     {
         std::string path = szFileName;
 
@@ -214,12 +214,12 @@ WinLogin::create_new_diary()
                 break;
             case LIFEO::FILE_LOCKED:
                 // TODO: to be improved
-                MessageBox( WinAppWindow::p->get_hwnd(), "Diary LOCKED!", "",
-                            MB_OK|MB_ICONWARNING );
+                MessageBoxA( WinAppWindow::p->get_hwnd(), "Diary LOCKED!", "",
+                             MB_OK|MB_ICONWARNING );
                 break;
             default:
-                MessageBox( WinAppWindow::p->get_hwnd(), STRING::FAILED_TO_OPEN_DIARY, "",
-                            MB_OK|MB_ICONERROR );
+                MessageBoxA( WinAppWindow::p->get_hwnd(), STRING::FAILED_TO_OPEN_DIARY, "",
+                             MB_OK|MB_ICONERROR );
                 break;
         }
     }
@@ -228,7 +228,7 @@ WinLogin::create_new_diary()
 void
 WinLogin::add_existing_diary()
 {
-    OPENFILENAME ofn;
+    OPENFILENAMEA ofn;
     char szFileName[ MAX_PATH ];
 
     ZeroMemory( &ofn, sizeof( ofn ) );
@@ -242,12 +242,12 @@ WinLogin::add_existing_diary()
     ofn.lpstrDefExt = "diary";
     ofn.Flags = OFN_EXPLORER|OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
     
-    if( GetOpenFileName( &ofn ) )
+    if( GetOpenFileNameA( &ofn ) )
     {
         m_path_cur = szFileName;
         if( open_selected_diary( false ) != LIFEO::SUCCESS )
-            MessageBox( WinAppWindow::p->get_hwnd(), "Load of file failed.", "",
-                        MB_OK|MB_ICONERROR );
+            MessageBoxA( WinAppWindow::p->get_hwnd(), "Load of file failed.", "",
+                         MB_OK|MB_ICONERROR );
     }
 }
 
@@ -256,7 +256,7 @@ WinLogin::handle_start()
 {
     if( Lifeograph::settings.flag_maiden_voyage || Lifeograph::p->m_flag_force_welcome )
     {
-        MessageBox( WinAppWindow::p->get_hwnd(), "Welcome to Lifeograph!", "Welcome", MB_OK );
+        MessageBoxA( WinAppWindow::p->get_hwnd(), "Welcome to Lifeograph!", "Welcome", MB_OK );
     }
 }
 

@@ -74,7 +74,7 @@ DialogEnterPassword::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             m_hwnd = hwnd;
             m_edit_current = GetDlgItem( hwnd, IDE_PASSWORD );
 
-            SetDlgItemText( hwnd, IDL_DIARY_NAME, m_ptr2diary->get_name().c_str() );
+            SetDlgItemTextA( hwnd, IDL_DIARY_NAME, m_ptr2diary->get_name().c_str() );
 
             EnableWindow( GetDlgItem( m_hwnd, IDOK ), false );
 
@@ -83,7 +83,7 @@ DialogEnterPassword::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             if( m_flag_again )
             {
                 Sleep( SLEEP_DURATION );
-                SetDlgItemText( m_hwnd, IDL_PASSWORD_MESSAGE, "Wrong password. Please retry..." );
+                SetDlgItemTextA( m_hwnd, IDL_PASSWORD_MESSAGE, "Wrong password. Please retry..." );
             }
 
             return TRUE;
@@ -100,9 +100,9 @@ DialogEnterPassword::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                     EndDialog( m_hwnd, 0 );
                     return TRUE;
                 case IDOK: {
-                    char* str = new char[ 128 ];
+                    TCHAR* str = new TCHAR[ 128 ];
                     GetDlgItemText( m_hwnd, IDE_PASSWORD, str, 128 );
-                    m_ptr2diary->set_passphrase( str );
+                    m_ptr2diary->set_passphrase( HELPERS::convert_utf16_to_8( str ) );
                     EndDialog( m_hwnd, 1 ); // TODO: use constants
                     return TRUE;
                 }
@@ -118,7 +118,7 @@ void
 DialogEnterPassword::handle_entry_changed()
 {
     char* str = new char[ 128 ];
-    GetDlgItemText( m_hwnd, IDE_PASSWORD, str, 128 );
+    GetDlgItemTextA( m_hwnd, IDE_PASSWORD, str, 128 );
     EnableWindow( GetDlgItem( m_hwnd, IDOK ), ( strlen( str ) >= PASSPHRASE_MIN_SIZE ) );
 }
 

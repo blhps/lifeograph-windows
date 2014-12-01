@@ -61,9 +61,9 @@ Settings::read()
         m_path = Glib::build_filename( Glib::get_user_config_dir(), "lifeograph", "lifeo.conf" );
 #else
         char exe_path[ MAX_PATH ];
-        GetModuleFileName( NULL, exe_path, MAX_PATH );
-        PathRemoveFileSpec( exe_path );
-        PathAppend( exe_path, "lifeo.conf" );
+        GetModuleFileNameA( NULL, exe_path, MAX_PATH );
+        PathRemoveFileSpecA( exe_path );
+        PathAppendA( exe_path, "lifeo.conf" );
         m_path = exe_path;
 #endif
     }

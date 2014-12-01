@@ -549,7 +549,7 @@ copy_file_suffix( const std::string& source_path, const std::string& suffix1, in
             Glib::RefPtr< Gio::File > file_dest = Gio::File::create_for_path( ss.str() );
             file_src->copy( file_dest );
 #else
-            CopyFile( source_path.c_str(), ss.str().c_str(), true );
+            CopyFileA( source_path.c_str(), ss.str().c_str(), true );
 #endif
         }
 #ifndef LIFEO_WINDOZE
@@ -579,6 +579,26 @@ get_env_lang()
     return s_lang_env;
 }
 
+#else
+wchar_t*
+convert_utf8_to_16( const Ustring& str8 )
+{
+    wchar_t* str16 = new wchar_t[ str8.size() + 1 ];
+    MultiByteToWideChar( CP_UTF8, 0, str8.c_str(), str8.size() + 1, str16, str8.size() + 1 );
+    
+    return str16;
+}
+
+char*
+convert_utf16_to_8( const wchar_t* str16 )
+{
+    char* str8;
+    int size = WideCharToMultiByte( CP_UTF8, 0, str16, -1, str8, 0, NULL, NULL );
+    str8 = new char[ size ];
+    WideCharToMultiByte( CP_UTF8, 0, str16, -1, str8, size, NULL, NULL );
+
+    return str8;
+}
 #endif
 
 // ENCRYPTION ======================================================================================

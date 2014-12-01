@@ -451,11 +451,15 @@ std::ios::pos_type  get_file_size( std::ifstream& );
 
 bool                copy_file_suffix( const std::string&, const std::string&, int );
 
+#ifndef LIFEO_WINDOZE
 std::string         get_env_lang();
 
-#ifndef LIFEO_WINDOZE
 Gtk::MenuItem*      create_menuitem_markup( const Glib::ustring&,
                                             const Glib::SignalProxy0< void >::SlotType& );
+                                            
+#else
+wchar_t*            convert_utf8_to_16( const Ustring& );
+char*               convert_utf16_to_8( const wchar_t* );
 #endif
 
 // COMMON SIGNALS ==================================================================================
