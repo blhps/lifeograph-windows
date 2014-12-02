@@ -579,6 +579,18 @@ get_env_lang()
     return s_lang_env;
 }
 
+gunichar
+char_lower( gunichar c )
+{
+    return Glib::Unicode::tolower( c );
+}
+
+bool
+is_char_alpha( gunichar c )
+{
+    return Glib::Unicode::isalpha( c );
+}
+
 #else
 wchar_t*
 convert_utf8_to_16( const Ustring& str8 )
@@ -598,6 +610,18 @@ convert_utf16_to_8( const wchar_t* str16 )
     WideCharToMultiByte( CP_UTF8, 0, str16, -1, str8, size, NULL, NULL );
 
     return str8;
+}
+
+wchar_t
+char_lower( wchar_t c )
+{
+    return LOWORD( CharLower( ( LPWSTR ) MAKELONG( c, 0 ) ) );
+}
+
+bool
+is_char_alpha( wchar_t c )
+{
+    return IsCharAlpha( c );
 }
 #endif
 

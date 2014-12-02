@@ -157,8 +157,7 @@ EntryView::show( Entry& entry )
     m_ptr2elem = &entry; // must be first thing
 
     // BODY
-    SetWindowText( WinAppWindow::p->m_richedit,
-                   HELPERS::convert_utf8_to_16( entry.get_text() ) );
+    WinAppWindow::p->m_richedit->set_richtext( m_ptr2elem );
 
     m_entry_sync = m_ptr2elem;
 }

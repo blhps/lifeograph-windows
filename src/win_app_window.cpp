@@ -46,9 +46,9 @@
 #include "win_app_window.hpp"
 
 // TEMPORARY
-#define IDRT_MAIN       123338
-#define IDLV_MAIN       123339
-#define IDCAL_MAIN      123340
+#define IDRT_MAIN       12338
+#define IDLV_MAIN       12339
+#define IDCAL_MAIN      12340
 
 
 using namespace LIFEO;
@@ -70,6 +70,7 @@ WinAppWindow::WinAppWindow()
 
     Diary::d = new Diary;
     m_login = new WinLogin;
+    m_richedit = new RichEdit;
 }
 
 WinAppWindow::~WinAppWindow()
@@ -165,6 +166,11 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                 case IDMI_ABOUT:
                     MessageBoxA( NULL, "Lifeograph 0.0.0", "About...", 0 );
                     break;
+                case IDRT_MAIN:
+                    if( HIWORD( wParam ) == EN_CHANGE )
+                    {
+                        m_richedit->handle_change();
+                    }
             }
             break;
         case WM_NOTIFY:
@@ -193,38 +199,25 @@ WinAppWindow::handle_create()
     iccx.dwICC  = ICC_LISTVIEW_CLASSES | ICC_DATE_CLASSES;
     InitCommonControlsEx( &iccx );
     
-    static HINSTANCE hlib; //used to link with rich edit control library
-    static TCHAR chCntrlName[ 32 ];
-    
-    //try to load latest version of rich edit control
-    hlib = LoadLibrary( L"RICHED20.DLL" );        //Rich Edit Version 2.0/3.0
+    // try to load latest version of rich edit control
+    static HINSTANCE hlib = LoadLibrary( L"RICHED20.DLL" );
     if( !hlib )
-    {   //can't get latest version so try to get earlier one
-        hlib = LoadLibrary( L"RICHED32.DLL" );    //Rich Edit Version 1.0
-        if( !hlib )
-        {   //can't get this version so inform user
-            MessageBoxA( NULL, "Failed to load Rich Edit", "Error", MB_OK | MB_ICONERROR );
-            return;
-        }
-        else    //version 1.0 is good
-            lstrcpy( chCntrlName, L"RICHEDIT" ); //store the class name for version 1.0
-
+    {
+        MessageBoxA( NULL, "Failed to load Rich Edit", "Error", MB_OK | MB_ICONERROR );
+        return;
     }
-    else       //version 2.0/3.0 is good
-        lstrcpy( chCntrlName, RICHEDIT_CLASS );  //store the class name for version 2.0/3.0
 
     // RICH EDIT
-    m_richedit =
+    m_richedit->m_hwnd =
             CreateWindowEx( 0, //WS_EX_CLIENTEDGE,
-                            chCntrlName, L"",
+                            RICHEDIT_CLASS, L"",
                     	    WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_WANTRETURN,
                             0, 0, CW_USEDEFAULT, CW_USEDEFAULT,
                             m_hwnd, ( HMENU ) IDRT_MAIN, GetModuleHandle( NULL ), NULL );
 
-    SendMessage( m_richedit, WM_SETFONT,
+    SendMessage( m_richedit->m_hwnd, WM_SETFONT,
                  ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
-    SendMessage( m_richedit, EM_SETEVENTMASK, 0,
-                 ( LPARAM ) ENM_CHANGE | ENM_SELCHANGE | ENM_MOUSEEVENTS );
+    SendMessage( m_richedit->m_hwnd, EM_SETEVENTMASK, 0, ( LPARAM ) ENM_CHANGE );
 
 #define _UNICODE
     // LIST VIEW

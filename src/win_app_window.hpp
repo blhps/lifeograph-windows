@@ -28,6 +28,7 @@
 
 #include "win_login.hpp"
 #include "win_entry_view.hpp"
+#include "win_richedit.hpp"
 #include "helpers.hpp"
 #include "settings.hpp"
 
@@ -81,7 +82,7 @@ class WinAppWindow
         int                         m_auto_logout_status; // reflects the result of all factors
 
         HWND                        m_hwnd;
-        HWND                        m_richedit;
+        RichEdit*                   m_richedit;
         HWND                        m_calendar;
         HWND                        m_list;
 };

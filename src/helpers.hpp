@@ -41,11 +41,17 @@
 
 #ifndef LIFEO_WINDOZE
 typedef Glib::ustring Ustring;
+typedef Glib::ustring Wstring;
+typedef gunichar Wchar;
+#define W(s) s
 typedef Glib::RefPtr< Gdk::Pixbuf > Icon;
 typedef Gdk::RGBA Color;
 #else
 // values are temporary
 typedef std::string Ustring;
+typedef std::wstring Wstring;
+typedef wchar_t Wchar;
+#define W(s) L##s
 typedef void* Icon;
 typedef std::string Color;
 #endif
@@ -55,27 +61,26 @@ namespace HELPERS
 
 class STR
 {
-	private:
-		static void print_internal( std::stringstream& ) {}
-		
-		
-		template< typename Arg1, typename... Args >
-		static void print_internal( std::stringstream& str, Arg1 arg1, Args... args )
-		{
-		    str << arg1;
-		    print_internal( str, args... );
-		}
+    private:
+        static void print_internal( std::stringstream& ) {}
 
-	public:
-		template< typename... Args >
-		static Ustring compose( Args... args )
-		{
-		    std::stringstream str;
-		    print_internal( str, args... );
-		    
-		    return str.str();
-		}
 
+        template< typename Arg1, typename... Args >
+        static void print_internal( std::stringstream& str, Arg1 arg1, Args... args )
+        {
+            str << arg1;
+            print_internal( str, args... );
+        }
+
+    public:
+        template< typename... Args >
+        static Ustring compose( Args... args )
+        {
+            std::stringstream str;
+            print_internal( str, args... );
+
+            return str.str();
+        }
 };
 
 class Error
@@ -457,9 +462,15 @@ std::string         get_env_lang();
 Gtk::MenuItem*      create_menuitem_markup( const Glib::ustring&,
                                             const Glib::SignalProxy0< void >::SlotType& );
                                             
+gunichar            char_lower( gunichar );
+bool                is_char_alpha( gunichar );
+                                            
 #else
 wchar_t*            convert_utf8_to_16( const Ustring& );
 char*               convert_utf16_to_8( const wchar_t* );
+
+wchar_t             char_lower( wchar_t );
+bool                is_char_alpha( wchar_t );
 #endif
 
 // COMMON SIGNALS ==================================================================================
