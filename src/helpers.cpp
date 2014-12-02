@@ -501,6 +501,18 @@ midtone( const Gdk::RGBA& c1, const Gdk::RGBA& c2, float ratio )
     midtone.set_alpha( 1.0 );
     return midtone;
 }
+
+#else
+
+COLORREF
+midtone( int r1, int g1, int b1, int r2, int g2, int b2, float ratio )
+{
+    return RGB(
+            ( int ) ( ( r1 * ratio ) + ( r2 * ( 1.0 - ratio ) ) ),
+            ( int ) ( ( g1 * ratio ) + ( g2 * ( 1.0 - ratio ) ) ),
+            ( int ) ( ( b1 * ratio ) + ( b2 * ( 1.0 - ratio ) ) ) );
+}
+    
 #endif
 
 // FILE FUNCTIONS

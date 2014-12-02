@@ -488,6 +488,10 @@ parse_color( const std::string& color )
                 parse_color_sub( color, 5, 6 ),
                 parse_color_sub( color, 9, 10 ) );
 }
+
+COLORREF
+midtone( int, int, int, int, int, int, float );
+
 #endif
 
 std::ios::pos_type  get_file_size( std::ifstream& );

@@ -1404,27 +1404,35 @@ RichEdit::set_richtext( Entry* entry )
 void
 RichEdit::set_theme( const Theme* theme )
 {
+    COLORREF color_mid( midtone(
+            parse_color_sub( theme->color_base, 1, 2 ),
+            parse_color_sub( theme->color_base, 5, 6 ),
+            parse_color_sub( theme->color_base, 9, 10 ),
+            parse_color_sub( theme->color_text, 1, 2 ),
+            parse_color_sub( theme->color_text, 5, 6 ),
+            parse_color_sub( theme->color_text, 9, 10 ),
+            0.5 ) );
+
     m_format_default.crTextColor = parse_color( theme->color_text );
     m_format_heading.crTextColor = parse_color( theme->color_heading );
     m_format_subheading.crTextColor = parse_color( theme->color_subheading );
     m_format_highlight.crBackColor = parse_color( theme->color_highlight );
+    m_format_markup.crTextColor = color_mid;
+    m_format_comment.crTextColor = color_mid;
     
     SendMessage( m_hwnd, EM_SETCHARFORMAT, SCF_ALL, ( LPARAM ) &m_format_default );
     SendMessage( m_hwnd, EM_SETBKGNDCOLOR, 0, ( LPARAM ) parse_color( theme->color_base ) );
     
-    //COLORREF color_mid( midtone( theme->color_base, theme->color_text ) );
     
 /*    m_ptr2textview->override_font( theme->font );
 
     m_format_comment->property_background_rgba() = theme->color_base; // to disable highlighting
 
-    m_format_comment->property_foreground_rgba() = color_mid;
     m_format_region->property_paragraph_background_rgba() = midtone(
             theme->color_base, theme->color_text, 0.9 );
     m_format_match->property_foreground_rgba() = theme->color_base;
     m_format_match->property_background_rgba() = contrast2(
             theme->color_base, Theme::s_color_match1, Theme::s_color_match2 );
-    m_format_markup->property_foreground_rgba() = color_mid;
     m_format_markup_link->property_foreground_rgba() = color_mid;
     m_format_link->property_foreground_rgba() = contrast2(
             theme->color_base, Theme::s_color_link1, Theme::s_color_link2 );
