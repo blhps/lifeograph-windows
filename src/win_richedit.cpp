@@ -44,17 +44,22 @@ RichEdit::RichEdit()
     m_ptr2entry( NULL )
 {
     // FORMATS
+    memset( &m_format_default, 0, sizeof( CHARFORMAT2 ) );
+    m_format_default.cbSize = sizeof( CHARFORMAT2 );
+    m_format_default.dwMask = CFM_COLOR | CFM_SIZE;
+    m_format_default.yHeight = 200;
+    
     memset( &m_format_heading, 0, sizeof( CHARFORMAT2 ) );
     m_format_heading.cbSize = sizeof( CHARFORMAT2 );
     m_format_heading.dwMask = CFM_COLOR | CFM_BOLD | CFM_SIZE;
     m_format_heading.dwEffects = CFE_BOLD;
-    m_format_heading.yHeight = 500;
+    m_format_heading.yHeight = 400;
     
     memset( &m_format_subheading, 0, sizeof( CHARFORMAT2 ) );
     m_format_subheading.cbSize = sizeof( CHARFORMAT2 );
     m_format_subheading.dwMask = CFM_COLOR | CFM_BOLD | CFM_SIZE;
     m_format_subheading.dwEffects = CFE_BOLD;
-    m_format_heading.yHeight = 400;
+    m_format_subheading.yHeight = 300;
 
     memset( &m_format_match, 0, sizeof( CHARFORMAT2 ) );
     m_format_match.cbSize = sizeof( CHARFORMAT2 );
@@ -63,7 +68,7 @@ RichEdit::RichEdit()
     memset( &m_format_markup, 0, sizeof( CHARFORMAT2 ) );
     m_format_markup.cbSize = sizeof( CHARFORMAT2 );
     m_format_markup.dwMask = CFM_COLOR | CFM_SIZE;
-    m_format_markup.yHeight = 200;
+    m_format_markup.yHeight = 150;
 
     memset( &m_format_markup_link, 0, sizeof( CHARFORMAT2 ) );
     m_format_markup_link.cbSize = sizeof( CHARFORMAT2 );
@@ -81,7 +86,7 @@ RichEdit::RichEdit()
 
     memset( &m_format_highlight, 0, sizeof( CHARFORMAT2 ) );
     m_format_highlight.cbSize = sizeof( CHARFORMAT2 );
-    m_format_highlight.dwMask = CFM_COLOR|CFM_BACKCOLOR;
+    m_format_highlight.dwMask = CFM_BACKCOLOR;
 
     memset( &m_format_strikethrough, 0, sizeof( CHARFORMAT2 ) );
     m_format_strikethrough.cbSize = sizeof( CHARFORMAT2 );
@@ -145,17 +150,27 @@ void
 RichEdit::parse( LONG start, LONG end )
 {
     m_flag_parsing = true;
+
+    // TWEAKS TO SPEED UP
+    SendMessage( m_hwnd, EM_SETEVENTMASK, 0, 0 );
+    SendMessage( m_hwnd, WM_SETREDRAW, false, 0 );
+    
+    // STORE THE SELECTION
     CHARRANGE sel;
     SendMessage( m_hwnd, EM_EXGETSEL, 0, ( LPARAM ) &sel );
-
-    // COMPLETELY CLEAR THE PARSING REGION
+    
+    // CLEAR EXISTING FORMATTING AND PARSE
     remove_all_formats( start, end );
-
-    // DO THE PARSING
     EntryParser::parse( start, end );
     
+    // RESTORE SELECTION
     SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &sel );
-
+    
+    // REVERT SPEED UP TWEAKS
+    SendMessage( m_hwnd, WM_SETREDRAW, true, 0 );
+    InvalidateRect( m_hwnd, 0, true );
+    SendMessage( m_hwnd, EM_SETEVENTMASK, 0, ( LPARAM ) ENM_CHANGE );
+    
     m_flag_parsing = false;
 }
 
@@ -185,7 +200,7 @@ RichEdit::apply_format( CHARFORMAT2& format, LONG start, LONG end )
 void
 RichEdit::remove_all_formats( LONG start, LONG end )
 {
-    
+    SendMessage( m_hwnd, EM_SETCHARFORMAT, SCF_ALL, ( LPARAM ) &m_format_default );
 }
 
 LONG
@@ -1389,19 +1404,19 @@ RichEdit::set_richtext( Entry* entry )
 void
 RichEdit::set_theme( const Theme* theme )
 {
+    m_format_default.crTextColor = parse_color( theme->color_text );
+    m_format_heading.crTextColor = parse_color( theme->color_heading );
+    m_format_subheading.crTextColor = parse_color( theme->color_subheading );
+    m_format_highlight.crBackColor = parse_color( theme->color_highlight );
+    
+    SendMessage( m_hwnd, EM_SETCHARFORMAT, SCF_ALL, ( LPARAM ) &m_format_default );
+    SendMessage( m_hwnd, EM_SETBKGNDCOLOR, 0, ( LPARAM ) parse_color( theme->color_base ) );
+    
+    //COLORREF color_mid( midtone( theme->color_base, theme->color_text ) );
+    
 /*    m_ptr2textview->override_font( theme->font );
-    m_ptr2textview->override_background_color( theme->color_base, Gtk::STATE_FLAG_NORMAL );
-    m_ptr2textview->override_color( theme->color_text, Gtk::STATE_FLAG_NORMAL );
 
-    m_ptr2textview->override_background_color( theme->color_heading, Gtk::STATE_FLAG_SELECTED );
-    m_ptr2textview->override_color( theme->color_base, Gtk::STATE_FLAG_SELECTED );
-
-    m_format_heading->property_foreground_rgba() = theme->color_heading;
-    m_format_subheading->property_foreground_rgba() = theme->color_subheading;
-    m_format_highlight->property_background_rgba() = theme->color_highlight;
     m_format_comment->property_background_rgba() = theme->color_base; // to disable highlighting
-
-    Gdk::RGBA color_mid( midtone( theme->color_base, theme->color_text ) );
 
     m_format_comment->property_foreground_rgba() = color_mid;
     m_format_region->property_paragraph_background_rgba() = midtone(

@@ -450,6 +450,44 @@ convert_gdkrgba_to_string( const Gdk::RGBA& gdkcolor )
             int( gdkcolor.get_blue() * 0xFFFF ) );
     return buffer;
 }
+
+#else
+
+inline int
+parse_color_sub( const std::string& color, int begin, int end )
+{
+    int ret_val = 0;
+
+    for( int i = begin; i <= end; i++ )
+    {
+        char c = color[ i ];
+        if( c >= '0' && c <= '9' )
+        {
+            ret_val *= 16;
+            ret_val += ( c - '0' );
+        }
+        else if( c >= 'a' && c <= 'f' )
+        {
+            ret_val *= 16;
+            ret_val += ( c - 'a' + 10 );
+        }
+        else if( c >= 'A' && c <= 'F' )
+        {
+            ret_val *= 16;
+            ret_val += ( c - 'A' + 10 );
+        }
+    }
+
+    return ret_val;
+}
+
+inline COLORREF
+parse_color( const std::string& color )
+{
+    return RGB( parse_color_sub( color, 1, 2 ),
+                parse_color_sub( color, 5, 6 ),
+                parse_color_sub( color, 9, 10 ) );
+}
 #endif
 
 std::ios::pos_type  get_file_size( std::ifstream& );

@@ -722,14 +722,16 @@ ThemeSystem::get()
         Gtk::TextView *tv = new Gtk::TextView;
         tv->show();
         s_theme = new ThemeSystem( tv->get_style_context()->get_font().to_string(),
-#else
-        s_theme = new ThemeSystem( "sans 11",
-#endif
                                    "white", "black",
                                    "blue", "#F066FC",
                                    "#FFF955" );
-#ifndef LIFEO_WINDOZE
         delete tv;
+#else
+        s_theme = new ThemeSystem( "sans 11",
+                                   "#FFFFFFFFFFFF", "#000000000000",
+                                   "#00000000FFFF", "#F0F06666FCFC",
+                                   "#FFFFF9F95555" );
+
 #endif
         s_flag_initialized = true;
         return s_theme;

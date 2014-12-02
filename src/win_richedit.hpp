@@ -243,6 +243,7 @@ class RichEdit : public EntryParser
         Wstring                     get_text();
 
         // FORMATS
+        CHARFORMAT2                 m_format_default;
         CHARFORMAT2                 m_format_heading;
         CHARFORMAT2                 m_format_subheading;
         CHARFORMAT2                 m_format_match;
