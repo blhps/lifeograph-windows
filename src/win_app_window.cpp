@@ -164,7 +164,8 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     m_login->add_existing_diary();
                     break;
                 case IDMI_EXPORT:
-                    // TODO
+                    if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
+                        export_diary();
                     break;
                 case IDMI_QUIT_WO_SAVE:
                     PostMessage( hwnd, WM_CLOSE, 0, true );
@@ -312,7 +313,7 @@ WinAppWindow::finish_editing( bool opt_save )
 
     if( ! Diary::d->is_read_only() )
     {
-        sync_entry();
+        m_entry_view->sync();
         // TODO Diary::d->set_last_elem( panel_main->get_cur_elem() );
 
         if( opt_save )
@@ -438,12 +439,6 @@ WinAppWindow::init_list()
 }
 
 void
-WinAppWindow::sync_entry()
-{
-    // TODO
-}
-
-void
 WinAppWindow::update_title()
 {
     Ustring title( PROGRAM_NAME );
@@ -520,5 +515,31 @@ WinAppWindow::confirm_dismiss_element( const DiaryElement* elem )
                                           elem->get_name() ) ),
                     L"Confirm Dismiss",
                     MB_YESNO | MB_ICONWARNING ) == IDYES );
+}
+
+LIFEO::Result
+WinAppWindow::export_diary()
+{
+    OPENFILENAME ofn;
+    Wchar szFileName[ MAX_PATH ];
+
+    ZeroMemory( &ofn, sizeof( ofn ) );
+    szFileName[ 0 ] = 0;
+
+    ofn.lStructSize = sizeof( ofn );
+    ofn.hwndOwner = WinAppWindow::p->get_hwnd();
+    ofn.lpstrFilter = L"Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0\0";
+    ofn.lpstrFile = szFileName;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.lpstrDefExt = L"txt";
+    ofn.Flags = OFN_OVERWRITEPROMPT;
+
+    if( GetSaveFileName( &ofn ) )
+    {
+        std::string path = convert_utf16_to_8( szFileName );
+        return Diary::d->write_txt( path, false );
+    }
+    
+    return ABORTED;
 }
 
