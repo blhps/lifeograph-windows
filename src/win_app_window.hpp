@@ -27,7 +27,7 @@
 
 
 #include "win_login.hpp"
-#include "win_entry_view.hpp"
+#include "win_views.hpp"
 #include "win_richedit.hpp"
 #include "helpers.hpp"
 #include "settings.hpp"
@@ -49,6 +49,8 @@ class WinAppWindow
         void                        handle_create();
         void                        handle_resize( short, short );
         void                        handle_notify( int, LPARAM );
+        
+        BOOL                        init_list();
 
         void                        update_menu();
         void                        update_entry_list();
@@ -81,6 +83,7 @@ class WinAppWindow
         static WinAppWindow*        p;
         WinLogin*                   m_login;
         EntryView*                  m_entry_view;
+        DiaryView*                  m_diary_view;
 
     //protected:
         int                         m_seconds_remaining;

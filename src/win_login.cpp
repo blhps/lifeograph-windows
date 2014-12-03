@@ -258,5 +258,7 @@ WinLogin::handle_start()
     {
         MessageBoxA( WinAppWindow::p->get_hwnd(), "Welcome to Lifeograph!", "Welcome", MB_OK );
     }
+    
+    WinAppWindow::p->m_richedit->set_richtext( NULL );
 }
 

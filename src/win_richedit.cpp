@@ -29,7 +29,7 @@
 
 #include "lifeograph.hpp"
 #include "win_app_window.hpp"
-#include "win_entry_view.hpp"
+#include "win_views.hpp"
 #include "win_richedit.hpp"
 #include "strings.hpp"
 
@@ -1393,11 +1393,24 @@ RichEdit::set_richtext( Entry* entry )
     parser_offset_insert_prev = 0;
 
     m_ptr2entry = entry;
-    //set_language( Diary::d->is_read_only() ? "" : entry->get_lang_final() );
-    set_theme( entry->get_theme() );
+    
+    if( entry )
+    {
+        //set_language( Diary::d->is_read_only() ? "" : entry->get_lang_final() );
+        set_theme( entry->get_theme() );
 
-    SetWindowText( m_hwnd, HELPERS::convert_utf8_to_16( entry->get_text() ) );
-    //place_cursor( begin() );
+        SetWindowText( m_hwnd, HELPERS::convert_utf8_to_16( entry->get_text() ) );
+
+        //place_cursor( begin() );
+        EnableWindow( m_hwnd, true );
+    }
+    else
+    {
+        SetWindowText( m_hwnd, L"" );
+        EnableWindow( m_hwnd, false );
+    }
+
+    
     m_flag_settextoperation = false;
 }
 

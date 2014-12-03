@@ -98,6 +98,29 @@ class EntryView : public ElementShower< Entry >
     friend class Lifeograph;
 };
 
+class DiaryView : public ElementShower< Diary >
+{
+    public:
+                                DiaryView();
+                                ~DiaryView();
+
+        Ustring                 get_title_str() const
+        { return m_ptr2elem->m_name; }
+
+        void                    handle_login();
+
+        void                    show( Diary& );
+
+        void                    update_startup_elem();
+
+    protected:
+        // DIALOGS
+
+        void                    open_diary_folder();
+        void                    handle_language_changed();
+        void                    handle_startup_type_changed();
+};
+
 } // end of namespace LIFEO
 
 #endif

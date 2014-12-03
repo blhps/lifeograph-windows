@@ -29,7 +29,7 @@
 
 #include "lifeograph.hpp"
 #include "win_app_window.hpp"
-#include "win_entry_view.hpp"
+#include "win_views.hpp"
 
 
 using namespace LIFEO;
@@ -177,5 +177,29 @@ EntryView::show( Entry& entry )
     WinAppWindow::p->m_richedit->set_richtext( m_ptr2elem );
 
     m_entry_sync = m_ptr2elem;
+}
+
+// DIARY ===========================================================================================
+DiaryView::DiaryView()
+{
+    Diary::shower = this;
+    m_ptr2elem = Diary::d;	// for now no other diary is shown in the view
+}
+
+DiaryView::~DiaryView()
+{
+    Diary::shower = NULL;
+}
+
+void
+DiaryView::handle_login()
+{
+
+}
+
+void
+DiaryView::show( Diary& diary )
+{
+    WinAppWindow::p->m_richedit->set_richtext( NULL );
 }
 

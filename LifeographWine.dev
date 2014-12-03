@@ -261,7 +261,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit24]
-FileName=src\win_entry_view.hpp
+FileName=src\win_views.hpp
 Folder=
 Compile=1
 Link=1
@@ -291,7 +291,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit25]
-FileName=src\win_entry_view.cpp
+FileName=src\win_views.cpp
 CompileCpp=1
 Folder=
 Compile=1

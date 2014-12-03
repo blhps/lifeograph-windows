@@ -71,6 +71,7 @@ WinAppWindow::WinAppWindow()
     Diary::d = new Diary;
     m_login = new WinLogin;
     m_entry_view = new EntryView;
+    m_diary_view = new DiaryView;
     m_richedit = new RichEdit;
 }
 
@@ -228,18 +229,13 @@ WinAppWindow::handle_create()
                  ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
     SendMessage( m_richedit->m_hwnd, EM_SETEVENTMASK, 0, ( LPARAM ) ENM_CHANGE );
 
-#define _UNICODE
     // LIST VIEW
     m_list =
             CreateWindowExW( 0, WC_LISTVIEWW, L"",
                             WS_CHILD|WS_VISIBLE|WS_VSCROLL|LVS_REPORT,
                             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                             m_hwnd, ( HMENU ) IDLV_MAIN, GetModuleHandle( NULL ), NULL );
-    SendMessage( m_list, WM_SETFONT,
-                 ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
-    ListView_SetExtendedListViewStyle( m_list, LVS_EX_FULLROWSELECT );
-    ListView_SetUnicodeFormat( m_list, true );
-#undef _UNICODE
+    init_list();
 
     // CALENDAR
     m_calendar =
@@ -333,7 +329,7 @@ WinAppWindow::finish_editing( bool opt_save )
         else
         {
             if( MessageBoxA( m_hwnd,
-                            "Your changes will be backed up .~unsaved~.."
+                            "Your changes will be backed up in .~unsaved~."
                             "If you exit normally, your diary is saved automatically.",
                             "Are you sure you want to log out without saving?",
                             MB_YESNO | MB_ICONQUESTION ) != IDYES )
@@ -401,8 +397,13 @@ WinAppWindow::login()
 }
 
 BOOL
-InitListView( HWND hWndListView )
+WinAppWindow::init_list()
 {
+    SendMessage( m_list, WM_SETFONT,
+                 ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
+    ListView_SetExtendedListViewStyle( m_list, LVS_EX_FULLROWSELECT );
+    ListView_SetUnicodeFormat( m_list, true );
+    
     // COLUMNS
     LV_COLUMN lvc;
 
@@ -412,7 +413,7 @@ InitListView( HWND hWndListView )
     lvc.pszText  = ( wchar_t* ) L"Entries";
     lvc.cx       = 100;          // width of column in pixels
 
-    ListView_InsertColumn( hWndListView, 0, &lvc );
+    ListView_InsertColumn( m_list, 0, &lvc );
     
     // IMAGE LISTS
     HICON hIconItem;     // Icon for list-view items.
@@ -431,7 +432,7 @@ InitListView( HWND hWndListView )
     }
 
     // Assign the image lists to the list-view control.
-    ListView_SetImageList( hWndListView, hSmall, LVSIL_SMALL );
+    ListView_SetImageList( m_list, hSmall, LVSIL_SMALL );
 
     return TRUE;
 }
@@ -479,10 +480,6 @@ WinAppWindow::update_menu()
 void
 WinAppWindow::update_entry_list()
 {
-    InitListView( m_list );
-
-    ListView_SetUnicodeFormat( m_list, true );
-
     int i = 0;
     LVITEM lvi;
     lvi.mask      = LVIF_TEXT | LVIF_IMAGE | LVIF_STATE | LVIF_PARAM;
@@ -519,7 +516,8 @@ WinAppWindow::confirm_dismiss_element( const DiaryElement* elem )
     return(
         MessageBox( m_hwnd,
                     convert_utf8_to_16(
-                            STR::compose( "Are you sure, you want to dismiss ", elem->get_name() ) ),
+                            STR::compose( "Are you sure, you want to dismiss ",
+                                          elem->get_name() ) ),
                     L"Confirm Dismiss",
                     MB_YESNO | MB_ICONWARNING ) == IDYES );
 }
