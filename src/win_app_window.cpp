@@ -70,6 +70,7 @@ WinAppWindow::WinAppWindow()
 
     Diary::d = new Diary;
     m_login = new WinLogin;
+    m_entry_view = new EntryView;
     m_richedit = new RichEdit;
 }
 
@@ -148,10 +149,17 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
         case WM_SETFOCUS:
             SetFocus( GetDlgItem( hwnd, IDRT_MAIN ) );
             break;
+        case WM_ENTERMENULOOP:
+            if( wParam == false )
+                update_menu();
+            break;
         case WM_COMMAND:
             switch( LOWORD( wParam ) )
             {
-                case IDMI_OPEN_DIARY:
+                case IDMI_DIARY_CREATE:
+                    // TODO
+                    break;
+                case IDMI_DIARY_OPEN:
                     m_login->add_existing_diary();
                     break;
                 case IDMI_EXPORT:
@@ -163,14 +171,15 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                 case IDMI_QUIT:
                     PostMessage( hwnd, WM_CLOSE, 0, 0 );
                     break;
+                case IDMI_ENTRY_DISMISS:
+                    m_entry_view->dismiss_entry();
+                    break;
                 case IDMI_ABOUT:
-                    MessageBoxA( NULL, "Lifeograph 0.0.0", "About...", 0 );
+                    MessageBoxA( NULL, "Lifeograph 0.0.2", "About...", MB_OK );
                     break;
                 case IDRT_MAIN:
                     if( HIWORD( wParam ) == EN_CHANGE )
-                    {
                         m_richedit->handle_change();
-                    }
             }
             break;
         case WM_NOTIFY:
@@ -363,23 +372,6 @@ WinAppWindow::logout( bool opt_save )
 }
 
 void
-WinAppWindow::update_title()
-{
-    Ustring title( PROGRAM_NAME );
-
-    if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
-    {
-        title += " - ";
-        title += Diary::d->get_name();
-
-        if( Diary::d->is_read_only() )
-            title += " <Read Only>";
-    }
-
-    SetWindowTextA( m_hwnd, title.c_str() );
-}
-
-void
 WinAppWindow::login()
 {
     // LOGIN
@@ -387,11 +379,6 @@ WinAppWindow::login()
     m_auto_logout_status = ( Lifeograph::settings.autologout && Diary::d->is_encrypted() ) ? 0 : 1;
 
     Lifeograph::m_internaloperation++;
-    
-    if( m_entry_view == NULL )
-    {
-        m_entry_view = new EntryView;
-    }
 
 //    panel_main->handle_login(); // must come before m_diary_view->handle_login() for header bar order
 //    m_view_login->handle_login();
@@ -403,7 +390,8 @@ WinAppWindow::login()
 //    panel_diary->handle_login();
 //    panel_extra->handle_login();
 
-    populate();
+    update_entry_list();
+    update_calendar();
 
     Lifeograph::m_internaloperation--;
 
@@ -449,12 +437,52 @@ InitListView( HWND hWndListView )
 }
 
 void
-WinAppWindow::populate()
+WinAppWindow::sync_entry()
+{
+    // TODO
+}
+
+void
+WinAppWindow::update_title()
+{
+    Ustring title( PROGRAM_NAME );
+
+    if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
+    {
+        title += " - ";
+        title += Diary::d->get_name();
+
+        if( Diary::d->is_read_only() )
+            title += " <Read Only>";
+    }
+
+    SetWindowTextA( m_hwnd, title.c_str() );
+}
+
+void
+WinAppWindow::update_menu()
+{
+    HMENU hmenu = GetMenu( m_hwnd );
+    bool logged_in = Lifeograph::loginstatus == Lifeograph::LOGGED_IN;
+    
+    EnableMenuItem( hmenu, IDMI_EXPORT,
+                    MF_BYCOMMAND | ( logged_in ? MF_ENABLED : MF_GRAYED ) );
+    EnableMenuItem( hmenu, IDMI_QUIT_WO_SAVE,
+                    MF_BYCOMMAND | ( logged_in ? MF_ENABLED : MF_GRAYED ) );
+                            
+    EnableMenuItem( hmenu, IDMI_ENTRY_DISMISS,
+                    MF_BYCOMMAND | ( m_entry_view->get_element() ? MF_ENABLED : MF_GRAYED ) );
+                            
+    //CheckMenuItem( hmenu, IDMI_, MF_BYCOMMAND | ( ? MF_CHECKED : MF_UNCHECKED ) );
+}
+
+void
+WinAppWindow::update_entry_list()
 {
     InitListView( m_list );
 
     ListView_SetUnicodeFormat( m_list, true );
-    
+
     int i = 0;
     LVITEM lvi;
     lvi.mask      = LVIF_TEXT | LVIF_IMAGE | LVIF_STATE | LVIF_PARAM;
@@ -469,15 +497,30 @@ WinAppWindow::populate()
         lvi.pszText = HELPERS::convert_utf8_to_16( kv.second->get_list_str() );
         lvi.lParam  = ( LPARAM ) kv.second->get_id();
 
-
-        //ListView_InsertItem( m_list, &lvi );
         SendMessageW( m_list, LVM_INSERTITEM, 0, ( LPARAM ) &lvi );
     }
 }
 
 void
-WinAppWindow::sync_entry()
+WinAppWindow::update_calendar()
 {
     // TODO
+}
+
+void
+WinAppWindow::update_startup_elem()
+{
+    // TODO
+}
+
+bool
+WinAppWindow::confirm_dismiss_element( const DiaryElement* elem )
+{
+    return(
+        MessageBox( m_hwnd,
+                    convert_utf8_to_16(
+                            STR::compose( "Are you sure, you want to dismiss ", elem->get_name() ) ),
+                    L"Confirm Dismiss",
+                    MB_YESNO | MB_ICONWARNING ) == IDYES );
 }
 

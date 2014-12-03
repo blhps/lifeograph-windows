@@ -16,17 +16,22 @@
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDM_MAIN MENU
 {
-    POPUP "&File"
+    POPUP "&Diary"
     {
-        MENUITEM "&Open Diary...", IDMI_OPEN_DIARY
-        MENUITEM "&Export...", IDMI_EXPORT, INACTIVE
+        MENUITEM "&Create Diary...", IDMI_DIARY_CREATE
+        MENUITEM "&Open Diary...", IDMI_DIARY_OPEN
+        MENUITEM "&Export...", IDMI_EXPORT
         MENUITEM SEPARATOR
         MENUITEM "Quit &without Saving", IDMI_QUIT_WO_SAVE
         MENUITEM "&Quit", IDMI_QUIT
     }
+    POPUP "&Entry"
+    {
+        MENUITEM "&Dismiss...", IDMI_ENTRY_DISMISS
+    }
     POPUP "&Help"
     {
-        MENUITEM "About...", IDMI_ABOUT
+        MENUITEM "&About...", IDMI_ABOUT
     }
 }
 

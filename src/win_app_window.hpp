@@ -50,9 +50,14 @@ class WinAppWindow
         void                        handle_resize( short, short );
         void                        handle_notify( int, LPARAM );
 
-        void                        populate();
+        void                        update_menu();
+        void                        update_entry_list();
+        void                        update_calendar();
+        void                        update_startup_elem();
         void                        sync_entry();
         void                        update_title();
+
+        bool                        confirm_dismiss_element( const DiaryElement* );
 
         void                        login();
         bool                        finish_editing( bool = true );

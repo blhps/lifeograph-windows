@@ -144,7 +144,24 @@ EntryView::restore_entry()
 void
 EntryView::dismiss_entry()
 {
+    if( ! WinAppWindow::p->confirm_dismiss_element( m_ptr2elem ) )
+        return;
 
+    // first make sure that entry to be deleted is completely out of business...
+    // ...else dark forces may take action and cause SEGFAULT:
+    Diary::d->show();
+
+    //AppWindow::p->remove_element_from_history( m_ptr2elem );
+    Diary::d->dismiss_entry( m_ptr2elem );
+
+    Lifeograph::m_internaloperation++;
+
+    WinAppWindow::p->update_calendar();
+    WinAppWindow::p->update_entry_list();
+
+    WinAppWindow::p->update_startup_elem();
+
+    Lifeograph::m_internaloperation--;
 }
 
 void

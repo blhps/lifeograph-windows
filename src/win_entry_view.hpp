@@ -66,11 +66,6 @@ class EntryView : public ElementShower< Entry >
         void                    update_highlight_button();
         void                    toggle_comments();
 
-        void                    update_theme();
-
-    protected:
-        enum TagOperation { TO_NONE, TO_ADD, TO_REMOVE, TO_CREATE_AND_ADD };
-
         void                    trash_entry();
         void                    restore_entry();
         void                    dismiss_entry();
@@ -80,6 +75,12 @@ class EntryView : public ElementShower< Entry >
         void                    hide();
         void                    hide_before();
         void                    hide_after();
+
+        void                    update_theme();
+
+    protected:
+        enum TagOperation { TO_NONE, TO_ADD, TO_REMOVE, TO_CREATE_AND_ADD };
+        
         void                    handle_textview_changed();
         void                    handle_entry_tag_changed();
         void                    handle_button_tag_clicked();
