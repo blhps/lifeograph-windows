@@ -26,6 +26,9 @@
 #define LIFEOGRAPH_DEVELOPMENT_VERSION
 
 
+//#define _WIN32_IE 0x0400
+#include <commctrl.h>
+
 #include "win_login.hpp"
 #include "win_views.hpp"
 #include "win_richedit.hpp"
@@ -54,6 +57,7 @@ class WinAppWindow
 
         void                        update_menu();
         void                        update_entry_list();
+        void                        fill_monthdaystate( int, int, MONTHDAYSTATE[], int );
         void                        update_calendar();
         void                        update_startup_elem();
         void                        update_title();

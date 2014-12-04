@@ -25,8 +25,6 @@
 #endif
 
 #include <windows.h>
-//#define _WIN32_IE 0x0400
-#include <commctrl.h>
 #include <richedit.h>
 #include <string>
 #include <cstdlib>
@@ -298,6 +296,20 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
             }
             PRINT_DEBUG( "....." );
             break;
+        case IDCAL_MAIN:
+            if( ( ( LPNMHDR ) lparam )->code == MCN_GETDAYSTATE )
+            {
+                NMDAYSTATE* ds( ( NMDAYSTATE* ) lparam );
+                MONTHDAYSTATE mds[ ds->cDayState ];
+                
+                fill_monthdaystate( ds->stStart.wYear,
+                                    ds->stStart.wMonth,
+                                    mds,
+                                    ds->cDayState );
+                
+                ds->prgDayState = mds;
+            }
+            break;
     }
 }
 
@@ -493,10 +505,54 @@ WinAppWindow::update_entry_list()
     }
 }
 
+#define BOLDDAY(ds, iDay)  if (iDay > 0 && iDay < 32)(ds) |= (0x00000001 << (iDay - 1))
+
+void
+WinAppWindow::fill_monthdaystate( int year, int month, MONTHDAYSTATE mds[], int size )
+{
+    for( int i = 0; i < size; i++ )
+    {
+        mds[ i ] = 0;
+
+        for( auto& kv_entry : Diary::d->get_entries() )
+        {
+            Entry* entry = kv_entry.second;
+
+            if( /*entry->get_filtered_out() ||*/ entry->get_date().is_ordinal() )
+                continue;
+
+            if( entry->get_date().get_year() == year )
+            {
+                if( entry->get_date().get_month() == month )
+                    BOLDDAY( mds[ i ], entry->get_date().get_day() );
+                else if( entry->get_date().get_month() < month )
+                    break;
+            }
+            else
+            if( entry->get_date().get_year() < year )
+                break;
+        }
+
+        // increase month and, if needed, year
+        if( ++month > 12 )
+        {
+            month = 1;
+            year++;
+        }
+    }
+}
+
 void
 WinAppWindow::update_calendar()
 {
-    // TODO
+    // does not seem to work!
+    SYSTEMTIME st[ 2 ];
+    int size = SendMessage( m_calendar, MCM_GETMONTHRANGE, GMR_DAYSTATE, ( LPARAM ) &st );
+    MONTHDAYSTATE mds[ size ];
+    
+    fill_monthdaystate( st[ 0 ].wYear, st[ 0 ].wMonth, mds, size );
+    
+    SendMessage( m_calendar, MCM_SETDAYSTATE, size, ( LPARAM ) &mds );
 }
 
 void
