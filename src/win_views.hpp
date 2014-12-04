@@ -112,6 +112,8 @@ class DiaryView : public ElementShower< Diary >
         void                    show( Diary& );
 
         void                    update_startup_elem();
+        
+        LIFEO::Result           export_diary();
 
     protected:
         // DIALOGS

@@ -61,10 +61,10 @@ class WinAppWindow
         void                        update_calendar();
         void                        update_startup_elem();
         void                        update_title();
+        
+        void                        handle_calendar_doubleclick();
 
         bool                        confirm_dismiss_element( const DiaryElement* );
-        
-        LIFEO::Result               export_diary();
 
         void                        login();
         bool                        finish_editing( bool = true );

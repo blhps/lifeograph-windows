@@ -203,3 +203,29 @@ DiaryView::show( Diary& diary )
     WinAppWindow::p->m_richedit->set_richtext( NULL );
 }
 
+LIFEO::Result
+DiaryView::export_diary()
+{
+    OPENFILENAME ofn;
+    Wchar szFileName[ MAX_PATH ];
+
+    ZeroMemory( &ofn, sizeof( ofn ) );
+    szFileName[ 0 ] = 0;
+
+    ofn.lStructSize = sizeof( ofn );
+    ofn.hwndOwner = WinAppWindow::p->get_hwnd();
+    ofn.lpstrFilter = L"Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0\0";
+    ofn.lpstrFile = szFileName;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.lpstrDefExt = L"txt";
+    ofn.Flags = OFN_OVERWRITEPROMPT;
+
+    if( GetSaveFileName( &ofn ) )
+    {
+        std::string path = convert_utf16_to_8( szFileName );
+        return Diary::d->write_txt( path, false );
+    }
+
+    return ABORTED;
+}
+

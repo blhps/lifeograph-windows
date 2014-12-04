@@ -576,8 +576,8 @@ struct CipherBuffers
     }
 };
 
-// ENTRY WIDGET WITH SELF-HANDLED CLEAR ICON =======================================================
 #ifndef LIFEO_WINDOZE
+// ENTRY WIDGET WITH SELF-HANDLED CLEAR ICON =======================================================
 class EntryClear : public Gtk::Entry
 {
     public:
@@ -590,140 +590,6 @@ class EntryClear : public Gtk::Entry
         virtual bool        on_key_release_event( GdkEventKey* );
         bool                m_pressed;
 };
-#endif
-
-// MENU 2 ==========================================================================================
-#if( GTKMM_MAJOR_VERSION < 3 )
-#ifndef LIFEO_WINDOZE
-
-class Menu2 : public Gtk::Menu
-{
-    public:
-        Menu2() { }
-        Menu2( BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& )
-        :   Gtk::Menu( cobject ) { }
-
-    protected:
-
-    private:
-
-    friend class Menubutton;
-};
-
-class Menubutton : public Gtk::ToggleButton
-{
-    public:
-                            Menubutton( const Gtk::StockID&,
-                                        const Glib::ustring&,
-                                        Gtk::ReliefStyle = Gtk::RELIEF_NONE,
-                                        Gtk::IconSize = Gtk::ICON_SIZE_BUTTON,
-                                        Menu2* = NULL );
-                            Menubutton( const Glib::RefPtr< Gdk::Pixbuf >*,
-                                        const Glib::ustring&,
-                                        Gtk::ReliefStyle = Gtk::RELIEF_NONE,
-                                        Menu2* = NULL );
-                            Menubutton( BaseObjectType*,
-                                        const Glib::RefPtr< Gtk::Builder >& );
-        virtual             ~Menubutton();
-
-        Menu2*              get_menu() const;
-        void                set_menu( Menu2* );
-        bool                clear_menu();
-        void                release();
-
-        void                set_label( const Glib::ustring& );
-        void                get_menu_position( int&, int&, bool& );
-
-        static Glib::ustring
-                            s_builder_name;
-
-    protected:
-        bool                on_button_press_event( GdkEventButton* );
-
-        Menu2*              m_menu;
-        Gtk::Label*         m_label;
-        sigc::connection    m_connection;
-
-    private:
-};
-
-class MenuitemRecent : public Gtk::MenuItem
-{
-    public:
-        typedef sigc::signal< void, const std::string& >
-                                    Signal_void_string;
-
-                                    MenuitemRecent( const std::string& );
-
-        Signal_void_string          signal_removerecent()
-        { return m_signal_removerecent; }
-
-    protected:
-        virtual bool                on_motion_notify_event( GdkEventMotion* );
-        virtual bool                on_leave_notify_event( GdkEventCrossing* );
-        virtual bool                on_button_release_event( GdkEventButton* );
-        virtual bool                on_button_press_event( GdkEventButton* );
-
-        Gtk::Image                  m_icon_remove;
-        std::string                 m_path;
-        bool                        m_flag_deletepressed;
-
-        Signal_void_string          m_signal_removerecent;
-};
-
-class FilebuttonRecent : public Menubutton
-{
-    public:
-        const unsigned int  MAX_RECENT_FILE_COUNT( 8 );
-
-        typedef std::list< std::string > ListPaths;
-//                                    FilebuttonRecent( const Glib::RefPtr< Gdk::Pixbuf >&,
-//                                                      ListPaths*, const Glib::ustring& );
-                                    FilebuttonRecent( BaseObjectType*,
-                                                      const Glib::RefPtr< Gtk::Builder >& );
-
-        void                        set( ListPaths* );
-
-        ListPaths*                  get_recentlist()
-        {
-            return m_list_recent;
-        }
-        std::string                 get_filename() const;
-        std::string                 get_filename_recent( int ) const;
-        void                        set_filename( const std::string& );
-        void                        update_filenames();
-
-        bool                        add_recent( const std::string& );
-        void                        remove_recent( const std::string& );
-
-        void                        show_filechooser();
-
-        SignalVoid                  signal_selection_changed();
-        SignalVoid                  signal_create_file();
-
-        bool                        handle_motion_notify( GdkEventMotion* );
-
-        static Glib::ustring        fallback_label;
-
-    protected:
-        virtual void                on_create_file();
-        virtual void                on_size_allocate( Gtk::Allocation& );
-        virtual void                on_drag_data_received(
-                                            const Glib::RefPtr<Gdk::DragContext>&,
-                                            int, int,
-                                            const Gtk::SelectionData&, guint, guint );
-
-    private:
-        Gtk::FileChooserDialog*     m_filechooserdialog;
-        Gtk::Image                  m_icon_new;
-        Gtk::Image                  m_icon_browse;
-        ListPaths*                  m_list_recent;
-        SignalVoid                  m_signal_selectionchanged;
-        SignalVoid                  m_signal_createfile;
-};
-
-#endif
-#endif
 
 // FILE FILTERS ====================================================================================
 //class FilefilterAny : public Gtk::FileFilter
@@ -747,7 +613,6 @@ class FilebuttonRecent : public Menubutton
 //};
 
 // DIALOGEVENT =====================================================================================
-#ifndef LIFEO_WINDOZE
 class DialogEvent : public Gtk::Dialog
 {
     public:
@@ -768,6 +633,14 @@ Gtk::Frame* create_frame( const Glib::ustring&, Gtk::Widget& );
 // scroll_to_row( Path& ) does not work for some reason. So, implemented our own
 bool is_treepath_less( const Gtk::TreePath&, const Gtk::TreePath& );
 bool is_treepath_more( const Gtk::TreePath&, const Gtk::TreePath& );
+
+#else //LIFEO WINDOZE
+
+class Calendar
+{
+    Calendar();
+    
+};
 
 #endif
 

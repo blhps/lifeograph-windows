@@ -51,9 +51,26 @@
 
 using namespace LIFEO;
 
+// NON-MEMBER PROCEDURES
 inline static LRESULT CALLBACK app_window_proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
     return WinAppWindow::p->proc( hwnd, msg, wParam, lParam );
+}
+
+LRESULT CALLBACK calendar_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam,
+                                UINT_PTR uIdSubclass, DWORD_PTR dwRefData )
+{
+    switch( msg )
+    {
+        case WM_LBUTTONDBLCLK:
+            WinAppWindow::p->handle_calendar_doubleclick();
+            return TRUE;
+        // TODO: add a menu for chapters..
+        //case WM_RBUTTONUP:
+            //return TRUE;
+    }
+    
+    return DefSubclassProc( hwnd, msg, wparam, lparam );
 }
 
 WinAppWindow* WinAppWindow::p = NULL;
@@ -163,7 +180,7 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     break;
                 case IDMI_EXPORT:
                     if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
-                        export_diary();
+                        m_diary_view->export_diary();
                     break;
                 case IDMI_QUIT_WO_SAVE:
                     PostMessage( hwnd, WM_CLOSE, 0, true );
@@ -175,7 +192,7 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     m_entry_view->dismiss_entry();
                     break;
                 case IDMI_ABOUT:
-                    MessageBoxA( NULL, "Lifeograph 0.0.2", "About...", MB_OK );
+                    MessageBoxA( NULL, "Lifeograph 0.0.3", "About...", MB_OK );
                     break;
                 case IDRT_MAIN:
                     if( HIWORD( wParam ) == EN_CHANGE )
@@ -244,6 +261,9 @@ WinAppWindow::handle_create()
                             m_hwnd, ( HMENU ) IDCAL_MAIN, Lifeograph::p->hInst, NULL );
     SendMessage( m_calendar, WM_SETFONT,
                  ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
+                 
+    SetWindowSubclass( m_calendar, calendar_proc, 0, 0 );
+    SetClassLongPtr( m_calendar, GCL_STYLE, CS_DBLCLKS ); // make it accept double clicks
 
     SYSTEMTIME lt;
     GetLocalTime( &lt );
@@ -561,6 +581,25 @@ WinAppWindow::update_startup_elem()
     // TODO
 }
 
+void
+WinAppWindow::handle_calendar_doubleclick()
+{
+    if( Lifeograph::loginstatus != Lifeograph::LOGGED_IN || Diary::d->is_read_only() )
+        return;
+
+    SYSTEMTIME st;
+    if( ! SendMessage( m_calendar, MCM_GETCURSEL, 0, ( LPARAM ) &st ) )
+        return;
+        
+    Date date( st.wYear, st.wMonth, st.wDay );
+    Entry* entry( Diary::d->create_entry( date.m_date ) );
+
+    update_entry_list();
+    update_calendar();
+
+    entry->show();
+}
+
 bool
 WinAppWindow::confirm_dismiss_element( const DiaryElement* elem )
 {
@@ -571,31 +610,5 @@ WinAppWindow::confirm_dismiss_element( const DiaryElement* elem )
                                           elem->get_name() ) ),
                     L"Confirm Dismiss",
                     MB_YESNO | MB_ICONWARNING ) == IDYES );
-}
-
-LIFEO::Result
-WinAppWindow::export_diary()
-{
-    OPENFILENAME ofn;
-    Wchar szFileName[ MAX_PATH ];
-
-    ZeroMemory( &ofn, sizeof( ofn ) );
-    szFileName[ 0 ] = 0;
-
-    ofn.lStructSize = sizeof( ofn );
-    ofn.hwndOwner = WinAppWindow::p->get_hwnd();
-    ofn.lpstrFilter = L"Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0\0";
-    ofn.lpstrFile = szFileName;
-    ofn.nMaxFile = MAX_PATH;
-    ofn.lpstrDefExt = L"txt";
-    ofn.Flags = OFN_OVERWRITEPROMPT;
-
-    if( GetSaveFileName( &ofn ) )
-    {
-        std::string path = convert_utf16_to_8( szFileName );
-        return Diary::d->write_txt( path, false );
-    }
-    
-    return ABORTED;
 }
 
