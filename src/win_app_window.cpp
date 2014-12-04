@@ -248,7 +248,7 @@ WinAppWindow::handle_create()
     // LIST VIEW
     m_list =
             CreateWindowExW( 0, WC_LISTVIEWW, L"",
-                            WS_CHILD|WS_VISIBLE|WS_VSCROLL|LVS_REPORT,
+                            WS_CHILD | WS_VISIBLE | WS_VSCROLL | LVS_REPORT | LVS_NOCOLUMNHEADER,
                             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                             m_hwnd, ( HMENU ) IDLV_MAIN, GetModuleHandle( NULL ), NULL );
     init_list();
@@ -289,6 +289,8 @@ WinAppWindow::handle_resize( short width, short height )
     MoveWindow( m_calendar,
                 EDITOR_WIDTH, height - rc.bottom, width - EDITOR_WIDTH, rc.bottom,
                 TRUE );
+
+    ListView_SetColumnWidth( m_list, 0, width - EDITOR_WIDTH - GetSystemMetrics( SM_CXVSCROLL ) );
 }
 
 void
@@ -436,7 +438,7 @@ WinAppWindow::init_list()
                  ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
     ListView_SetExtendedListViewStyle( m_list, LVS_EX_FULLROWSELECT );
     ListView_SetUnicodeFormat( m_list, true );
-    
+
     // COLUMNS
     LV_COLUMN lvc;
 
@@ -507,6 +509,8 @@ WinAppWindow::update_menu()
 void
 WinAppWindow::update_entry_list()
 {
+    SendMessage( m_list, LVM_DELETEALLITEMS, 0, 0 );
+    
     int i = 0;
     LVITEM lvi;
     lvi.mask      = LVIF_TEXT | LVIF_IMAGE | LVIF_STATE | LVIF_PARAM;
