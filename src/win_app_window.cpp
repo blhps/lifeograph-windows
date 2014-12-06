@@ -172,9 +172,15 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
             switch( LOWORD( wParam ) )
             {
                 case IDMI_DIARY_CREATE:
+                    if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
+                        if( ! finish_editing() )
+                            break;
                     m_login->create_new_diary();
                     break;
                 case IDMI_DIARY_OPEN:
+                    if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
+                        if( ! finish_editing() )
+                            break;
                     m_login->add_existing_diary();
                     break;
                 case IDMI_EXPORT:
@@ -385,6 +391,11 @@ WinAppWindow::finish_editing( bool opt_save )
     if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
         Lifeograph::loginstatus = Lifeograph::LOGGED_OUT;
     Diary::d->clear();
+    
+    m_entry_view->m_richedit->set_richtext( NULL );
+    update_entry_list();
+    update_calendar();
+    update_title();
 
     Lifeograph::m_internaloperation--;
     
