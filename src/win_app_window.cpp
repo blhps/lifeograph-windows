@@ -52,12 +52,37 @@
 using namespace LIFEO;
 
 // NON-MEMBER PROCEDURES
-inline static LRESULT CALLBACK app_window_proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
+inline static LRESULT CALLBACK
+app_window_proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
     return WinAppWindow::p->proc( hwnd, msg, wParam, lParam );
 }
 
-LRESULT CALLBACK calendar_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam,
+int CALLBACK
+list_compare_func( LPARAM lp1, LPARAM lp2, LPARAM lParamSort )
+{
+    // SORT BY DATE (ONLY DESCENDINGLY FOR NOW)
+    DiaryElement* item1 = Diary::d->get_element( lp1 );
+    DiaryElement* item2 = Diary::d->get_element( lp2 );
+    if( !( item1 && item2 ) )
+        return 0;
+    else
+    if( item1->get_type() == DiaryElement::ET_DIARY )
+    return -1;
+
+    int direction( ( item1->get_date().is_ordinal() && item2->get_date().is_ordinal() ) ? -1 : 1 );
+
+    if( item1->get_date() > item2->get_date() )
+        return -direction;
+    else
+    if( item1->get_date() < item2->get_date() )
+        return direction;
+    else
+        return 0;
+}
+
+LRESULT CALLBACK
+calendar_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam,
                                 UINT_PTR uIdSubclass, DWORD_PTR dwRefData )
 {
     switch( msg )
@@ -537,6 +562,8 @@ WinAppWindow::update_entry_list()
 
         SendMessageW( m_list, LVM_INSERTITEM, 0, ( LPARAM ) &lvi );
     }
+    
+    SendMessage( m_list, LVM_SORTITEMS, 0, ( WPARAM ) list_compare_func );
 }
 
 #define BOLDDAY(ds, iDay)  if (iDay > 0 && iDay < 32)(ds) |= (0x00000001 << (iDay - 1))
