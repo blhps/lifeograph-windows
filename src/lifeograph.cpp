@@ -58,6 +58,8 @@ DiaryElement*                       Lifeograph::s_elem_dragged = NULL;
 bool                                Lifeograph::s_flag_dragging = false;
 LanguageList                        Lifeograph::s_lang_list;
 std::string                         Lifeograph::s_color_insensitive;
+#else
+HINSTANCE                           Lifeograph::hInst = 0;
 #endif
 int                                 Lifeograph::m_internaloperation = 0;
 
@@ -118,7 +120,8 @@ Lifeograph::run( HINSTANCE hInstance )
 {
     on_startup();
     new WinAppWindow;
-    WinAppWindow::p->run( hInstance );
+    hInst = hInstance;
+    WinAppWindow::p->run();
 }
 #endif
 

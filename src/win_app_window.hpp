@@ -45,7 +45,7 @@ class WinAppWindow
                                     WinAppWindow();
                                     ~WinAppWindow();
                                     
-        int                         run( HINSTANCE );
+        int                         run();
         HWND                        get_hwnd() const
         { return m_hwnd; }
         LRESULT                     proc( HWND, UINT, WPARAM, LPARAM );

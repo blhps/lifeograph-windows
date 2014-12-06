@@ -4,8 +4,16 @@
 
 #define IDD_PASSWORD                            101
 #define IDM_MAIN                                103
+
 #define IDI_ENTRY16                             105
-#define IDI_TAG16                               107
+#define IDI_TODO_OPEN16                         106
+#define IDI_TODO_PROG16                         107
+#define IDI_TODO_DONE16                         108
+#define IDI_TODO_CANC16                         109
+
+#define IDI_TAG16                               120
+
+
 #define IDMI_DIARY_OPEN                         40000
 #define IDMI_DIARY_CREATE                       40001
 #define IDMI_EXPORT                             40002

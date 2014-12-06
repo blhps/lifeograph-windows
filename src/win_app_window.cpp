@@ -121,7 +121,7 @@ WinAppWindow::~WinAppWindow()
 }
 
 int
-WinAppWindow::run( HINSTANCE hInstance )
+WinAppWindow::run()
 {
     WNDCLASSEX wc;
     HWND hwnd;
@@ -132,14 +132,14 @@ WinAppWindow::run( HINSTANCE hInstance )
     wc.lpfnWndProc   = app_window_proc;
     wc.cbClsExtra    = 0;
     wc.cbWndExtra    = 0;
-    wc.hInstance     = hInstance;
+    wc.hInstance     = Lifeograph::hInst;
     wc.hIcon         = LoadIcon( NULL, IDI_APPLICATION );
     wc.hCursor       = LoadCursor( NULL, IDC_ARROW );
     wc.hbrBackground = ( HBRUSH ) ( COLOR_WINDOW + 1 );
     wc.lpszMenuName  = MAKEINTRESOURCE( IDM_MAIN );
     wc.lpszClassName = L"WindowClass";
-    wc.hIconSm       = LoadIcon( hInstance, L"A" ); /* A is name used by project icons */
-
+    wc.hIconSm       = LoadIcon( Lifeograph::hInst, L"A" ); // A is name used by project icons
+    
     if( !RegisterClassEx( &wc ) )
     {
         MessageBoxA( 0, "Window Registration Failed!", "Error!",
@@ -153,12 +153,12 @@ WinAppWindow::run( HINSTANCE hInstance )
                            WS_OVERLAPPEDWINDOW,
                            CW_USEDEFAULT, CW_USEDEFAULT,
                            640, 480,
-                           NULL, NULL, hInstance, NULL );
+                           NULL, NULL, Lifeograph::hInst, NULL );
 
     if( hwnd == NULL )
     {
         MessageBoxA( 0, "Window Creation Failed!", "Error!",
-                    MB_ICONEXCLAMATION|MB_OK|MB_SYSTEMMODAL );
+                     MB_ICONEXCLAMATION|MB_OK|MB_SYSTEMMODAL );
         return 0;
     }
 
@@ -278,7 +278,8 @@ WinAppWindow::handle_create()
     // LIST VIEW
     m_list =
             CreateWindowExW( 0, WC_LISTVIEWW, L"",
-                            WS_CHILD | WS_VISIBLE | WS_VSCROLL | LVS_REPORT | LVS_NOCOLUMNHEADER,
+                            WS_CHILD | WS_VISIBLE | WS_VSCROLL | LVS_REPORT |
+                            LVS_NOCOLUMNHEADER | LVS_SINGLESEL,
                             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                             m_hwnd, ( HMENU ) IDLV_MAIN, GetModuleHandle( NULL ), NULL );
     init_list();
@@ -286,9 +287,9 @@ WinAppWindow::handle_create()
     // CALENDAR
     m_calendar =
             CreateWindowEx( 0, L"SysMonthCal32", L"",
-                            WS_CHILD|WS_VISIBLE|WS_BORDER|MCS_DAYSTATE|MCS_NOTODAY,
+                            WS_CHILD|WS_VISIBLE | MCS_DAYSTATE|MCS_NOTODAY,
                             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                            m_hwnd, ( HMENU ) IDCAL_MAIN, Lifeograph::p->hInst, NULL );
+                            m_hwnd, ( HMENU ) IDCAL_MAIN, Lifeograph::hInst, NULL );
     SendMessage( m_calendar, WM_SETFONT,
                  ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
                  
@@ -477,32 +478,23 @@ WinAppWindow::init_list()
     // COLUMNS
     LV_COLUMN lvc;
 
-    lvc.mask     = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
-    lvc.fmt      = LVCFMT_LEFT;
-    lvc.iSubItem = 0;
+    lvc.mask     = LVCF_FMT | LVCF_TEXT;
+    lvc.fmt      = LVCFMT_LEFT | LVCFMT_IMAGE;
     lvc.pszText  = ( wchar_t* ) L"Entries";
-    lvc.cx       = 100;          // width of column in pixels
 
     ListView_InsertColumn( m_list, 0, &lvc );
     
     // IMAGE LISTS
-    HICON hIconItem;     // Icon for list-view items.
-    HIMAGELIST hLarge;   // Image list for icon view.
-    HIMAGELIST hSmall;   // Image list for other views.
+    HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_MASK, 1, 1 );
 
-    hSmall = ImageList_Create( GetSystemMetrics( SM_CXSMICON ),
-                               GetSystemMetrics( SM_CYSMICON ),
-                               ILC_MASK, 1, 1 );
-
-    for( int index = 0; index < 2; index++ )
+    for( int i = 0; i < 5; i++ )
     {
-        hIconItem = LoadIcon( Lifeograph::p->hInst, MAKEINTRESOURCE( IDI_ENTRY16 + index ) );
-        ImageList_AddIcon( hSmall, hIconItem );
-        DestroyIcon( hIconItem );
+        HICON hicon = LoadIcon( Lifeograph::p->hInst, MAKEINTRESOURCE( IDI_ENTRY16 + i ) );
+        ImageList_AddIcon( himagelist, hicon );
+        DestroyIcon( hicon );
     }
 
-    // Assign the image lists to the list-view control.
-    ListView_SetImageList( m_list, hSmall, LVSIL_SMALL );
+    ListView_SetImageList( m_list, himagelist, LVSIL_SMALL );
 
     return TRUE;
 }
@@ -552,7 +544,6 @@ WinAppWindow::update_entry_list()
     lvi.stateMask = 0;
     lvi.iSubItem  = 0;
     lvi.state     = 0;
-    lvi.iImage    = 0;
 
     for( auto& kv : Diary::d->get_entries() )
     {
@@ -560,7 +551,27 @@ WinAppWindow::update_entry_list()
         lvi.pszText = HELPERS::convert_utf8_to_16( kv.second->get_list_str() );
         lvi.lParam  = ( LPARAM ) kv.second->get_id();
 
-        SendMessageW( m_list, LVM_INSERTITEM, 0, ( LPARAM ) &lvi );
+        switch( kv.second->get_todo_status() )
+        {
+            case ES::TODO:
+                lvi.iImage    = 1;
+                break;
+            case ES::PROGRESSED:
+                lvi.iImage    = 2;
+                break;
+            case ES::DONE:
+                lvi.iImage    = 3;
+                break;
+            case ES::CANCELED:
+                lvi.iImage    = 4;
+                break;
+            default:    // 0
+                lvi.iImage    = 0;
+                break;
+        }
+        
+
+        SendMessage( m_list, LVM_INSERTITEM, 0, ( LPARAM ) &lvi );
     }
     
     SendMessage( m_list, LVM_SORTITEMS, 0, ( WPARAM ) list_compare_func );

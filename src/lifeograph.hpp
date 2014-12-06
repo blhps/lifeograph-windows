@@ -181,7 +181,7 @@ class Lifeograph
                                     m_actions_edit;
 #else
         int                         run( HINSTANCE );
-        HINSTANCE                   hInst;
+        static HINSTANCE            hInst;
         
 #endif
 
