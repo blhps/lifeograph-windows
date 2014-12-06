@@ -42,6 +42,7 @@
 #include "strings.hpp"
 #include "lifeograph.hpp"
 #include "win_app_window.hpp"
+#include "win_dialog_password.hpp"
 
 // TEMPORARY
 #define IDRT_MAIN       12338
@@ -208,6 +209,12 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                             break;
                     m_login->add_existing_diary();
                     break;
+                case IDMI_DIARY_CHANGE_PASSWORD:
+                    if( !authorize() )
+                        break;
+                case IDMI_DIARY_ENCRYPT:
+                    DialogPassword::launch( m_hwnd, Diary::d, DialogPassword::PD_NEW );
+                    break;
                 case IDMI_EXPORT:
                     if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
                         m_diary_view->export_diary();
@@ -222,7 +229,7 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     m_entry_view->dismiss_entry();
                     break;
                 case IDMI_ABOUT:
-                    MessageBoxA( NULL, "Lifeograph 0.0.3", "About...", MB_OK );
+                    MessageBoxA( NULL, "Lifeograph 0.0.5", "About...", MB_OK );
                     break;
                 case IDRT_MAIN:
                     if( HIWORD( wParam ) == EN_CHANGE )
@@ -278,10 +285,10 @@ WinAppWindow::handle_create()
     // LIST VIEW
     m_list =
             CreateWindowExW( 0, WC_LISTVIEWW, L"",
-                            WS_CHILD | WS_VISIBLE | WS_VSCROLL | LVS_REPORT |
-                            LVS_NOCOLUMNHEADER | LVS_SINGLESEL,
-                            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                            m_hwnd, ( HMENU ) IDLV_MAIN, GetModuleHandle( NULL ), NULL );
+                             WS_CHILD | WS_VISIBLE | WS_VSCROLL | LVS_REPORT |
+                             LVS_NOCOLUMNHEADER | LVS_SINGLESEL,
+                             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+                             m_hwnd, ( HMENU ) IDLV_MAIN, GetModuleHandle( NULL ), NULL );
     init_list();
 
     // CALENDAR
@@ -521,7 +528,14 @@ WinAppWindow::update_menu()
 {
     HMENU hmenu = GetMenu( m_hwnd );
     bool logged_in = Lifeograph::loginstatus == Lifeograph::LOGGED_IN;
+    bool encrypted = Diary::d->is_encrypted();
     
+    EnableMenuItem( hmenu, IDMI_DIARY_ENCRYPT,
+                    MF_BYCOMMAND | ( logged_in && !encrypted ? MF_ENABLED : MF_GRAYED ) );
+                    
+    EnableMenuItem( hmenu, IDMI_DIARY_CHANGE_PASSWORD,
+                    MF_BYCOMMAND | ( logged_in && encrypted ? MF_ENABLED : MF_GRAYED ) );
+
     EnableMenuItem( hmenu, IDMI_EXPORT,
                     MF_BYCOMMAND | ( logged_in ? MF_ENABLED : MF_GRAYED ) );
     EnableMenuItem( hmenu, IDMI_QUIT_WO_SAVE,
@@ -569,7 +583,6 @@ WinAppWindow::update_entry_list()
                 lvi.iImage    = 0;
                 break;
         }
-        
 
         SendMessage( m_list, LVM_INSERTITEM, 0, ( LPARAM ) &lvi );
     }
@@ -650,6 +663,27 @@ WinAppWindow::handle_calendar_doubleclick()
     update_calendar();
 
     entry->show();
+}
+
+bool
+WinAppWindow::authorize()
+{
+    int i = 0;
+    Result res;
+    
+    while( res = DialogPassword::launch( m_hwnd, Diary::d, DialogPassword::PD_AUTHORIZE, i ) )
+    {
+        switch( res )
+        {
+            case SUCCESS:
+                return true;
+            case INVALID:
+                i++;
+                break;
+            case ABORTED:
+                return false;
+        }
+    }
 }
 
 bool

@@ -151,12 +151,14 @@ WinLogin::open_selected_diary( bool read_only )
     // HANDLE ENCRYPTION
     if( Diary::d->is_encrypted() )
     {
-        if( DialogEnterPassword::launch( WinAppWindow::p->get_hwnd(),
-                                         Diary::d,
-                                         m_password_attempt_no ) != 1 ) // FIXME
+        if( DialogPassword::launch( WinAppWindow::p->get_hwnd(),
+                                    Diary::d,
+                                    DialogPassword::PD_OPEN,
+                                    m_password_attempt_no ) !=
+            HELPERS::OK )
         {
             Diary::d->clear();
-            return LIFEO::ABORTED;
+            return HELPERS::ABORTED;
         }
     }
 
@@ -177,6 +179,8 @@ WinLogin::open_selected_diary( bool read_only )
             return result;
     }
 
+    m_password_attempt_no = 0;
+    
     return LIFEO::SUCCESS;
 }
 

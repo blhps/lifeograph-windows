@@ -64,6 +64,8 @@ class WinAppWindow
         
         void                        handle_calendar_doubleclick();
 
+        bool                        authorize();
+
         bool                        confirm_dismiss_element( const DiaryElement* );
 
         void                        login();

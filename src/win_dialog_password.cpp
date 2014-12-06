@@ -32,53 +32,63 @@ using namespace LIFEO;
 
 
 // ENTER PASSWORD DIALOG ===========================================================================
-DialogEnterPassword* DialogEnterPassword::ptr = NULL;
+DialogPassword* DialogPassword::ptr = NULL;
 
 inline static BOOL CALLBACK
-dialog_enter_password_proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
+dialog_password_proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {   
-    return DialogEnterPassword::ptr->proc( hwnd, msg, wParam, lParam );
+    return DialogPassword::ptr->proc( hwnd, msg, wParam, lParam );
 }
 
-DialogEnterPassword::DialogEnterPassword( )
+DialogPassword::DialogPassword( PDType type )
+:   m_flag_again( false ), m_type( type )
 {
 
 }
 
-int
-DialogEnterPassword::launch( HWND hw_par, Diary* diary, bool flag_again )
+Result
+DialogPassword::launch( HWND hw_par, Diary* diary, PDType type, bool flag_again )
 {
-    ptr = new DialogEnterPassword;
+    ptr = new DialogPassword( type );
 
     ptr->m_ptr2diary = diary;
     ptr->m_flag_again = flag_again;
 
-    int ret_value = DialogBox( NULL,
-                               MAKEINTRESOURCE( IDD_PASSWORD ),
-                               hw_par,
-                               dialog_enter_password_proc );
+    Result res = ( Result ) DialogBox( NULL,
+                                       MAKEINTRESOURCE( type == PD_NEW ?
+                                                            IDD_NEW_PASSWORD : IDD_PASSWORD ),
+                                       hw_par,
+                                       dialog_password_proc );
 
     delete ptr;
     ptr = NULL;
 
-    return ret_value;
+    return res;
 }
 
 bool
-DialogEnterPassword::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
+DialogPassword::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
 	switch( msg )
     {
     	case WM_INITDIALOG:
             // HWNDs
             m_hwnd = hwnd;
-            m_edit_current = GetDlgItem( hwnd, IDE_PASSWORD );
-
-            SetDlgItemTextA( hwnd, IDL_DIARY_NAME, m_ptr2diary->get_name().c_str() );
+            
+            m_edit1 = GetDlgItem( hwnd, IDE_PASSWORD );
+                
+            if( m_type == PD_NEW )
+            {
+                m_edit2 = GetDlgItem( hwnd, IDE_PASSWORD2 );
+            }
+            else
+            {
+                SetDlgItemTextA( hwnd, IDL_DIARY_NAME, m_ptr2diary->get_name().c_str() );
+            }
+            
+            SetFocus( m_edit1 );
 
             EnableWindow( GetDlgItem( m_hwnd, IDOK ), false );
-
-            SetFocus( m_edit_current ); // probably unnecessary here
 
             if( m_flag_again )
             {
@@ -91,19 +101,28 @@ DialogEnterPassword::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             switch( LOWORD( wParam ) )
             {
                 case IDE_PASSWORD:
+                case IDE_PASSWORD2:
                     if( HIWORD( wParam ) == EN_UPDATE )
-                    {
                         handle_entry_changed();
-                    }
                     return TRUE;
                 case IDCANCEL:
-                    EndDialog( m_hwnd, 0 );
+                    EndDialog( m_hwnd, HELPERS::ABORTED );
                     return TRUE;
                 case IDOK: {
-                    TCHAR* str = new TCHAR[ 128 ];
-                    GetDlgItemText( m_hwnd, IDE_PASSWORD, str, 128 );
-                    m_ptr2diary->set_passphrase( HELPERS::convert_utf16_to_8( str ) );
-                    EndDialog( m_hwnd, 1 ); // TODO: use constants
+                    TCHAR str[ 128 ];
+                    GetWindowText( m_edit1, str, 128 );
+                    if( m_type == PD_AUTHORIZE )
+                    {
+                        EndDialog( m_hwnd,
+                            m_ptr2diary->compare_passphrase( HELPERS::convert_utf16_to_8( str ) )
+                            ? HELPERS::SUCCESS : HELPERS::INVALID );
+                    }
+                    else
+                    {
+                        m_ptr2diary->set_passphrase( HELPERS::convert_utf16_to_8( str ) );
+                        EndDialog( m_hwnd, HELPERS::OK );
+                    }
+                    
                     return TRUE;
                 }
             }
@@ -115,10 +134,21 @@ DialogEnterPassword::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 }
 
 void
-DialogEnterPassword::handle_entry_changed()
+DialogPassword::handle_entry_changed()
 {
-    char* str = new char[ 128 ];
-    GetDlgItemTextA( m_hwnd, IDE_PASSWORD, str, 128 );
-    EnableWindow( GetDlgItem( m_hwnd, IDOK ), ( strlen( str ) >= PASSPHRASE_MIN_SIZE ) );
+    char str[ 128 ];
+    GetWindowTextA( m_edit1, str, 128 );
+    
+    if( m_type == PD_NEW )
+    {
+        char str2[ 128 ];
+        GetWindowTextA( m_edit2, str2, 128 );
+        EnableWindow( GetDlgItem( m_hwnd, IDOK ), ( strlen( str ) >= PASSPHRASE_MIN_SIZE ) &&
+                                                    ! strcmp( str, str2 ) );
+    }
+    else
+    {
+        EnableWindow( GetDlgItem( m_hwnd, IDOK ), ( strlen( str ) >= PASSPHRASE_MIN_SIZE ) );
+    }
 }
 

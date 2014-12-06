@@ -31,15 +31,18 @@ namespace LIFEO
 {
 
 // PASSWORD DIALOG =================================================================================
-class DialogEnterPassword
+class DialogPassword
 {
     public:
-                                    DialogEnterPassword();
+        enum PDType { PD_OPEN, PD_AUTHORIZE, PD_NEW };
+        
+                                    DialogPassword( PDType );
 
-        static int                  launch( HWND, Diary*, bool = false );
+        static Result               launch( HWND, Diary*, PDType, bool = false );
+
         bool                        proc( HWND, UINT, WPARAM, LPARAM );
 
-        static DialogEnterPassword* ptr;
+        static DialogPassword*      ptr;
 
     protected:
         void                        handle_entry_changed();
@@ -48,7 +51,10 @@ class DialogEnterPassword
         bool                        m_flag_again;
         
         HWND                        m_hwnd;
-        HWND                        m_edit_current;
+        HWND                        m_edit1;
+        HWND                        m_edit2;
+
+        PDType                      m_type;
 
         static const int            SLEEP_DURATION = 2000;
 };
