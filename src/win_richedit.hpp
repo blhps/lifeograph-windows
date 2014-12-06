@@ -162,6 +162,8 @@ class RichEdit : public EntryParser
 //        Link*                       get_link( LONG ) const;
 
         void                        set_richtext( Entry* );
+        LONG                        get_length();
+        Wstring                     get_text();
 
         void                        set_search_str( const Wstring& );
         bool                        select_searchstr_previous();
@@ -239,8 +241,6 @@ class RichEdit : public EntryParser
 
         void                        apply_format( CHARFORMAT2&, LONG, LONG );
         void                        remove_all_formats( LONG, LONG );
-        LONG                        get_length();
-        Wstring                     get_text();
 
         // FORMATS
         CHARFORMAT2                 m_format_default;

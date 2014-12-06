@@ -530,6 +530,8 @@ RichEdit::handle_change()
         return;
 
     parse( 0, get_length() );
+    
+    WinAppWindow::p->m_entry_view->handle_text_change();
 }
 
 /*
@@ -1387,6 +1389,9 @@ RichEdit::insert_time_stamp()
 void
 RichEdit::set_richtext( Entry* entry )
 {
+    if( m_ptr2entry && ! Diary::d->is_read_only() )
+        WinAppWindow::p->m_entry_view->sync();
+
     m_flag_settextoperation = true;
     //clear_links();
 

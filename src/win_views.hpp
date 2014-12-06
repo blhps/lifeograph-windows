@@ -26,6 +26,7 @@
 
 #include "entry.hpp"
 #include "diary.hpp"
+#include "win_richedit.hpp"
 
 
 namespace LIFEO
@@ -78,10 +79,12 @@ class EntryView : public ElementShower< Entry >
 
         void                    update_theme();
 
+        void                    handle_text_change();
+
+        RichEdit*               m_richedit;
+
     protected:
         enum TagOperation { TO_NONE, TO_ADD, TO_REMOVE, TO_CREATE_AND_ADD };
-        
-        void                    handle_textview_changed();
         void                    handle_entry_tag_changed();
         void                    handle_button_tag_clicked();
         void                    handle_set_theme();
@@ -94,8 +97,6 @@ class EntryView : public ElementShower< Entry >
 
         bool                    m_flag_entrychanged;
         Entry*                  m_entry_sync;
-
-    friend class Lifeograph;
 };
 
 class DiaryView : public ElementShower< Diary >

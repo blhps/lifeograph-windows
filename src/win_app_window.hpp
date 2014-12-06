@@ -95,7 +95,6 @@ class WinAppWindow
         int                         m_auto_logout_status; // reflects the result of all factors
 
         HWND                        m_hwnd;
-        RichEdit*                   m_richedit;
         HWND                        m_calendar;
         HWND                        m_list;
 };

@@ -39,6 +39,8 @@ EntryView::EntryView()
 :   m_entry_sync( NULL ), m_flag_entrychanged( false )
 {
     Entry::shower = this;
+
+    m_richedit = new RichEdit;
 }
 
 void
@@ -47,9 +49,10 @@ EntryView::sync()
     if( m_flag_entrychanged )
     {
         m_entry_sync->set_date_changed( time( NULL ) );
-        //m_entry_sync->set_text( m_textview->m_buffer->get_text() );
+        
+        m_entry_sync->set_text( convert_utf16_to_8( m_richedit->get_text().c_str() ) );
+        
         m_flag_entrychanged = false;
-        PRINT_DEBUG( "entry synced" );
     }
 }
 
@@ -60,7 +63,7 @@ EntryView::handle_login()
 }
 
 void
-EntryView::handle_textview_changed()
+EntryView::handle_text_change()
 {
     if( Lifeograph::m_internaloperation ) return;
 
@@ -174,7 +177,7 @@ EntryView::show( Entry& entry )
     m_ptr2elem = &entry; // must be first thing
 
     // BODY
-    WinAppWindow::p->m_richedit->set_richtext( m_ptr2elem );
+    m_richedit->set_richtext( m_ptr2elem );
 
     m_entry_sync = m_ptr2elem;
 }
@@ -200,7 +203,7 @@ DiaryView::handle_login()
 void
 DiaryView::show( Diary& diary )
 {
-    WinAppWindow::p->m_richedit->set_richtext( NULL );
+    WinAppWindow::p->m_entry_view->m_richedit->set_richtext( NULL );
 }
 
 LIFEO::Result

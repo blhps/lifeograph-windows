@@ -210,7 +210,7 @@ WinLogin::create_new_diary()
         switch( Diary::d->init_new( path ) )
         {
             case LIFEO::SUCCESS:
-                //AppWindow::p->login(); TODO
+                WinAppWindow::p->login();
                 break;
             case LIFEO::FILE_LOCKED:
                 // TODO: to be improved
@@ -259,6 +259,6 @@ WinLogin::handle_start()
         MessageBoxA( WinAppWindow::p->get_hwnd(), "Welcome to Lifeograph!", "Welcome", MB_OK );
     }
     
-    WinAppWindow::p->m_richedit->set_richtext( NULL );
+    WinAppWindow::p->m_entry_view->m_richedit->set_richtext( NULL );
 }
 

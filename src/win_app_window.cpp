@@ -87,7 +87,6 @@ WinAppWindow::WinAppWindow()
     m_login = new WinLogin;
     m_entry_view = new EntryView;
     m_diary_view = new DiaryView;
-    m_richedit = new RichEdit;
 }
 
 WinAppWindow::~WinAppWindow()
@@ -173,7 +172,7 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
             switch( LOWORD( wParam ) )
             {
                 case IDMI_DIARY_CREATE:
-                    // TODO
+                    m_login->create_new_diary();
                     break;
                 case IDMI_DIARY_OPEN:
                     m_login->add_existing_diary();
@@ -196,7 +195,7 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     break;
                 case IDRT_MAIN:
                     if( HIWORD( wParam ) == EN_CHANGE )
-                        m_richedit->handle_change();
+                        m_entry_view->m_richedit->handle_change();
             }
             break;
         case WM_NOTIFY:
@@ -224,7 +223,7 @@ WinAppWindow::handle_create()
     iccx.dwSize = sizeof( INITCOMMONCONTROLSEX );
     iccx.dwICC  = ICC_LISTVIEW_CLASSES | ICC_DATE_CLASSES;
     InitCommonControlsEx( &iccx );
-    
+
     // try to load latest version of rich edit control
     static HINSTANCE hlib = LoadLibrary( L"RICHED20.DLL" );
     if( !hlib )
@@ -234,16 +233,16 @@ WinAppWindow::handle_create()
     }
 
     // RICH EDIT
-    m_richedit->m_hwnd =
+    m_entry_view->m_richedit->m_hwnd =
             CreateWindowEx( 0, //WS_EX_CLIENTEDGE,
                             RICHEDIT_CLASS, L"",
                     	    WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_WANTRETURN,
                             0, 0, CW_USEDEFAULT, CW_USEDEFAULT,
                             m_hwnd, ( HMENU ) IDRT_MAIN, GetModuleHandle( NULL ), NULL );
 
-    SendMessage( m_richedit->m_hwnd, WM_SETFONT,
+    SendMessage( m_entry_view->m_richedit->m_hwnd, WM_SETFONT,
                  ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
-    SendMessage( m_richedit->m_hwnd, EM_SETEVENTMASK, 0, ( LPARAM ) ENM_CHANGE );
+    SendMessage( m_entry_view->m_richedit->m_hwnd, EM_SETEVENTMASK, 0, ( LPARAM ) ENM_CHANGE );
 
     // LIST VIEW
     m_list =
