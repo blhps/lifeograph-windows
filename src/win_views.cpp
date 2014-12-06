@@ -26,6 +26,7 @@
 
 
 #include <windows.h>
+#include <algorithm>
 
 #include "lifeograph.hpp"
 #include "win_app_window.hpp"
@@ -50,7 +51,10 @@ EntryView::sync()
     {
         m_entry_sync->set_date_changed( time( NULL ) );
         
-        m_entry_sync->set_text( convert_utf16_to_8( m_richedit->get_text().c_str() ) );
+        Wstring text( m_richedit->get_text() );
+        std::replace( text.begin(), text.end(), '\r', '\n' );
+        
+        m_entry_sync->set_text( convert_utf16_to_8( text.c_str() ) );
         
         m_flag_entrychanged = false;
     }
