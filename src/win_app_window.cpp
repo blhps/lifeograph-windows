@@ -229,7 +229,10 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     m_entry_view->dismiss_entry();
                     break;
                 case IDMI_ABOUT:
-                    MessageBoxA( NULL, "Lifeograph 0.0.5", "About...", MB_OK );
+                    MessageBoxA( NULL, "Lifeograph for Windows  0.1.0\n\n"
+                                       "Copyright (C) 2014 Ahmet Öztürk\n\n"
+                                       "Lifeograph is licensed under GNU Public License v3",
+                                 "About...", MB_OK );
                     break;
                 case IDRT_MAIN:
                     if( HIWORD( wParam ) == EN_CHANGE )
