@@ -1,18 +1,18 @@
 # Project: LifeographWine
 # Makefile created by Dev-C++ 5.8.3
 
-CPP      = g++.exe -D__DEBUG__
-CC       = gcc.exe -D__DEBUG__
+CPP      = g++.exe
+CC       = gcc.exe
 WINDRES  = windres.exe
 RES      = o/LifeographWine_private.res
 OBJ      = o/main.o o/diary.o o/diarydata.o o/helpers.o o/entry.o o/lifeograph.o o/settings.o o/win_login.o o/win_dialog_password.o o/win_app_window.o o/win_views.o o/entry_parser.o o/win_richedit.o $(RES)
 LINKOBJ  = o/main.o o/diary.o o/diarydata.o o/helpers.o o/entry.o o/lifeograph.o o/settings.o o/win_login.o o/win_dialog_password.o o/win_app_window.o o/win_views.o o/entry_parser.o o/win_richedit.o $(RES)
-LIBS     = -L"C:/Program Files/Dev-Cpp/MinGW64/lib32" -L"C:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib32" -static-libgcc -L"C:/users/ahmet/Desktop/devel/gpg4win/lib" -mwindows -lcomctl32 -lshlwapi -lgcrypt -lgpg-error -m32 -m32 -g3
+LIBS     = -L"C:/Program Files/Dev-Cpp/MinGW64/lib32" -L"C:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib32" -static-libgcc -L"C:/users/ahmet/Desktop/devel/gpg4win/lib" -mwindows -lcomctl32 -lshlwapi -lgcrypt -lgpg-error -m32 -m32 -s
 INCS     = -I"C:/Program Files/Dev-Cpp/MinGW64/include" -I"C:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"C:/users/ahmet/Desktop/devel/gpg4win/include"
 CXXINCS  = -I"C:/Program Files/Dev-Cpp/MinGW64/include" -I"C:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"C:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include/c++" -I"C:/users/ahmet/Desktop/devel/gpg4win/include"
 BIN      = bin/lifeograph.exe
-CXXFLAGS = $(CXXINCS) -m32 -g3 -DLIFEO_WINDOZE -DHAVE_CONFIG_H -DUNICODE -I config -std=c++11 -m32
-CFLAGS   = $(INCS) -m32 -g3
+CXXFLAGS = $(CXXINCS) -m32 -DLIFEO_WINDOZE -DHAVE_CONFIG_H -DUNICODE -I config -std=c++11 -m32
+CFLAGS   = $(INCS) -m32
 RM       = rm.exe -f
 
 .PHONY: all all-before all-after clean clean-custom
