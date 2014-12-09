@@ -182,33 +182,31 @@ WidgetTagList::add_item( const HDC hdc, const Wstring& label, const Tag* tag )
         pts[ 3 ].x = titem.xl + width; pts[ 3 ].y = titem.yl + 2 * HALF_HEIGHT;
         pts[ 4 ].x = titem.xl; pts[ 4 ].y = titem.yl + 2 * HALF_HEIGHT;
 
-        HRGN region = CreatePolygonRgn( pts, 5, ALTERNATE );
-
         if( tag->get_has_own_theme() )
         {
             HBRUSH hbrush = CreateSolidBrush( parse_color( tag->get_theme()->color_base ) );
             SelectObject( hdc, hbrush );
-            PaintRgn( hdc, region );
+            
+            HPEN hpen = CreatePen( PS_SOLID, bs, parse_color( tag->get_theme()->color_highlight ) );
+            SelectObject( hdc, hpen );
+            Polygon( hdc, pts, 5 );
+            DeleteObject( hpen );
+            
+            hpen = CreatePen( PS_DOT, bs, parse_color( tag->get_theme()->color_heading ) );
+            SelectObject( hdc, hpen );
+            Polygon( hdc, pts, 5 );
+            DeleteObject( hpen );
+            
             DeleteObject( hbrush );
-
-            hbrush = CreateSolidBrush( parse_color( tag->get_theme()->color_highlight ) );
-            FrameRgn( hdc, region, hbrush, bs, bs );
-            DeleteObject( hbrush );
-
-            /*cr->set_dash( dashes, 0.0 );
-
-            Gdk::Cairo::set_source_rgba( cr, tag->get_theme()->color_heading );
-            cr->stroke();
-            cr->unset_dash();*/
         }
         else
         {
+            HRGN region = CreatePolygonRgn( pts, 5, ALTERNATE );
             HBRUSH hbrush = CreateSolidBrush( 0x0 );
             FrameRgn( hdc, region, hbrush, bs, bs );
             DeleteObject( hbrush );
+            DeleteObject( region );
         }
-        
-        DeleteObject( region );
     }
 
     /*// ICON
@@ -232,5 +230,36 @@ WidgetTagList::add_item( const HDC hdc, const Wstring& label, const Tag* tag )
     TextOut( hdc, m_pos_x, m_pos_y, label.c_str(), label.size() );
 
     m_pos_x += ( text_width + HALF_HEIGHT + HSPACING );
+}
+
+void
+WidgetTagList::handle_mouse_move( int x, int y )
+{
+    if( m_ptr2entry != NULL )
+    {
+        const Tag* hovered_tag( NULL );
+
+        for( TagItem& ti : m_items )
+        {
+            if( ti.xl < x && ti.xr > x &&
+                ti.yl < y && ti.yr > y )
+            {
+                hovered_tag = ti.tag;
+                break;
+            }
+        }
+
+        if( hovered_tag != m_hovered_tag )
+        {
+            m_hovered_tag = hovered_tag;
+            
+            RECT rect;
+            rect.left = 0;
+            rect.top = m_y_offset;
+            rect.right = m_width;
+            rect.bottom = m_y_offset + m_height;
+            InvalidateRect( WinAppWindow::p->m_hwnd, &rect, true );
+        }
+    }
 }
 

@@ -45,7 +45,7 @@ class WinAppWindow
 
                                     WinAppWindow();
                                     ~WinAppWindow();
-                                    
+
         int                         run();
         HWND                        get_hwnd() const
         { return m_hwnd; }

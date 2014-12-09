@@ -241,6 +241,10 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
             if( GetUpdateRect( m_hwnd, NULL, false ) )
                 m_entry_view->m_tag_widget->handle_draw();
             break;
+        case WM_MOUSEMOVE:
+            if( !wParam )
+                m_entry_view->m_tag_widget->handle_mouse_move( LOWORD( lParam ), HIWORD( lParam ) );
+            break;
         case WM_CLOSE:
             if( Lifeograph::p->loginstatus == Lifeograph::LOGGED_IN )
                 if( ! finish_editing( ! lParam ) )

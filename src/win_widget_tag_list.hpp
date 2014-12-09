@@ -45,6 +45,7 @@ class WidgetTagList
 
         bool                        handle_draw();
         void                        handle_resize( int, int );
+        void                        handle_mouse_move( int, int );
         
         int                         get_height();
 
