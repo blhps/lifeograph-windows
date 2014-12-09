@@ -31,7 +31,6 @@
 
 #include "win_login.hpp"
 #include "win_views.hpp"
-#include "win_richedit.hpp"
 #include "helpers.hpp"
 #include "settings.hpp"
 
@@ -42,6 +41,8 @@ namespace LIFEO
 class WinAppWindow
 {
     public:
+        static constexpr float EDITOR_RATIO = 0.6;
+
                                     WinAppWindow();
                                     ~WinAppWindow();
                                     

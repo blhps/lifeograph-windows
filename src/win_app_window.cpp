@@ -44,11 +44,6 @@
 #include "win_app_window.hpp"
 #include "win_dialog_password.hpp"
 
-// TEMPORARY
-#define IDRT_MAIN       12338
-#define IDLV_MAIN       12339
-#define IDCAL_MAIN      12340
-
 
 using namespace LIFEO;
 
@@ -84,7 +79,7 @@ list_compare_func( LPARAM lp1, LPARAM lp2, LPARAM lParamSort )
 
 LRESULT CALLBACK
 calendar_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam,
-                                UINT_PTR uIdSubclass, DWORD_PTR dwRefData )
+               UINT_PTR uIdSubclass, DWORD_PTR dwRefData )
 {
     switch( msg )
     {
@@ -242,6 +237,10 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
         case WM_NOTIFY:
             handle_notify( ( int ) wParam, lParam );
             break;
+        case WM_PAINT:
+            if( GetUpdateRect( m_hwnd, NULL, false ) )
+                m_entry_view->m_tag_widget->handle_draw();
+            break;
         case WM_CLOSE:
             if( Lifeograph::p->loginstatus == Lifeograph::LOGGED_IN )
                 if( ! finish_editing( ! lParam ) )
@@ -313,25 +312,35 @@ WinAppWindow::handle_create()
     m_login->handle_start();
 }
 
-const static float EDITOR_RATIO = 0.6;
-
 void
 WinAppWindow::handle_resize( short width, short height )
 {
     RECT rc;
     MonthCal_GetMinReqRect( m_calendar, &rc );
     
-    const int EDITOR_WIDTH = width * EDITOR_RATIO;
+    const int editor_width = width * EDITOR_RATIO;
+
+    m_entry_view->m_tag_widget->handle_resize( editor_width, height );
+
+    const int editor_height = height - m_entry_view->m_tag_widget->get_height();
     
-    MoveWindow( GetDlgItem( m_hwnd, IDRT_MAIN ), 0, 0, EDITOR_WIDTH, height, TRUE );
+    MoveWindow( m_entry_view->m_richedit->m_hwnd, 0, 0, editor_width, editor_height, TRUE );
+
     MoveWindow( m_list,
-                EDITOR_WIDTH, 0, width - EDITOR_WIDTH, height - rc.bottom,
-                TRUE );
-    MoveWindow( m_calendar,
-                EDITOR_WIDTH, height - rc.bottom, width - EDITOR_WIDTH, rc.bottom,
+                editor_width, 0, width - editor_width, height - rc.bottom,
                 TRUE );
 
-    ListView_SetColumnWidth( m_list, 0, width - EDITOR_WIDTH - GetSystemMetrics( SM_CXVSCROLL ) );
+    MoveWindow( m_calendar,
+                editor_width, height - rc.bottom, width - editor_width, rc.bottom,
+                TRUE );
+
+    ListView_SetColumnWidth( m_list, 0, width - editor_width - GetSystemMetrics( SM_CXVSCROLL ) );
+    
+    rc.left = 0;
+    rc.top = editor_height;
+    rc.right = editor_width;
+    rc.bottom = height;
+    InvalidateRect( m_hwnd, &rc, true );
 }
 
 void
@@ -475,6 +484,9 @@ WinAppWindow::login()
     Lifeograph::loginstatus = Lifeograph::LOGGED_IN;
 
     update_title();
+    
+    if( Diary::d->get_prev_session_elem()->get_type() == DiaryElement::ET_ENTRY )
+        Diary::d->get_prev_session_elem()->show();
 }
 
 BOOL

@@ -27,6 +27,7 @@
 #include "entry.hpp"
 #include "diary.hpp"
 #include "win_richedit.hpp"
+#include "win_widget_tag_list.hpp"
 
 
 namespace LIFEO
@@ -82,6 +83,7 @@ class EntryView : public ElementShower< Entry >
         void                    handle_text_change();
 
         RichEdit*               m_richedit;
+        WidgetTagList*          m_tag_widget;
 
     protected:
         enum TagOperation { TO_NONE, TO_ADD, TO_REMOVE, TO_CREATE_AND_ADD };

@@ -28,10 +28,16 @@
 #define IDMI_ENTRY_DISMISS                      40014
 #define IDMI_ABOUT                              40020
 
-// EDITS
+// TEXT EDITS
+#define IDRT_MAIN                               40100
 #define IDE_PASSWORD                            40101
 #define IDE_PASSWORD2                           40102
 
 // LABELS
 #define IDL_PASSWORD_MESSAGE                    40801
 #define IDL_DIARY_NAME                          40802
+
+// OTHERS
+#define IDCC_TAGS                               40901
+#define IDLV_MAIN                               40911
+#define IDCAL_MAIN                              40950
