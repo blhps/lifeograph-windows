@@ -263,6 +263,10 @@ WinLogin::handle_start()
         MessageBoxA( WinAppWindow::p->get_hwnd(), "Welcome to Lifeograph!", "Welcome", MB_OK );
     }
     
+    if( Lifeograph::p->m_flag_open_directly )
+        if( open_selected_diary( Lifeograph::p->m_flag_read_only ) == LIFEO::SUCCESS )
+            return;
+
     WinAppWindow::p->m_entry_view->m_richedit->set_richtext( NULL );
 }
 

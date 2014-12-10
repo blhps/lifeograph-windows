@@ -20,6 +20,8 @@
 ***********************************************************************************/
 
 
+#include <unistd.h>
+
 #include "lifeograph.hpp"
 #include "win_app_window.hpp"
 #ifndef LIFEO_WINDOZE
@@ -116,9 +118,15 @@ Lifeograph::create()
 }
 #else
 int
-Lifeograph::run( HINSTANCE hInstance )
+Lifeograph::run( HINSTANCE hInstance, LPSTR cmdline )
 {
+    int argc;
+    char** argv = command_line_to_argvA( cmdline, &argc );
+
     on_startup();
+    on_command_line( argc, argv );
+
+    LocalFree( argv );
     new WinAppWindow;
     hInst = hInstance;
     WinAppWindow::p->run();
@@ -207,24 +215,33 @@ Lifeograph::on_activate()
     add_window( *( new AppWindow ) );
     AppWindow::p->show();
 }
+#endif
 
 int
+#ifndef LIFEO_WINDOZE
 Lifeograph::on_command_line( const Glib::RefPtr< Gio::ApplicationCommandLine >& cmd_line )
 {
     int argc;
     char** argv( cmd_line->get_arguments( argc ) );
 
     for( int i = 1; i < argc; i++ )
+
+#else
+Lifeograph::on_command_line( int argc, char** argv )
+{
+    for( int i = 0; i < argc; i++ )
+#endif
+
     {
         if( ! strcmp( argv[ i ], "--open" ) || ! strcmp( argv[ i ], "-o" ) )
         {
             if( ( i + 1 ) < argc )
             {
-                if( Glib::file_test( argv[ ++i ], Glib::FILE_TEST_EXISTS ) )
+                if( access( argv[ ++i ], F_OK ) == 0 ) // check existance
                 {
-                    if( ! Glib::file_test( argv[ i ], Glib::FILE_TEST_IS_DIR ) )
+                    if( ! is_dir( argv[ i ] ) )
                     {
-                        ViewLogin::m_path_cur = argv[ i ];
+                        WinAppWindow::p->m_login->m_path_cur = argv[ i ];
                         m_flag_open_directly = true;
                     }
                 }
@@ -250,11 +267,10 @@ Lifeograph::on_command_line( const Glib::RefPtr< Gio::ApplicationCommandLine >& 
             m_flag_read_only = true;
         }
         else
-        if( Glib::file_test( argv[ i ], Glib::FILE_TEST_EXISTS ) &&
-            Glib::file_test( argv[ i ], Glib::FILE_TEST_IS_DIR ) == false )
+        if( access( argv[ i ], F_OK ) == 0 && ! is_dir( argv[ i ] ) )
         {
-                ViewLogin::m_path_cur = argv[ i ];
-                m_flag_open_directly = true;
+            WinAppWindow::p->m_login->m_path_cur = argv[ i ];
+            m_flag_open_directly = true;
         }
         else
         {
@@ -262,11 +278,14 @@ Lifeograph::on_command_line( const Glib::RefPtr< Gio::ApplicationCommandLine >& 
         }
     }
 
+#ifndef LIFEO_WINDOZE
     activate();
+#endif
 
     return 0;
 }
 
+#ifndef LIFEO_WINDOZE
 bool
 Lifeograph::load_gui( const std::string& path )
 {

@@ -29,6 +29,6 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 {
     LIFEO::Lifeograph* app = new LIFEO::Lifeograph;
     
-    return app->run( hInstance );
+    return app->run( hInstance, lpCmdLine );
 }
 

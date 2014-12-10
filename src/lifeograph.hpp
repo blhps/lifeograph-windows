@@ -114,6 +114,8 @@ class Lifeograph
         void                        on_activate();
 #ifndef LIFEO_WINDOZE
         int             on_command_line( const Glib::RefPtr< Gio::ApplicationCommandLine >& );
+#else
+        int             on_command_line( int argc, char** argv );
 #endif
 
         static Settings             settings;
@@ -180,7 +182,7 @@ class Lifeograph
         static Glib::RefPtr< Gtk::ActionGroup >
                                     m_actions_edit;
 #else
-        int                         run( HINSTANCE );
+        int                         run( HINSTANCE, LPSTR );
         static HINSTANCE            hInst;
         
 #endif

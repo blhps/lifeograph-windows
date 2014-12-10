@@ -238,10 +238,6 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
         case WM_NOTIFY:
             handle_notify( ( int ) wParam, lParam );
             break;
-        case WM_PAINT:
-            if( GetUpdateRect( m_hwnd, NULL, false ) )
-                m_entry_view->m_tag_widget->handle_draw();
-            break;
         case WM_MOUSEMOVE:
             if( !wParam )
                 m_entry_view->m_tag_widget->handle_mouse_move( LOWORD( lParam ), HIWORD( lParam ) );
@@ -259,6 +255,10 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
         case WM_DESTROY:
             PostQuitMessage( 0 );
             break;
+        case WM_PAINT:
+            if( GetUpdateRect( m_hwnd, NULL, false ) )
+                m_entry_view->m_tag_widget->handle_draw();
+            // BEWARE: no break, WM_PAINT must be processed by the system or bad things happen
         default:
             return DefWindowProc( hwnd, Message, wParam, lParam );
     }
@@ -447,6 +447,7 @@ WinAppWindow::finish_editing( bool opt_save )
     Diary::d->clear();
     
     m_entry_view->m_richedit->set_richtext( NULL );
+    m_entry_view->m_tag_widget->set_entry( NULL );
     update_entry_list();
     update_calendar();
     update_title();
@@ -493,9 +494,11 @@ WinAppWindow::login()
     Lifeograph::loginstatus = Lifeograph::LOGGED_IN;
 
     update_title();
+
+    DiaryElement* startup_elem = Diary::d->get_startup_elem();
     
-    if( Diary::d->get_prev_session_elem()->get_type() == DiaryElement::ET_ENTRY )
-        Diary::d->get_prev_session_elem()->show();
+    if( startup_elem->get_type() == DiaryElement::ET_ENTRY )
+        startup_elem->show();
 }
 
 BOOL

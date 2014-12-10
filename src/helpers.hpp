@@ -494,9 +494,12 @@ midtone( int, int, int, int, int, int, float );
 
 #endif
 
+// FILE OPERATIONS
 std::ios::pos_type  get_file_size( std::ifstream& );
 
 bool                copy_file_suffix( const std::string&, const std::string&, int );
+
+bool                is_dir( const char* );
 
 #ifndef LIFEO_WINDOZE
 std::string         get_env_lang();
@@ -513,6 +516,8 @@ char*               convert_utf16_to_8( const wchar_t* );
 
 wchar_t             char_lower( wchar_t );
 bool                is_char_alpha( wchar_t );
+
+PCHAR*              command_line_to_argvA( PCHAR, int* );
 #endif
 
 // COMMON SIGNALS ==================================================================================
@@ -633,14 +638,6 @@ Gtk::Frame* create_frame( const Glib::ustring&, Gtk::Widget& );
 // scroll_to_row( Path& ) does not work for some reason. So, implemented our own
 bool is_treepath_less( const Gtk::TreePath&, const Gtk::TreePath& );
 bool is_treepath_more( const Gtk::TreePath&, const Gtk::TreePath& );
-
-#else //LIFEO WINDOZE
-
-class Calendar
-{
-    Calendar();
-    
-};
 
 #endif
 

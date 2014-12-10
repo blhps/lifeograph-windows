@@ -1437,11 +1437,10 @@ RichEdit::set_theme( const Theme* theme )
     m_format_highlight.crBackColor = parse_color( theme->color_highlight );
     m_format_markup.crTextColor = color_mid;
     m_format_comment.crTextColor = color_mid;
-    
+
     SendMessage( m_hwnd, EM_SETCHARFORMAT, SCF_ALL, ( LPARAM ) &m_format_default );
     SendMessage( m_hwnd, EM_SETBKGNDCOLOR, 0, ( LPARAM ) color_base );
-    
-    
+
 /*    m_ptr2textview->override_font( theme->font );
 
     m_format_comment->property_background_rgba() = theme->color_base; // to disable highlighting
