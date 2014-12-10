@@ -95,28 +95,24 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                 case IDCANCEL:
                     EndDialog( m_hwnd, HELPERS::ABORTED );
                     return TRUE;
-                case IDB_TAG_THEME: {
-/*                    TCHAR str[ 128 ];
-                    GetWindowText( m_edit1, str, 128 );
-                    if( m_type == PD_AUTHORIZE )
+                case IDB_TAG_THEME:
+                {
+                    // only tags in entry can be set as the theme
+                    if( m_tag_operation_cur == TO_REMOVE ) 
                     {
-                        EndDialog( m_hwnd,
-                            m_ptr2diary->compare_passphrase( HELPERS::convert_utf16_to_8( str ) )
-                            ? HELPERS::SUCCESS : HELPERS::INVALID );
-                    }
-                    else
-                    {
-                        m_ptr2diary->set_passphrase( HELPERS::convert_utf16_to_8( str ) );
-                        EndDialog( m_hwnd, HELPERS::OK );
-                    }*/
+                        Ustring filter = convert_utf16_to_8( m_name.c_str() );
+                        Tag* tag = Diary::d->get_tags()->get_tag( filter );
 
+                        if( tag->get_has_own_theme() )
+                            m_ptr2entry->set_theme_tag( tag );
+
+                        EndDialog( m_hwnd, SUCCESS );
+                    }
                     return TRUE;
                 }
                 case IDB_TAG_ACTION:
                 {
-                    wchar_t buffer[ 128 ];
-                    GetWindowText( m_edit, buffer, 128 );
-                    Ustring filter = convert_utf16_to_8( buffer );
+                    Ustring filter = convert_utf16_to_8( m_name.c_str() );
 
                     Tag* tag;
                     Result result( SUCCESS );
@@ -156,6 +152,7 @@ DialogTags::handle_entry_changed()
 {
     wchar_t filter[ 128 ];
     GetWindowText( m_edit, filter, 128 );
+    m_name = filter;
 
     EnableWindow( m_button_theme, false );
 

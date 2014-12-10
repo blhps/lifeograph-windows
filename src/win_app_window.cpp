@@ -694,7 +694,7 @@ WinAppWindow::start_tag_dialog( const Wstring& name )
 {
     if( DialogTags::launch( m_hwnd, Diary::d, m_entry_view->get_element(), name ) == SUCCESS )
     {
-        // TODO update_theme();
+        m_entry_view->update_theme();
         m_entry_view->m_tag_widget->update_full();
     }
 }

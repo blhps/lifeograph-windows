@@ -134,7 +134,8 @@ EntryView::hide_after()
 void
 EntryView::update_theme()
 {
-    //m_textview->m_buffer->set_theme( m_ptr2elem->get_theme() );
+    m_richedit->set_theme( m_ptr2elem->get_theme() );
+    m_richedit->reparse();
 }
 
 void

@@ -192,6 +192,8 @@ class RichEdit : public EntryParser
         std::string                 set_language( std::string );
 
         void                        set_theme( const Theme* );
+
+        void                        reparse();
         
         void                        handle_change();
 
@@ -203,7 +205,6 @@ class RichEdit : public EntryParser
 
         // PARSING
         void                        parse( LONG, LONG );
-        void                        reparse();
 
         void                        apply_heading();
         void                        apply_subheading();
