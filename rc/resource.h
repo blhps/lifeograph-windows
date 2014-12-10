@@ -2,20 +2,22 @@
 #define IDC_STATIC (-1)
 #endif
 
+#define IDM_MAIN                                100
+
 // DIALOGS
 #define IDD_PASSWORD                            101
 #define IDD_NEW_PASSWORD                        102
+#define IDD_TAGS                                105
 
-#define IDM_MAIN                                103
 
 // ICONS
-#define IDI_ENTRY16                             105
-#define IDI_TODO_OPEN16                         106
-#define IDI_TODO_PROG16                         107
-#define IDI_TODO_DONE16                         108
-#define IDI_TODO_CANC16                         109
+#define IDI_ENTRY16                             205
+#define IDI_TODO_OPEN16                         206
+#define IDI_TODO_PROG16                         207
+#define IDI_TODO_DONE16                         208
+#define IDI_TODO_CANC16                         209
 
-#define IDI_TAG16                               120
+#define IDI_TAG16                               220
 
 // MENU ITEMS
 #define IDMI_DIARY_OPEN                         40000
@@ -28,10 +30,15 @@
 #define IDMI_ENTRY_DISMISS                      40014
 #define IDMI_ABOUT                              40020
 
+// BUTTONS
+#define IDB_TAG_THEME                           40119
+#define IDB_TAG_ACTION                          40120
+
 // TEXT EDITS
-#define IDRT_MAIN                               40100
-#define IDE_PASSWORD                            40101
-#define IDE_PASSWORD2                           40102
+#define IDRT_MAIN                               40200
+#define IDE_PASSWORD                            40201
+#define IDE_PASSWORD2                           40202
+#define IDE_TAG_NAME                            40222
 
 // LABELS
 #define IDL_PASSWORD_MESSAGE                    40801

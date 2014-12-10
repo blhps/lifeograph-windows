@@ -42,6 +42,35 @@ WidgetTagList::set_entry( Entry* ptr2entry )
 }
 
 void
+WidgetTagList::update()
+{
+    RECT rect;
+    rect.left = 0;
+    rect.top = m_y_offset;
+    rect.right = m_width;
+    rect.bottom = m_y_offset + m_height;
+    InvalidateRect( WinAppWindow::p->m_hwnd, &rect, true );
+}
+
+void
+WidgetTagList::update_full()
+{
+    RECT rect;
+    GetClientRect( WinAppWindow::p->m_hwnd, &rect );
+
+    const int editor_width = rect.right * WinAppWindow::EDITOR_RATIO;
+    handle_resize( editor_width, rect.bottom );
+    const int editor_height = rect.bottom - m_height;
+
+    MoveWindow( WinAppWindow::p->m_entry_view->m_richedit->m_hwnd, 0, 0,
+                editor_width, editor_height, TRUE );
+
+    rect.top = editor_height;
+    rect.right = editor_width;
+    InvalidateRect( WinAppWindow::p->m_hwnd, &rect, true );
+}
+
+void
 WidgetTagList::handle_resize( int width, int client_height )
 {
     m_width = width;
@@ -253,13 +282,26 @@ WidgetTagList::handle_mouse_move( int x, int y )
         {
             m_hovered_tag = hovered_tag;
             
-            RECT rect;
-            rect.left = 0;
-            rect.top = m_y_offset;
-            rect.right = m_width;
-            rect.bottom = m_y_offset + m_height;
-            InvalidateRect( WinAppWindow::p->m_hwnd, &rect, true );
+            update();
         }
     }
 }
 
+void
+WidgetTagList::handle_click( int x, int y )
+{
+    if( m_ptr2entry != NULL )
+    {
+        const Tag* hovered_tag( NULL );
+
+        for( TagItem& ti : m_items )
+        {
+            if( ti.xl < x && ti.xr > x &&
+                ti.yl < y && ti.yr > y )
+            {
+                WinAppWindow::p->start_tag_dialog( convert_utf8_to_16( ti.tag->get_name() ) );
+                break;
+            }
+        }
+    }
+}

@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=3
 CompilerSettings=0000000100000000000001000
-UnitCount=31
+UnitCount=33
 
 [VersionInfo]
 Major=1
@@ -352,6 +352,26 @@ BuildCmd=
 
 [Unit31]
 FileName=src\win_widget_tag_list.hpp
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit32]
+FileName=src\win_dialog_tags.hpp
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit33]
+FileName=src\win_dialog_tags.cpp
 CompileCpp=1
 Folder=
 Compile=1

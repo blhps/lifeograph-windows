@@ -64,6 +64,8 @@ class WinAppWindow
         void                        update_title();
         
         void                        handle_calendar_doubleclick();
+        
+        void                        start_tag_dialog( const Wstring& );
 
         bool                        authorize();
 

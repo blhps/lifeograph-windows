@@ -183,19 +183,7 @@ EntryView::show( Entry& entry )
 
     m_richedit->set_richtext( m_ptr2elem );
     m_tag_widget->set_entry( m_ptr2elem );
-    
-    RECT rect;
-    GetClientRect( WinAppWindow::p->m_hwnd, &rect );
-
-    const int editor_width = rect.right * WinAppWindow::EDITOR_RATIO;
-    m_tag_widget->handle_resize( editor_width, rect.bottom );
-    const int editor_height = rect.bottom - m_tag_widget->get_height();
-
-    MoveWindow( m_richedit->m_hwnd, 0, 0, editor_width, editor_height, TRUE );
-
-    rect.top = editor_height;
-    rect.right = editor_width;
-    InvalidateRect( WinAppWindow::p->m_hwnd, &rect, true );
+    m_tag_widget->update_full();
 
     m_entry_sync = m_ptr2elem;
 }

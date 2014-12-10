@@ -43,6 +43,7 @@
 #include "lifeograph.hpp"
 #include "win_app_window.hpp"
 #include "win_dialog_password.hpp"
+#include "win_dialog_tags.hpp"
 
 
 using namespace LIFEO;
@@ -124,7 +125,7 @@ WinAppWindow::run()
     MSG Msg;
 
     wc.cbSize        = sizeof( WNDCLASSEX );
-    wc.style         = 0;
+    wc.style         = CS_DBLCLKS;
     wc.lpfnWndProc   = app_window_proc;
     wc.cbClsExtra    = 0;
     wc.cbWndExtra    = 0;
@@ -244,6 +245,10 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
         case WM_MOUSEMOVE:
             if( !wParam )
                 m_entry_view->m_tag_widget->handle_mouse_move( LOWORD( lParam ), HIWORD( lParam ) );
+            break;
+        case WM_LBUTTONDBLCLK:
+            if( wParam == MK_LBUTTON )
+                m_entry_view->m_tag_widget->handle_click( LOWORD( lParam ), HIWORD( lParam ) );
             break;
         case WM_CLOSE:
             if( Lifeograph::p->loginstatus == Lifeograph::LOGGED_IN )
@@ -409,19 +414,19 @@ WinAppWindow::finish_editing( bool opt_save )
             if( Diary::d->write() != SUCCESS )
             {
                 MessageBoxA( m_hwnd,
-                            STRING::CANNOT_WRITE_SUB,
-                            STRING::CANNOT_WRITE,
-                            MB_OK|MB_ICONERROR );
+                             STRING::CANNOT_WRITE_SUB,
+                             STRING::CANNOT_WRITE,
+                             MB_OK|MB_ICONERROR );
                 return false;
             }
         }
         else
         {
             if( MessageBoxA( m_hwnd,
-                            "Your changes will be backed up in .~unsaved~."
-                            "If you exit normally, your diary is saved automatically.",
-                            "Are you sure you want to log out without saving?",
-                            MB_YESNO | MB_ICONQUESTION ) != IDYES )
+                             "Your changes will be backed up in .~unsaved~."
+                             "If you exit normally, your diary is saved automatically.",
+                             "Are you sure you want to log out without saving?",
+                             MB_YESNO | MB_ICONQUESTION ) != IDYES )
                 return false;
             // back up changes
             Diary::d->write( Diary::d->get_path() + ".~unsaved~" );
@@ -674,7 +679,7 @@ WinAppWindow::handle_calendar_doubleclick()
     SYSTEMTIME st;
     if( ! SendMessage( m_calendar, MCM_GETCURSEL, 0, ( LPARAM ) &st ) )
         return;
-        
+
     Date date( st.wYear, st.wMonth, st.wDay );
     Entry* entry( Diary::d->create_entry( date.m_date ) );
 
@@ -682,6 +687,16 @@ WinAppWindow::handle_calendar_doubleclick()
     update_calendar();
 
     entry->show();
+}
+
+void
+WinAppWindow::start_tag_dialog( const Wstring& name )
+{
+    if( DialogTags::launch( m_hwnd, Diary::d, m_entry_view->get_element(), name ) == SUCCESS )
+    {
+        // TODO update_theme();
+        m_entry_view->m_tag_widget->update_full();
+    }
 }
 
 bool

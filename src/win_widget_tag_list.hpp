@@ -42,10 +42,12 @@ class WidgetTagList
 
         void                        set_entry( Entry* );
         void                        update();
+        void                        update_full();
 
         bool                        handle_draw();
         void                        handle_resize( int, int );
         void                        handle_mouse_move( int, int );
+        void                        handle_click( int, int );
         
         int                         get_height();
 
