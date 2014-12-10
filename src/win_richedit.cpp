@@ -46,7 +46,9 @@ RichEdit::RichEdit()
     // FORMATS
     memset( &m_format_default, 0, sizeof( CHARFORMAT2 ) );
     m_format_default.cbSize = sizeof( CHARFORMAT2 );
-    m_format_default.dwMask = CFM_COLOR | CFM_SIZE;
+    m_format_default.dwMask = CFM_COLOR | CFM_SIZE | CFM_BOLD | CFM_ITALIC | CFM_STRIKEOUT |
+                              CFM_UNDERLINE | CFM_SUPERSCRIPT | CFM_BACKCOLOR;
+    m_format_heading.dwEffects = 0;
     m_format_default.yHeight = 200;
     
     memset( &m_format_heading, 0, sizeof( CHARFORMAT2 ) );
@@ -1415,23 +1417,21 @@ RichEdit::set_richtext( Entry* entry )
         EnableWindow( m_hwnd, false );
     }
 
-    
     m_flag_settextoperation = false;
 }
 
 void
 RichEdit::set_theme( const Theme* theme )
 {
-    COLORREF color_mid( midtone(
-            parse_color_sub( theme->color_base, 1, 2 ),
-            parse_color_sub( theme->color_base, 5, 6 ),
-            parse_color_sub( theme->color_base, 9, 10 ),
-            parse_color_sub( theme->color_text, 1, 2 ),
-            parse_color_sub( theme->color_text, 5, 6 ),
-            parse_color_sub( theme->color_text, 9, 10 ),
+    const COLORREF color_base( parse_color( theme->color_base ) );
+    const COLORREF color_text( parse_color( theme->color_text ) );
+    const COLORREF color_mid( midtone(
+            GetRValue( color_base ), GetGValue( color_base ), GetBValue( color_base ),
+            GetRValue( color_text ), GetGValue( color_text ), GetBValue( color_text ),
             0.5 ) );
 
-    m_format_default.crTextColor = parse_color( theme->color_text );
+    m_format_default.crTextColor = color_text;
+    m_format_default.crBackColor = color_base; // not elegant but no way for transparent
     m_format_heading.crTextColor = parse_color( theme->color_heading );
     m_format_subheading.crTextColor = parse_color( theme->color_subheading );
     m_format_highlight.crBackColor = parse_color( theme->color_highlight );
@@ -1439,7 +1439,7 @@ RichEdit::set_theme( const Theme* theme )
     m_format_comment.crTextColor = color_mid;
     
     SendMessage( m_hwnd, EM_SETCHARFORMAT, SCF_ALL, ( LPARAM ) &m_format_default );
-    SendMessage( m_hwnd, EM_SETBKGNDCOLOR, 0, ( LPARAM ) parse_color( theme->color_base ) );
+    SendMessage( m_hwnd, EM_SETBKGNDCOLOR, 0, ( LPARAM ) color_base );
     
     
 /*    m_ptr2textview->override_font( theme->font );
