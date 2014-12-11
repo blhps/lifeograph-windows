@@ -407,7 +407,7 @@ WinAppWindow::finish_editing( bool opt_save )
     if( ! Diary::d->is_read_only() )
     {
         m_entry_view->sync();
-        // TODO Diary::d->set_last_elem( panel_main->get_cur_elem() );
+        Diary::d->set_last_elem( m_entry_view->get_element() );
 
         if( opt_save )
         {
@@ -665,12 +665,6 @@ WinAppWindow::update_calendar()
     fill_monthdaystate( st[ 0 ].wYear, st[ 0 ].wMonth, mds, size );
     
     SendMessage( m_calendar, MCM_SETDAYSTATE, size, ( LPARAM ) &mds );
-}
-
-void
-WinAppWindow::update_startup_elem()
-{
-    // TODO
 }
 
 void

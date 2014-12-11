@@ -60,7 +60,6 @@ class WinAppWindow
         void                        update_entry_list();
         void                        fill_monthdaystate( int, int, MONTHDAYSTATE[], int );
         void                        update_calendar();
-        void                        update_startup_elem();
         void                        update_title();
         
         void                        handle_calendar_doubleclick();

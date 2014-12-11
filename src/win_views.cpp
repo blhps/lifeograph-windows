@@ -153,8 +153,16 @@ EntryView::restore_entry()
 void
 EntryView::dismiss_entry()
 {
+    // TODO: part of this function will be moved to trash_entry() when trash support is added
+
     if( ! WinAppWindow::p->confirm_dismiss_element( m_ptr2elem ) )
         return;
+        
+    if( Diary::d->get_startup_elem() == m_ptr2elem )
+    {
+        Diary::d->set_startup_elem( Diary::d->get_id() );
+        //AppWindow::p->m_diary_view->update_startup_elem();
+    }
 
     // first make sure that entry to be deleted is completely out of business...
     // ...else dark forces may take action and cause SEGFAULT:
@@ -167,8 +175,6 @@ EntryView::dismiss_entry()
 
     WinAppWindow::p->update_calendar();
     WinAppWindow::p->update_entry_list();
-
-    WinAppWindow::p->update_startup_elem();
 
     Lifeograph::m_internaloperation--;
 }
