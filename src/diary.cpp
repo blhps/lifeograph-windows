@@ -535,20 +535,68 @@ Diary::do_standard_checks_after_parse()
     }
 }
 
+inline void
+parse_theme( Theme* ptr2theme, const std::string& line )
+{
+    switch( line[ 1 ] )
+    {
+        case 'f':   // font
+            ptr2theme->font =
+#ifndef LIFEO_WINDOZE
+                    Pango::FontDescription( line.substr( 2 ) );
+#else
+                    line.substr( 2 );
+#endif
+            break;
+        case 'b':   // base color
+#ifndef LIFEO_WINDOZE
+            ptr2theme->color_base.set( line.substr( 2 ) );
+#else
+            ptr2theme->color_base = line.substr( 2 );
+#endif
+            break;
+        case 't':   // text color
+#ifndef LIFEO_WINDOZE
+            ptr2theme->color_text.set( line.substr( 2 ) );
+#else
+            ptr2theme->color_text = line.substr( 2 );
+#endif
+            break;
+        case 'h':   // heading color
+#ifndef LIFEO_WINDOZE
+            ptr2theme->color_heading.set( line.substr( 2 ) );
+#else
+            ptr2theme->color_heading = line.substr( 2 );
+#endif
+            break;
+        case 's':   // subheading color
+#ifndef LIFEO_WINDOZE
+            ptr2theme->color_subheading.set( line.substr( 2 ) );
+#else
+            ptr2theme->color_subheading = line.substr( 2 );
+#endif
+            break;
+        case 'l':   // highlight color
+#ifndef LIFEO_WINDOZE
+            ptr2theme->color_highlight.set( line.substr( 2 ) );
+#else
+            ptr2theme->color_highlight = line.substr( 2 );
+#endif
+            break;
+    }
+}
+
+
 // PARSING FUNCTIONS
 inline LIFEO::Result
 Diary::parse_db_body_text( std::istream& stream )
 {
-#ifndef LIFEO_WINDOZE
     if( m_read_version == 1020 )
         return parse_db_body_text_1020( stream );
     else if( m_read_version == 1010 || m_read_version == 1011 )
         return parse_db_body_text_1010( stream );
     else
         return parse_db_body_text_110( stream );
-#else
-    return parse_db_body_text_1020( stream );
-#endif
 }
 
 LIFEO::Result
@@ -591,52 +639,7 @@ Diary::parse_db_body_text_1020( std::istream& stream )
                         print_error( "No tag declared for theme" );
                         break;
                     }
-                    switch( line[ 1 ] )
-                    {
-                        case 'f':   // font
-                            ptr2tag->get_own_theme()->font =
-#ifndef LIFEO_WINDOZE
-                                    Pango::FontDescription( line.substr( 2 ) );
-#else
-                                    line.substr( 2 );
-#endif
-                            break;
-                        case 'b':   // base color
-#ifndef LIFEO_WINDOZE
-                            ptr2tag->get_own_theme()->color_base.set( line.substr( 2 ) );
-#else
-                            ptr2tag->get_own_theme()->color_base = line.substr( 2 );
-#endif
-                            break;
-                        case 't':   // text color
-#ifndef LIFEO_WINDOZE
-                            ptr2tag->get_own_theme()->color_text.set( line.substr( 2 ) );
-#else
-                            ptr2tag->get_own_theme()->color_text = line.substr( 2 );
-#endif
-                            break;
-                        case 'h':   // heading color
-#ifndef LIFEO_WINDOZE
-                            ptr2tag->get_own_theme()->color_heading.set( line.substr( 2 ) );
-#else
-                            ptr2tag->get_own_theme()->color_heading = line.substr( 2 );
-#endif
-                            break;
-                        case 's':   // subheading color
-#ifndef LIFEO_WINDOZE
-                            ptr2tag->get_own_theme()->color_subheading.set( line.substr( 2 ) );
-#else
-                            ptr2tag->get_own_theme()->color_subheading = line.substr( 2 );
-#endif
-                            break;
-                        case 'l':   // highlight color
-#ifndef LIFEO_WINDOZE
-                            ptr2tag->get_own_theme()->color_highlight.set( line.substr( 2 ) );
-#else
-                            ptr2tag->get_own_theme()->color_highlight = line.substr( 2 );
-#endif
-                            break;
-                    }
+                    parse_theme( ptr2tag->get_own_theme(), line );
                     break;
                 case 'f':   // default filter
                     switch( line[ 1 ] )
@@ -824,7 +827,6 @@ Diary::parse_db_body_text_1020( std::istream& stream )
     return LIFEO::SUCCESS;
 }
 
-#ifndef LIFEO_WINDOZE
 LIFEO::Result
 Diary::parse_db_body_text_1010( std::istream& stream )
 {
@@ -865,28 +867,7 @@ Diary::parse_db_body_text_1010( std::istream& stream )
                         print_error( "No tag declared for theme" );
                         break;
                     }
-                    switch( line[ 1 ] )
-                    {
-                        case 'f':   // font
-                            ptr2tag->get_own_theme()->font =
-                                    Pango::FontDescription( line.substr( 2 ) );
-                            break;
-                        case 'b':   // base color
-                            ptr2tag->get_own_theme()->color_base.set( line.substr( 2 ) );
-                            break;
-                        case 't':   // text color
-                            ptr2tag->get_own_theme()->color_text.set( line.substr( 2 ) );
-                            break;
-                        case 'h':   // heading color
-                            ptr2tag->get_own_theme()->color_heading.set( line.substr( 2 ) );
-                            break;
-                        case 's':   // subheading color
-                            ptr2tag->get_own_theme()->color_subheading.set( line.substr( 2 ) );
-                            break;
-                        case 'l':   // highlight color
-                            ptr2tag->get_own_theme()->color_highlight.set( line.substr( 2 ) );
-                            break;
-                    }
+                    parse_theme( ptr2tag->get_own_theme(), line );
                     break;
                 case 'f':   // default filter
                     switch( line[ 1 ] )
@@ -1158,27 +1139,7 @@ Diary::parse_db_body_text_110( std::istream& stream )
                         print_error( "No theme declared" );
                         break;
                     }
-                    switch( line[ 1 ] )
-                    {
-                        case 'f':   // font
-                            ptr2theme->font = Pango::FontDescription( line.substr( 2 ) );
-                            break;
-                        case 'b':   // base color
-                            ptr2theme->color_base.set( line.substr( 2 ) );
-                            break;
-                        case 't':   // text color
-                            ptr2theme->color_text.set( line.substr( 2 ) );
-                            break;
-                        case 'h':   // heading color
-                            ptr2theme->color_heading.set( line.substr( 2 ) );
-                            break;
-                        case 's':   // subheading color
-                            ptr2theme->color_subheading.set( line.substr( 2 ) );
-                            break;
-                        case 'l':   // highlight color
-                            ptr2theme->color_highlight.set( line.substr( 2 ) );
-                            break;
-                    }
+                    parse_theme( ptr2theme, line );
                     break;
                 case 'O':   // options
                     if( line.size() < 4 )
@@ -1294,7 +1255,6 @@ Diary::parse_db_body_text_110( std::istream& stream )
 
     return LIFEO::SUCCESS;
 }
-#endif
 
 LIFEO::Result
 Diary::write()

@@ -34,11 +34,7 @@ namespace LIFEO
 
 const char                      DB_FILE_HEADER[] = "LIFEOGRAPHDB";
 const int                       DB_FILE_VERSION_INT( 1020 );
-#ifndef LIFEO_WINDOZE
 const int                       DB_FILE_VERSION_INT_MIN( 110 );
-#else
-const int                       DB_FILE_VERSION_INT_MIN( 1020 );
-#endif
 const std::string::size_type    PASSPHRASE_MIN_SIZE( 4 );
 const char                      LOCK_SUFFIX[] = ".~LOCK~";
 
@@ -267,10 +263,9 @@ class Diary : public DiaryElement
 
         LIFEO::Result           parse_db_body_text( std::istream& );
         LIFEO::Result           parse_db_body_text_1020( std::istream& );
-#ifndef LIFEO_WINDOZE
         LIFEO::Result           parse_db_body_text_1010( std::istream& );
         LIFEO::Result           parse_db_body_text_110( std::istream& );
-#endif
+
         void                    do_standard_checks_after_parse();
 
         bool                    create_db_body_text( std::stringstream& );
