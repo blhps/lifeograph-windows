@@ -5,9 +5,7 @@
 
 
 
-//
-// Menu resources
-//
+// MENUS ===========================================================================================
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDM_MAIN MENU
 {
@@ -35,9 +33,7 @@ IDM_MAIN MENU
 
 
 
-//
-// Dialog resources
-//
+// DIALOGS =========================================================================================
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDD_PASSWORD DIALOG 0, 0, 200, 85
 STYLE DS_3DLOOK | DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | DS_NOFAILCREATE | WS_CAPTION | WS_VISIBLE | WS_POPUP | WS_SYSMENU
@@ -75,10 +71,9 @@ FONT 8, "Ms Shell Dlg"
     DEFPUSHBUTTON   "Add", IDB_TAG_ACTION, 210, 7, 50, 15, 0, WS_EX_LEFT
 }
 
-//
-// Icon resources
-//
+// ICONS ===========================================================================================
 IDI_ENTRY16        ICON           "icons\\entry-16.ico"
+IDBM_ENTRY16        BITMAP          "icons\\entry-16.bmp"
 
 IDI_TODO_OPEN16    ICON           "icons\\todo_open-16.ico"
 

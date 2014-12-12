@@ -545,14 +545,24 @@ WinAppWindow::init_list()
     ListView_InsertColumn( m_list, 0, &lvc );
     
     // IMAGE LISTS
-    HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_MASK, 1, 1 );
+    /*HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_MASK, 1, 1 );
 
     for( int i = 0; i < 5; i++ )
     {
         HICON hicon = LoadIcon( Lifeograph::p->hInst, MAKEINTRESOURCE( IDI_ENTRY16 + i ) );
         ImageList_AddIcon( himagelist, hicon );
-        DestroyIcon( hicon );
-    }
+        //DestroyIcon( hicon );
+    }*/
+    
+    HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_COLOR24, 0, 5 );
+    HBITMAP hbitmap = ( HBITMAP ) LoadImage( Lifeograph::p->hInst,
+                                             MAKEINTRESOURCE( IDBM_ENTRY16 ),
+                                             IMAGE_BITMAP, 0, 0,
+                                             LR_LOADTRANSPARENT );
+
+    ImageList_Add( himagelist, hbitmap, NULL );
+
+    DeleteObject( hbitmap );
 
     ListView_SetImageList( m_list, himagelist, LVSIL_SMALL );
 

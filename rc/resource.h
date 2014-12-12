@@ -11,6 +11,7 @@
 
 
 // ICONS
+#define IDBM_ENTRY16                            202
 #define IDI_ENTRY16                             205
 #define IDI_TODO_OPEN16                         206
 #define IDI_TODO_PROG16                         207
