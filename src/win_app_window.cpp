@@ -381,14 +381,38 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
             if( ( ( LPNMHDR ) lparam )->code == MCN_GETDAYSTATE )
             {
                 NMDAYSTATE* ds( ( NMDAYSTATE* ) lparam );
-                MONTHDAYSTATE mds[ ds->cDayState ];
-                
+                MONTHDAYSTATE mds[ 12 ] = { 0 }; //ds->cDayState ];
+
                 fill_monthdaystate( ds->stStart.wYear,
                                     ds->stStart.wMonth,
                                     mds,
                                     ds->cDayState );
-                
+
                 ds->prgDayState = mds;
+            }
+            else if( ( ( LPNMHDR ) lparam )->code == MCN_SELECT )
+            {
+                if( Lifeograph::loginstatus != Lifeograph::LOGGED_IN )
+                    return;
+                //if( Lifeograph::m_internaloperation ) return;
+
+                NMSELCHANGE* sc = ( LPNMSELCHANGE ) lparam;
+                Date date( sc->stSelStart.wYear, sc->stSelStart.wMonth, sc->stSelStart.wDay );
+                Entry* entry;
+
+                if( m_entry_view->get_element() &&
+                    date.m_date == ( m_entry_view->get_element()->get_date().get_pure() ) )
+                {
+                    entry = Diary::d->get_entry_next_in_day(
+                            m_entry_view->get_element()->get_date() );
+                }
+                else
+                {
+                    entry = Diary::d->get_entry( date.m_date + 1 ); // 1 increment to fix order
+                }
+
+                if( entry )
+                    entry->show();
             }
             break;
     }
@@ -617,7 +641,7 @@ WinAppWindow::update_entry_list()
     SendMessage( m_list, LVM_SORTITEMS, 0, ( WPARAM ) list_compare_func );
 }
 
-#define BOLDDAY(ds, iDay)  if (iDay > 0 && iDay < 32)(ds) |= (0x00000001 << (iDay - 1))
+#define BOLDDAY(ds, iDay)  if(iDay > 0 && iDay < 32) (ds) |= (0x00000001 << (iDay - 1))
 
 void
 WinAppWindow::fill_monthdaystate( int year, int month, MONTHDAYSTATE mds[], int size )
