@@ -381,7 +381,7 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
             if( ( ( LPNMHDR ) lparam )->code == MCN_GETDAYSTATE )
             {
                 NMDAYSTATE* ds( ( NMDAYSTATE* ) lparam );
-                MONTHDAYSTATE mds[ 12 ] = { 0 }; //ds->cDayState ];
+                MONTHDAYSTATE mds[ 12 ] = { 0 };
 
                 fill_monthdaystate( ds->stStart.wYear,
                                     ds->stStart.wMonth,
@@ -600,6 +600,75 @@ WinAppWindow::update_menu()
     //CheckMenuItem( hmenu, IDMI_, MF_BYCOMMAND | ( ? MF_CHECKED : MF_UNCHECKED ) );
 }
 
+bool
+WinAppWindow::select_list_elem( const DiaryElement* elem )
+{
+    LVFINDINFO lvfi;
+    lvfi.flags = LVFI_PARAM;
+    lvfi.lParam = ( LPARAM ) elem->get_id();
+    
+    int index = SendMessage( m_list, LVM_FINDITEM, -1, ( LPARAM ) &lvfi );
+    
+    if( index > -1 )
+    {
+        LVITEM lvi;
+        lvi.stateMask = LVIS_SELECTED;
+        lvi.state = LVIS_SELECTED;
+
+        SendMessage( m_list, LVM_SETITEMSTATE, index, ( LPARAM ) &lvi );
+        SendMessage( m_list, LVM_ENSUREVISIBLE, index, TRUE );
+        
+        return true;
+    }
+    
+    return false;
+}
+
+bool
+WinAppWindow::update_list_elem( const DiaryElement* elem )
+{
+    LVFINDINFO lvfi;
+    lvfi.flags = LVFI_PARAM;
+    lvfi.lParam = ( LPARAM ) elem->get_id();
+
+    int index = SendMessage( m_list, LVM_FINDITEM, -1, ( LPARAM ) &lvfi );
+
+    if( index > -1 )
+    {
+        LVITEM lvi;
+        lvi.iItem       = index;
+        lvi.iSubItem    = 0;
+        lvi.mask        = LVIF_TEXT | LVIF_IMAGE;
+        lvi.pszText     = HELPERS::convert_utf8_to_16( elem->get_list_str() );
+
+        switch( elem->get_todo_status() )
+        {
+            case ES::TODO:
+                lvi.iImage    = 1;
+                break;
+            case ES::PROGRESSED:
+                lvi.iImage    = 2;
+                break;
+            case ES::DONE:
+                lvi.iImage    = 3;
+                break;
+            case ES::CANCELED:
+                lvi.iImage    = 4;
+                break;
+            default:    // 0
+                lvi.iImage    = 0;
+                break;
+        }
+
+        SendMessage( m_list, LVM_SETITEM, 0, ( LPARAM ) &lvi );
+        SendMessage( m_list, LVM_ENSUREVISIBLE, index, TRUE );
+
+        return true;
+    }
+
+    return false;
+}
+
 void
 WinAppWindow::update_entry_list()
 {
@@ -608,15 +677,17 @@ WinAppWindow::update_entry_list()
     int i = 0;
     LVITEM lvi;
     lvi.mask      = LVIF_TEXT | LVIF_IMAGE | LVIF_STATE | LVIF_PARAM;
-    lvi.stateMask = 0;
+    lvi.stateMask = LVIS_SELECTED;
     lvi.iSubItem  = 0;
-    lvi.state     = 0;
 
     for( auto& kv : Diary::d->get_entries() )
     {
         lvi.iItem   = i++;
         lvi.pszText = HELPERS::convert_utf8_to_16( kv.second->get_list_str() );
         lvi.lParam  = ( LPARAM ) kv.second->get_id();
+        lvi.state   = ( m_entry_view->get_element() &&
+                        m_entry_view->get_element()->get_id() == kv.second->get_id() ) ?
+                        LVIS_SELECTED : 0;
 
         switch( kv.second->get_todo_status() )
         {

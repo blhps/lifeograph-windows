@@ -53,11 +53,14 @@ class WinAppWindow
         void                        handle_create();
         void                        handle_resize( short, short );
         void                        handle_notify( int, LPARAM );
-        
+
         BOOL                        init_list();
+        bool                        select_list_elem( const DiaryElement* );
+        bool                        update_list_elem( const DiaryElement* );
+        void                        update_entry_list();
 
         void                        update_menu();
-        void                        update_entry_list();
+
         void                        fill_monthdaystate( int, int, MONTHDAYSTATE[], int );
         void                        update_calendar();
         void                        update_title();

@@ -261,7 +261,7 @@ RichEdit::apply_heading()
                 convert_utf16_to_8( text.substr( 0, end ).c_str() ) :
                 text.empty() ? STRING::EMPTY_ENTRY_TITLE : "" );
 
-        //AppWindow::p->panel_diary->handle_entry_title_changed( m_ptr2entry );
+        WinAppWindow::p->update_list_elem( m_ptr2entry );
         //AppWindow::p->panel_main->refresh_title();
     }
 }

@@ -191,6 +191,7 @@ EntryView::show( Entry& entry )
     m_richedit->set_richtext( m_ptr2elem );
     m_tag_widget->set_entry( m_ptr2elem );
     m_tag_widget->update_full();
+    WinAppWindow::p->select_list_elem( m_ptr2elem );
 
     m_entry_sync = m_ptr2elem;
 }
