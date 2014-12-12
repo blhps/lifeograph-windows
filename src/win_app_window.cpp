@@ -431,7 +431,9 @@ WinAppWindow::finish_editing( bool opt_save )
     if( ! Diary::d->is_read_only() )
     {
         m_entry_view->sync();
-        Diary::d->set_last_elem( m_entry_view->get_element() );
+
+        if( m_entry_view->get_element() )
+            Diary::d->set_last_elem( m_entry_view->get_element() );
 
         if( opt_save )
         {
@@ -648,8 +650,6 @@ WinAppWindow::fill_monthdaystate( int year, int month, MONTHDAYSTATE mds[], int 
 {
     for( int i = 0; i < size; i++ )
     {
-        mds[ i ] = 0;
-
         for( auto& kv_entry : Diary::d->get_entries() )
         {
             Entry* entry = kv_entry.second;
@@ -681,14 +681,24 @@ WinAppWindow::fill_monthdaystate( int year, int month, MONTHDAYSTATE mds[], int 
 void
 WinAppWindow::update_calendar()
 {
-    // does not seem to work!
     SYSTEMTIME st[ 2 ];
-    int size = SendMessage( m_calendar, MCM_GETMONTHRANGE, GMR_DAYSTATE, ( LPARAM ) &st );
-    MONTHDAYSTATE mds[ size ];
-    
+    MONTHDAYSTATE mds[ 12 ] = { 0 };
+    int size = SendMessage( m_calendar, MCM_GETMONTHRANGE, GMR_DAYSTATE, ( LPARAM ) st );
+
     fill_monthdaystate( st[ 0 ].wYear, st[ 0 ].wMonth, mds, size );
-    
+
     SendMessage( m_calendar, MCM_SETDAYSTATE, size, ( LPARAM ) &mds );
+
+    RECT rect;
+    
+    MonthCal_GetMinReqRect( m_calendar, &rect );
+    const int height = rect.bottom - rect.top;
+    GetClientRect( m_hwnd, &rect );
+    
+    rect.left = rect.right * EDITOR_RATIO;
+    rect.top = rect.bottom  - height;
+    
+    InvalidateRect( m_hwnd, &rect, TRUE );
 }
 
 void
