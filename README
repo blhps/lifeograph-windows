@@ -1,0 +1,55 @@
+Description
+===========
+
+Lifeograph is an off-line and private journal and note taking application.
+It offers a rich feature set presented in a clean and simple user interface.
+
+
+
+Comparison to Linux Version
+===========================
+
+Lifeograph for Windows is currently in early development phase and lacks many
+features provided by the Linux version. Main missing features are:
+
+    * Chapter support
+    * Favorite entries
+    * Todo status for entries and chapters
+    * Filtering
+    * Printing
+    * Bulleted, numbered, and check lists in entries
+    * Links of any kind in entries
+    * Creating and editing themes (existing themes can be used)
+
+
+
+Building from Source
+====================
+
+Lifeograph for Windows is developed in Orwell Dev-C++.
+(http://sourceforge.net/projects/orwelldevcpp/)
+
+Users interested in building from the source code are strongly recommended
+to use this software.
+
+Additionally, libgcrypt and libgpg-error dlls are needed to run
+Lifeograph. Full names of these libraries are listed below:
+
+	* libgcrypt-20.dll
+	* libgpg-error-0.dll
+
+These dlls can be obtained from MinGW, Cygwin or Gpg4win projects.
+
+
+
+Installation & Running
+======================
+
+Lifeograph for Windows is completely portable and installation is not
+required. Just put the following files into the same folder and run the exe.
+
+    * lifeograph.exe
+    * lifeo.conf
+	* The two dll files in the section above (if they are not already somewhere
+	  in the PATH)
+

@@ -4,14 +4,14 @@ Name=LifeographWine
 Type=0
 Ver=2
 ObjFiles=
-Includes=C:\users\ahmet\Desktop\devel\gpg4win\include
-Libs=C:\users\ahmet\Desktop\devel\gpg4win\lib
+Includes=mingw\include
+Libs=mingw\lib
 PrivateResource=LifeographWine_private.rc
 ResourceIncludes=
 MakeIncludes=
-Compiler=
-CppCompiler=-DLIFEO_WINDOZE_@@_-DHAVE_CONFIG_H_@@_-DUNICODE_@@_-I config_@@_-std=c++11_@@_-m32_@@_
-Linker=-lcomctl32_@@_-lshlwapi_@@_-lgcrypt_@@_-lgpg-error_@@_-m32_@@_
+Compiler=-static-libgcc_@@_
+CppCompiler=-DLIFEO_WINDOZE_@@_-DHAVE_CONFIG_H_@@_-DUNICODE_@@_-I config_@@_-std=c++11_@@_-m32_@@_-static-libgcc_@@_
+Linker=-lcomctl32_@@_-lshlwapi_@@_-lgcrypt_@@_-lgpg-error_@@_-m32_@@_-static-libgcc_@@_
 IsCpp=1
 Icon=LifeographWine.ico
 ExeOutput=bin
