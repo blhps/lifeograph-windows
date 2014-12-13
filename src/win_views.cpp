@@ -196,6 +196,15 @@ EntryView::show( Entry& entry )
     m_entry_sync = m_ptr2elem;
 }
 
+void
+EntryView::clear()
+{
+    m_ptr2elem = NULL;
+    m_richedit->set_richtext( NULL );
+    m_tag_widget->set_entry( NULL );
+    m_entry_sync = NULL;
+}
+
 // DIARY ===========================================================================================
 DiaryView::DiaryView()
 {

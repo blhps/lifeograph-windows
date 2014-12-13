@@ -61,6 +61,7 @@ class EntryView : public ElementShower< Entry >
         }
 
         void                    show( Entry& );
+        void                    clear();
 
         void                    handle_login();
 

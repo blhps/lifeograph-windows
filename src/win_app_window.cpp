@@ -471,10 +471,9 @@ WinAppWindow::finish_editing( bool opt_save )
 
     if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
         Lifeograph::loginstatus = Lifeograph::LOGGED_OUT;
+        
     Diary::d->clear();
-    
-    m_entry_view->m_richedit->set_richtext( NULL );
-    m_entry_view->m_tag_widget->set_entry( NULL );
+    m_entry_view->clear();
     update_entry_list();
     update_calendar();
     update_title();
