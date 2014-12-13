@@ -17,8 +17,9 @@ features provided by the Linux version. Main missing features are:
     * Todo status for entries and chapters
     * Filtering
     * Printing
-    * Bulleted, numbered, and check lists in entries
+    * Check/bulleted/numbered lists in entries
     * Links of any kind in entries
+    * Spell checking
     * Creating and editing themes (existing themes can be used)
 
 
