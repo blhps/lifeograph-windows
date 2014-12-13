@@ -226,8 +226,9 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     break;
                 case IDMI_ABOUT:
                     MessageBoxA( NULL, "Lifeograph for Windows  0.1.0\n\n"
-                                       "Copyright (C) 2014 Ahmet Öztürk\n\n"
-                                       "Lifeograph is licensed under GNU Public License v3",
+                                       "Copyright (C) 2014 Ahmet Öztürk\n"
+                                       "Lifeograph is licensed under GNU Public License v3\n\n"
+                                       "http://lifeograph.sourceforge.net",
                                  "About...", MB_OK );
                     break;
                 case IDRT_MAIN:
