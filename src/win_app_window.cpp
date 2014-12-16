@@ -130,7 +130,7 @@ WinAppWindow::run()
     wc.cbClsExtra    = 0;
     wc.cbWndExtra    = 0;
     wc.hInstance     = Lifeograph::hInst;
-    wc.hIcon         = LoadIcon( NULL, IDI_APPLICATION );
+    wc.hIcon         = LoadIcon( Lifeograph::hInst, L"A" );
     wc.hCursor       = LoadCursor( NULL, IDC_ARROW );
     wc.hbrBackground = ( HBRUSH ) ( COLOR_WINDOW + 1 );
     wc.lpszMenuName  = MAKEINTRESOURCE( IDM_MAIN );

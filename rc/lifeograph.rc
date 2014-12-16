@@ -72,17 +72,16 @@ FONT 8, "Ms Shell Dlg"
 }
 
 // ICONS ===========================================================================================
-IDI_ENTRY16        ICON           "icons\\entry-16.ico"
+//IDI_ENTRY16        ICON           "icons\\entry-16.ico"
 IDBM_ENTRY16        BITMAP          "icons\\entry-16.bmp"
 
-IDI_TODO_OPEN16    ICON           "icons\\todo_open-16.ico"
+//IDI_TODO_OPEN16    ICON           "icons\\todo_open-16.ico"
 
-IDI_TODO_PROG16    ICON           "icons\\todo_progressed-16.ico"
+//IDI_TODO_PROG16    ICON           "icons\\todo_progressed-16.ico"
 
-IDI_TODO_DONE16    ICON           "icons\\todo_done-16.ico"
+//IDI_TODO_DONE16    ICON           "icons\\todo_done-16.ico"
 
-IDI_TODO_CANC16    ICON           "icons\\todo_canceled-16.ico"
+//IDI_TODO_CANC16    ICON           "icons\\todo_canceled-16.ico"
 
-LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-IDI_TAG16          ICON           "icons\\tag-16.ico"
+//IDI_TAG16          ICON           "icons\\tag-16.ico"
 

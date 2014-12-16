@@ -12,11 +12,11 @@
 
 // ICONS
 #define IDBM_ENTRY16                            202
-#define IDI_ENTRY16                             205
-#define IDI_TODO_OPEN16                         206
-#define IDI_TODO_PROG16                         207
-#define IDI_TODO_DONE16                         208
-#define IDI_TODO_CANC16                         209
+//#define IDI_ENTRY16                             205
+//#define IDI_TODO_OPEN16                         206
+//#define IDI_TODO_PROG16                         207
+//#define IDI_TODO_DONE16                         208
+//#define IDI_TODO_CANC16                         209
 
 #define IDI_TAG16                               220
 
