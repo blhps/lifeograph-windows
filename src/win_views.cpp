@@ -157,19 +157,25 @@ EntryView::dismiss_entry()
 
     if( ! WinAppWindow::p->confirm_dismiss_element( m_ptr2elem ) )
         return;
-        
+
+    if( ! m_ptr2elem )
+        return;
+
     if( Diary::d->get_startup_elem() == m_ptr2elem )
     {
         Diary::d->set_startup_elem( Diary::d->get_id() );
         //AppWindow::p->m_diary_view->update_startup_elem();
     }
 
+    Entry* ptr2entry = m_ptr2elem; // save the pointer
+    
     // first make sure that entry to be deleted is completely out of business...
     // ...else dark forces may take action and cause SEGFAULT:
+
     Diary::d->show();
 
     //AppWindow::p->remove_element_from_history( m_ptr2elem );
-    Diary::d->dismiss_entry( m_ptr2elem );
+    Diary::d->dismiss_entry( ptr2entry );
 
     Lifeograph::m_internaloperation++;
 
@@ -226,7 +232,7 @@ DiaryView::handle_login()
 void
 DiaryView::show( Diary& diary )
 {
-    WinAppWindow::p->m_entry_view->m_richedit->set_richtext( NULL );
+    WinAppWindow::p->m_entry_view->clear();
 }
 
 LIFEO::Result
