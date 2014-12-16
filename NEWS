@@ -1,9 +1,14 @@
 LIFEOGRAPH FOR WINDOWS RELEASE HISTORY
 ======================================
 
+0.1.1 - 2014-12-16
 
-0.1.0 - 2014/12/13
+    * Fixed crash when dismissing entries
+    * Added 32x32 and 64x64 versions of the main icon
+
+
+
+0.1.0 - 2014-12-13
 
     * Initial release
-
 
