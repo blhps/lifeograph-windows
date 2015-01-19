@@ -70,8 +70,13 @@ class Entry : virtual public DiaryElement
         { return m_text.size(); }
         Type                    get_type() const
         { return ET_ENTRY; }
+
+#ifndef LIFEO_WINDOZE
         const Icon&             get_icon() const;
         const Icon&             get_icon32() const;
+#else
+        int                     get_icon() const;
+#endif
 
         void                    calculate_title( const Ustring& );
 

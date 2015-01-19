@@ -25,6 +25,7 @@
 #endif
 
 #include <windows.h>
+#include <windowsx.h> // GET_X_LPARAM
 #include <richedit.h>
 #include <string>
 #include <cstdlib>
@@ -294,11 +295,11 @@ WinAppWindow::handle_create()
                  ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
     SendMessage( m_entry_view->m_richedit->m_hwnd, EM_SETEVENTMASK, 0, ( LPARAM ) ENM_CHANGE );
 
-    // LIST VIEW
+    // TREE VIEW
     m_list =
-            CreateWindowExW( 0, WC_LISTVIEWW, L"",
-                             WS_CHILD | WS_VISIBLE | WS_VSCROLL | LVS_REPORT |
-                             LVS_NOCOLUMNHEADER | LVS_SINGLESEL,
+            CreateWindowExW( 0, WC_TREEVIEW, L"",
+                             WS_CHILD | WS_VISIBLE | WS_VSCROLL | TVS_HASLINES | TVS_HASBUTTONS |
+                             TVS_FULLROWSELECT,
                              CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                              m_hwnd, ( HMENU ) IDLV_MAIN, GetModuleHandle( NULL ), NULL );
     init_list();
@@ -361,22 +362,38 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
         case IDLV_MAIN:
             if( ( ( LPNMHDR ) lparam )->code == NM_CLICK )
             {
-                int iSelect = SendMessage( m_list, LVM_GETNEXTITEM, -1, LVNI_FOCUSED ); // return item selected
+                DWORD dwpos = GetMessagePos();
+                TVHITTESTINFO ht = { 0 };
+                ht.pt.x = GET_X_LPARAM( dwpos );
+                ht.pt.y = GET_Y_LPARAM( dwpos );
+                MapWindowPoints( HWND_DESKTOP, m_list, &ht.pt, 1 );
 
-                if( iSelect != -1 )
+                TreeView_HitTest( m_list, &ht );
+
+                if( ht.flags & TVHT_ONITEM )
                 {
-                    LVITEM lvi;
-                    lvi.mask        = LVIF_PARAM;
-                    lvi.iItem       = iSelect;
-                    if( ListView_GetItem( m_list, &lvi ) )
+                    TVITEM tvi;
+                    tvi.mask        = TVIF_PARAM;
+                    tvi.hItem       = ht.hItem;
+                    if( TreeView_GetItem( m_list, &tvi ) )
                     {
-                        DiaryElement* elem = Diary::d->get_element( lvi.lParam );
-                        if( elem )
+                        DiaryElement* elem = Diary::d->get_element( tvi.lParam );
+                        if( elem && elem->get_type() == DiaryElement::ET_ENTRY )
                             elem->show();
                     }
                 }
             }
-            PRINT_DEBUG( "....." );
+            else if( ( ( LPNMHDR ) lparam )->code == TVN_ITEMEXPANDED )
+            {
+                TVITEM tvi = ( ( LPNMTREEVIEW ) lparam )->itemNew;
+                DiaryElement* elem = Diary::d->get_element( tvi.lParam );
+                if( elem && ( elem->get_type() == DiaryElement::ET_CHAPTER ||
+                              elem->get_type() == DiaryElement::ET_TOPIC ) )
+                {
+                    Chapter* chapter = dynamic_cast< Chapter* >( elem );
+                    chapter->set_expanded( tvi.state & TVIS_EXPANDED );
+                }
+            }
             break;
         case IDCAL_MAIN:
             if( ( ( LPNMHDR ) lparam )->code == MCN_GETDAYSTATE )
@@ -479,7 +496,7 @@ WinAppWindow::finish_editing( bool opt_save )
     update_title();
 
     Lifeograph::m_internaloperation--;
-    
+
     return true;
 }
 
@@ -527,48 +544,6 @@ WinAppWindow::login()
         startup_elem->show();
 }
 
-BOOL
-WinAppWindow::init_list()
-{
-    SendMessage( m_list, WM_SETFONT,
-                 ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
-    ListView_SetExtendedListViewStyle( m_list, LVS_EX_FULLROWSELECT );
-    ListView_SetUnicodeFormat( m_list, true );
-
-    // COLUMNS
-    LV_COLUMN lvc;
-
-    lvc.mask     = LVCF_FMT | LVCF_TEXT;
-    lvc.fmt      = LVCFMT_LEFT | LVCFMT_IMAGE;
-    lvc.pszText  = ( wchar_t* ) L"Entries";
-
-    ListView_InsertColumn( m_list, 0, &lvc );
-    
-    // IMAGE LISTS
-    /*HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_MASK, 1, 1 );
-
-    for( int i = 0; i < 5; i++ )
-    {
-        HICON hicon = LoadIcon( Lifeograph::p->hInst, MAKEINTRESOURCE( IDI_ENTRY16 + i ) );
-        ImageList_AddIcon( himagelist, hicon );
-        //DestroyIcon( hicon );
-    }*/
-    
-    HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_COLOR24, 0, 5 );
-    HBITMAP hbitmap = ( HBITMAP ) LoadImage( Lifeograph::p->hInst,
-                                             MAKEINTRESOURCE( IDBM_ENTRY16 ),
-                                             IMAGE_BITMAP, 0, 0,
-                                             LR_LOADTRANSPARENT );
-
-    ImageList_Add( himagelist, hbitmap, NULL );
-
-    DeleteObject( hbitmap );
-
-    ListView_SetImageList( m_list, himagelist, LVSIL_SMALL );
-
-    return TRUE;
-}
-
 void
 WinAppWindow::update_title()
 {
@@ -610,118 +585,172 @@ WinAppWindow::update_menu()
     //CheckMenuItem( hmenu, IDMI_, MF_BYCOMMAND | ( ? MF_CHECKED : MF_UNCHECKED ) );
 }
 
+BOOL
+WinAppWindow::init_list()
+{
+    SendMessage( m_list, WM_SETFONT,
+                 ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
+    //ListView_SetExtendedListViewStyle( m_list, LVS_EX_FULLROWSELECT );
+    //ListView_SetUnicodeFormat( m_list, true );
+
+    // COLUMNS
+    /*LV_COLUMN lvc;
+
+    lvc.mask     = LVCF_FMT | LVCF_TEXT;
+    lvc.fmt      = LVCFMT_LEFT | LVCFMT_IMAGE;
+    lvc.pszText  = ( wchar_t* ) L"Entries";
+
+    ListView_InsertColumn( m_list, 0, &lvc );*/
+
+    // IMAGE LISTS
+    /*HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_MASK, 1, 1 );
+
+    for( int i = 0; i < 5; i++ )
+    {
+        HICON hicon = LoadIcon( Lifeograph::p->hInst, MAKEINTRESOURCE( IDI_ENTRY16 + i ) );
+        ImageList_AddIcon( himagelist, hicon );
+        //DestroyIcon( hicon );
+    }*/
+
+    HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_COLOR24, 0, 5 );
+    HBITMAP hbitmap = ( HBITMAP ) LoadImage( Lifeograph::p->hInst,
+                                             MAKEINTRESOURCE( IDBM_ENTRY16 ),
+                                             IMAGE_BITMAP, 0, 0,
+                                             LR_LOADTRANSPARENT );
+
+    ImageList_Add( himagelist, hbitmap, NULL );
+
+    DeleteObject( hbitmap );
+
+    TreeView_SetImageList( m_list, himagelist, TVSIL_NORMAL );
+
+    return TRUE;
+}
+
 bool
 WinAppWindow::select_list_elem( const DiaryElement* elem )
 {
-    LVFINDINFO lvfi;
-    lvfi.flags = LVFI_PARAM;
-    lvfi.lParam = ( LPARAM ) elem->get_id();
-    
-    int index = SendMessage( m_list, LVM_FINDITEM, -1, ( LPARAM ) &lvfi );
-    
-    if( index > -1 )
-    {
-        LVITEM lvi;
-        lvi.stateMask = LVIS_SELECTED;
-        lvi.state = LVIS_SELECTED;
+    TreeView_SelectItem( m_list, elem->m_list_data );
+    TreeView_EnsureVisible( m_list, elem->m_list_data );
 
-        SendMessage( m_list, LVM_SETITEMSTATE, index, ( LPARAM ) &lvi );
-        SendMessage( m_list, LVM_ENSUREVISIBLE, index, TRUE );
-        
-        return true;
-    }
-    
-    return false;
+    return true;
 }
 
 bool
 WinAppWindow::update_list_elem( const DiaryElement* elem )
 {
-    LVFINDINFO lvfi;
-    lvfi.flags = LVFI_PARAM;
-    lvfi.lParam = ( LPARAM ) elem->get_id();
+    TVITEM tvi;
+    tvi.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_PARAM;
+    tvi.pszText = HELPERS::convert_utf8_to_16( elem->get_list_str() );
+    tvi.cchTextMax = sizeof( tvi.pszText ) / sizeof( tvi.pszText[ 0 ] );
+    tvi.iImage = tvi.iSelectedImage = elem->get_icon();
+    tvi.lParam = ( LPARAM ) elem->get_id();
+    tvi.hItem = elem->m_list_data;
 
-    int index = SendMessage( m_list, LVM_FINDITEM, -1, ( LPARAM ) &lvfi );
+    TreeView_SetItem( m_list, &tvi );
+    TreeView_EnsureVisible( m_list, elem->m_list_data );
 
-    if( index > -1 )
+    return true;
+}
+
+HTREEITEM
+WinAppWindow::add_list_elem( DiaryElement* elem, HTREEITEM hti_root, bool flag_bold )
+{
+    TVITEM tvi;
+    TVINSERTSTRUCT tvins;
+    HTREEITEM hPrev = ( HTREEITEM ) TVI_FIRST;
+
+    tvi.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_PARAM;
+    tvi.pszText = HELPERS::convert_utf8_to_16( elem->get_list_str() );
+    tvi.cchTextMax = sizeof( tvi.pszText ) / sizeof( tvi.pszText[ 0 ] );
+    tvi.iImage = tvi.iSelectedImage = elem->get_icon();
+    tvi.lParam = ( LPARAM ) elem->get_id();
+    
+    if( flag_bold )
     {
-        LVITEM lvi;
-        lvi.iItem       = index;
-        lvi.iSubItem    = 0;
-        lvi.mask        = LVIF_TEXT | LVIF_IMAGE;
-        lvi.pszText     = HELPERS::convert_utf8_to_16( elem->get_list_str() );
-
-        switch( elem->get_todo_status() )
-        {
-            case ES::TODO:
-                lvi.iImage    = 1;
-                break;
-            case ES::PROGRESSED:
-                lvi.iImage    = 2;
-                break;
-            case ES::DONE:
-                lvi.iImage    = 3;
-                break;
-            case ES::CANCELED:
-                lvi.iImage    = 4;
-                break;
-            default:    // 0
-                lvi.iImage    = 0;
-                break;
-        }
-
-        SendMessage( m_list, LVM_SETITEM, 0, ( LPARAM ) &lvi );
-        SendMessage( m_list, LVM_ENSUREVISIBLE, index, TRUE );
-
-        return true;
+        tvi.mask |= TVIF_STATE;
+        tvi.state = TVIS_BOLD;
     }
 
-    return false;
+    tvins.item = tvi;
+    tvins.hInsertAfter = hPrev;
+    tvins.hParent = hti_root;
+
+    elem->m_list_data = ( HTREEITEM ) SendMessage( m_list,
+                                                   TVM_INSERTITEM,
+                                                   0,
+                                                   ( LPARAM ) ( LPTVINSERTSTRUCT ) &tvins );
+
+    return elem->m_list_data;
+}
+
+void
+WinAppWindow::add_chapter_category_to_list( const CategoryChapters* chapters, HTREEITEM hti_root )
+{
+    for( auto& kv_chapter : *chapters )
+    {
+        Chapter* chapter( kv_chapter.second );
+
+        HTREEITEM hti_chapter = add_list_elem( chapter, hti_root, true );
+
+        for( Entry* entry : *chapter )
+        {
+            if( entry->get_filtered_out() == false )
+            {
+                add_list_elem( entry, hti_chapter );
+            }
+        }
+
+        if( chapter->get_expanded() )
+            TreeView_Expand( m_list, hti_chapter, TVE_EXPAND );
+    }
 }
 
 void
 WinAppWindow::update_entry_list()
 {
-    SendMessage( m_list, LVM_DELETEALLITEMS, 0, 0 );
-    
-    int i = 0;
-    LVITEM lvi;
-    lvi.mask      = LVIF_TEXT | LVIF_IMAGE | LVIF_STATE | LVIF_PARAM;
-    lvi.stateMask = LVIS_SELECTED;
-    lvi.iSubItem  = 0;
+    SendMessage( m_list, TVM_DELETEITEM, 0, ( LPARAM ) NULL );
 
-    for( auto& kv : Diary::d->get_entries() )
+    // DIARY ITEM
+    HTREEITEM hti_diary = add_list_elem( Diary::d, ( HTREEITEM ) TVI_ROOT, true );
+
+    // CHAPTERS
+    if( Diary::d->get_sorting_criteria() == SC_DATE )
     {
-        lvi.iItem   = i++;
-        lvi.pszText = HELPERS::convert_utf8_to_16( kv.second->get_list_str() );
-        lvi.lParam  = ( LPARAM ) kv.second->get_id();
-        lvi.state   = ( m_entry_view->get_element() &&
-                        m_entry_view->get_element()->get_id() == kv.second->get_id() ) ?
-                        LVIS_SELECTED : 0;
+        add_chapter_category_to_list( Diary::d->get_topics(), hti_diary );
+        add_chapter_category_to_list( Diary::d->get_groups(), hti_diary );
+        add_chapter_category_to_list( Diary::d->get_current_chapter_ctg(), hti_diary );
 
-        switch( kv.second->get_todo_status() )
+        // ENTRIES NOT PART OF A CHAPTER (ORPHANED)
+        for( Entry* entry : *Diary::d->get_orphans() )
         {
-            case ES::TODO:
-                lvi.iImage    = 1;
-                break;
-            case ES::PROGRESSED:
-                lvi.iImage    = 2;
-                break;
-            case ES::DONE:
-                lvi.iImage    = 3;
-                break;
-            case ES::CANCELED:
-                lvi.iImage    = 4;
-                break;
-            default:    // 0
-                lvi.iImage    = 0;
-                break;
+            if( entry->get_filtered_out() == false )
+            {
+                add_list_elem( entry, hti_diary );
+            }
         }
-
-        SendMessage( m_list, LVM_INSERTITEM, 0, ( LPARAM ) &lvi );
     }
-    
-    SendMessage( m_list, LVM_SORTITEMS, 0, ( WPARAM ) list_compare_func );
+    else
+    {
+        for( auto& kv_entry : Diary::d->get_entries() )
+        {
+            Entry* entry( kv_entry.second );
+            if( entry->get_filtered_out() == false )
+            {
+                add_list_elem( entry, hti_diary );
+            }
+
+        }
+    }
+
+    // always expand diary
+    SendMessage( m_list, TVM_EXPAND, TVE_EXPAND, ( WPARAM ) hti_diary );
+
+    TVSORTCB tvscb;
+    tvscb.hParent = hti_diary;
+    tvscb.lpfnCompare = list_compare_func;
+    tvscb.lParam = 0;
+    SendMessage( m_list, TVM_SORTCHILDRENCB, 0, ( WPARAM ) &tvscb );
 }
 
 #define BOLDDAY(ds, iDay)  if(iDay > 0 && iDay < 32) (ds) |= (0x00000001 << (iDay - 1))

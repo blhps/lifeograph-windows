@@ -104,7 +104,11 @@ class Untagged;         // forward declaration
 class Entry;            // forward declaration
 class Filter;           // forward declaration
 class Diary;            // forward declaration
+#ifndef LIFEO_WINDOZE
 class ListData;	        // forward declaration
+#else
+#include <commctrl.h>
+#endif
 
 typedef std::vector< Entry* >               EntryVector;
 typedef std::vector< Entry* >::iterator     EntryVectorIter;
@@ -160,10 +164,27 @@ class DiaryElement : public NamedElement
         Ustring                 get_type_name()
         { return s_type_names[ get_type() ]; }
         virtual int             get_size() const = 0;
+#ifndef LIFEO_WINDOZE
         virtual const Icon&     get_icon() const
         { return( s_pixbuf_null ); }
         virtual const Icon&     get_icon32() const
         { return( s_pixbuf_null ); }
+
+#else
+#define ICON_NO_DIARY          0
+#define ICON_NO_ENTRY          1
+#define ICON_NO_TODO           2
+#define ICON_NO_PROGRESSED     3
+#define ICON_NO_DONE           4
+#define ICON_NO_CANCELED       5
+#define ICON_NO_CHAPTER_D      6
+#define ICON_NO_CHAPTER_O      7
+#define ICON_NO_TAG            8
+#define ICON_NO_TAG_THEME      9
+#define ICON_NO_UNTAGGED       10
+#define ICON_NO_TAG_CTG        11
+        virtual int             get_icon() const { return 0; }
+#endif
         virtual Date            get_date() const
         { return Date( Date::NOT_APPLICABLE ); }
         Date::date_t            get_date_t() const
@@ -201,7 +222,11 @@ class DiaryElement : public NamedElement
         virtual bool            is_favored() const
         { return false; }
 
+#ifndef LIFEO_WINDOZE
         ListData*               m_list_data;
+#else
+        HTREEITEM               m_list_data;
+#endif
 
     protected:
         Diary* const            m_ptr2diary;
@@ -405,8 +430,12 @@ class CategoryTags : public DiaryElementReferrer< Tag >
 
         Type                    get_type() const
         { return ET_TAG_CTG; }
+#ifndef LIFEO_WINDOZE
         const Icon&             get_icon() const;
         const Icon&             get_icon32() const;
+#else
+        int                     get_icon() const;
+#endif
         Ustring                 get_list_str() const
 #ifndef LIFEO_WINDOZE
         { return str_compose( "<b>", Glib::Markup::escape_text( m_name ), "</b>" ); }
@@ -467,8 +496,12 @@ class Tag : public DiaryElementReferrer< Entry >
         //Date                  get_date() const; // if earliest entry's date is needed
         virtual Type            get_type() const
         { return ET_TAG; }
+#ifndef LIFEO_WINDOZE
         virtual const Icon&     get_icon() const;
         virtual const Icon&     get_icon32() const;
+#else
+        virtual int             get_icon() const;
+#endif
 
         virtual Ustring         get_list_str() const
 #ifndef LIFEO_WINDOZE
@@ -492,8 +525,12 @@ class Untagged : public Tag
 
         Type                    get_type() const
         { return ET_UNTAGGED; }
+#ifndef LIFEO_WINDOZE
         const Icon&             get_icon() const;
         const Icon&             get_icon32() const;
+#else
+        int                     get_icon() const;
+#endif
 
         Ustring                 get_list_str() const;
 
@@ -559,8 +596,14 @@ class Chapter : public DiaryElementReferrer< Entry >
 
         Type                    get_type() const
         { return m_type; }
+
+#ifndef LIFEO_WINDOZE
         const Icon&             get_icon() const;
         const Icon&             get_icon32() const;
+#else
+        int                     get_icon() const;
+#endif
+
         Date                    get_date() const;
 
         Ustring                 get_list_str() const;
@@ -649,8 +692,10 @@ class Filter : public DiaryElement
         { return ET_FILTER; }
         int                         get_size() const
         { return 0; }   // redundant
+#ifndef LIFEO_WINDOZE
         const Icon&                 get_icon() const;
         const Icon&                 get_icon32() const;
+#endif
 
         Ustring                     get_list_str() const
 #ifndef LIFEO_WINDOZE

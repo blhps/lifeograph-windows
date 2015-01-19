@@ -57,6 +57,9 @@ class WinAppWindow
         BOOL                        init_list();
         bool                        select_list_elem( const DiaryElement* );
         bool                        update_list_elem( const DiaryElement* );
+        HTREEITEM                   add_list_elem( DiaryElement*, HTREEITEM, bool = false );
+        void                        add_chapter_category_to_list( const CategoryChapters*,
+                                                                  HTREEITEM );
         void                        update_entry_list();
 
         void                        update_menu();

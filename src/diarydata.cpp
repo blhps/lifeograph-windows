@@ -117,17 +117,24 @@ Tag::~Tag()
 {
 }
 
+#ifndef LIFEO_WINDOZE
 const Icon&
 Tag::get_icon() const
 {
     return( get_has_own_theme() ? Lifeograph::icons->tag_theme_16 : Lifeograph::icons->tag_16 );
 }
-
 const Icon&
 Tag::get_icon32() const
 {
     return( get_has_own_theme() ? Lifeograph::icons->tag_theme_32 : Lifeograph::icons->tag_32 );
 }
+#else
+int
+Tag::get_icon() const
+{
+    return( get_has_own_theme() ? ICON_NO_TAG_THEME : ICON_NO_TAG );
+}
+#endif
 
 void
 Tag::show()
@@ -225,17 +232,24 @@ Untagged::get_list_str() const
 #endif
 }
 
+#ifndef LIFEO_WINDOZE
 const Icon&
 Untagged::get_icon() const
 {
     return Lifeograph::icons->untagged_16;
 }
-
 const Icon&
 Untagged::get_icon32() const
 {
     return Lifeograph::icons->untagged_32;
 }
+#else
+int
+Untagged::get_icon() const
+{
+    return ICON_NO_UNTAGGED;
+}
+#endif
 
 // TAGPOOL =========================================================================================
 PoolTags::~PoolTags()
@@ -291,6 +305,7 @@ CategoryTags::CategoryTags( Diary* const d, const Ustring& name )
 {
 }
 
+#ifndef LIFEO_WINDOZE
 const Icon&
 CategoryTags::get_icon() const
 {
@@ -301,6 +316,13 @@ CategoryTags::get_icon32() const
 {
     return Lifeograph::icons->tag_category_32;
 }
+#else
+int
+CategoryTags::get_icon() const
+{
+    return ICON_NO_TAG_CTG;
+}
+#endif
 
 void
 CategoryTags::show()
@@ -394,6 +416,7 @@ Chapter::Chapter( Diary* const d, const Ustring& name, Date::date_t date )
     update_type();
 }
 
+#ifndef LIFEO_WINDOZE
 const Icon&
 Chapter::get_icon() const
 {
@@ -431,6 +454,26 @@ Chapter::get_icon32() const
     }
 
 }
+#else
+int
+Chapter::get_icon() const
+{
+    switch( m_status & ES::FILTER_TODO )
+    {
+        case ES::TODO:
+            return ICON_NO_TODO;
+        case ES::PROGRESSED:
+            return ICON_NO_PROGRESSED;
+        case ES::DONE:
+            return ICON_NO_DONE;
+        case ES::CANCELED:
+            return ICON_NO_CANCELED;
+        default:
+            return( m_date_begin.is_ordinal() ?
+                    ICON_NO_CHAPTER_O : ICON_NO_CHAPTER_D );
+    }
+}
+#endif
 
 Ustring
 Chapter::get_list_str() const
@@ -444,7 +487,7 @@ Chapter::get_list_str() const
 #else // FIXME
         return m_name;
 //    else
-        return STR::compose( m_date_begin.format_string(), m_name );
+        return STR::compose( m_date_begin.format_string(), " -  ", m_name );
 #endif
 }
 
@@ -751,17 +794,18 @@ Filter::Filter( Diary* const d, const Ustring& name )
 {
 }
 
+#ifndef LIFEO_WINDOZE
 const Icon&
 Filter::get_icon() const
 {
     return Lifeograph::icons->filter_16;
 }
-
 const Icon&
 Filter::get_icon32() const
 {
     return Lifeograph::icons->filter_32;
 }
+#endif
 
 void
 Filter::show()

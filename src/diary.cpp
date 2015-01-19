@@ -164,6 +164,7 @@ Diary::clear()
     m_option_sorting_criteria = SC_DATE;
 }
 
+#ifndef LIFEO_WINDOZE
 const Icon&
 Diary::get_icon() const
 {
@@ -174,6 +175,13 @@ Diary::get_icon32() const
 {
     return Lifeograph::icons->diary_32;
 }
+#else
+int
+Diary::get_icon() const
+{
+    return ICON_NO_DIARY;
+}
+#endif
 
 LIFEO::Result
 Diary::set_path( const std::string& path, SetPathType type )

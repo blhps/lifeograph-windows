@@ -52,6 +52,7 @@ Entry::Entry( Diary* const d, const Date::date_t date, bool favored )
 {
 }
 
+#ifndef LIFEO_WINDOZE
 const Icon&
 Entry::get_icon() const
 {
@@ -86,6 +87,25 @@ Entry::get_icon32() const
             return Lifeograph::icons->entry_32;
     }
 }
+#else
+int
+Entry::get_icon() const
+{
+    switch( get_todo_status() )
+    {
+        case ES::TODO:
+            return 2;
+        case ES::PROGRESSED:
+            return 3;
+        case ES::DONE:
+            return 4;
+        case ES::CANCELED:
+            return 5;
+        default:    // 0
+            return 1;
+    }
+}
+#endif
 
 Ustring
 Entry::get_list_str() const

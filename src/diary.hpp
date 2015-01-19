@@ -71,8 +71,13 @@ class Diary : public DiaryElement
         { return m_entries.size(); }
         Type                    get_type() const
         { return ET_DIARY; }
+
+#ifndef LIFEO_WINDOZE
         const Icon&             get_icon() const;
         const Icon&             get_icon32() const;
+#else
+        virtual int             get_icon() const;
+#endif
 
         Ustring                 get_list_str() const
 #ifndef LIFEO_WINDOZE
@@ -214,6 +219,8 @@ class Diary : public DiaryElement
         void                    add_entry_to_related_chapter( Entry* );
         void                    remove_entry_from_chapters( Entry* );
         void                    set_topic_order( Chapter*, Date::date_t );
+        Chapter*                get_orphans()
+        { return &m_orphans; }
 
         //Date                    get_free_chapter_order_temporal();
 
