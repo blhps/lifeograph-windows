@@ -39,6 +39,9 @@
 #include "lifeograph.hpp"
 #include "strings.hpp"
 
+#ifdef LIFEO_WINDOZE
+#include <shlwapi.h>
+#endif
 
 using namespace LIFEO;
 
@@ -247,7 +250,10 @@ Diary::set_path( const std::string& path, SetPathType type )
 #ifndef LIFEO_WINDOZE
     m_name = Glib::filename_display_basename( path );
 #else
-    m_name = path; // TODO
+    char* stripped_path = new char[ path.size() + 1 ];
+    strcpy( stripped_path, path.c_str() );
+    PathStripPathA( stripped_path );
+    m_name = stripped_path;
 #endif
     m_flag_read_only = ( type == SPT_READ_ONLY );
 
@@ -263,7 +269,7 @@ Diary::get_path() const
 bool
 Diary::is_path_set() const
 {
-    return ( (bool) m_path.size() );
+    return ( ( bool ) m_path.size() );
 }
 
 bool
