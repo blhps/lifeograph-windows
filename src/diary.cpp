@@ -269,7 +269,7 @@ Diary::get_path() const
 bool
 Diary::is_path_set() const
 {
-    return ( ( bool ) m_path.size() );
+    return( ( bool ) m_path.size() );
 }
 
 bool
@@ -305,7 +305,7 @@ Diary::compare_passphrase( const std::string& passphrase ) const
 bool
 Diary::is_passphrase_set() const
 {
-    return (bool) m_passphrase.size();
+    return( ( bool ) m_passphrase.size() );
 }
 
 void
@@ -396,7 +396,7 @@ Diary::read_plain()
 {
     if( ! m_ifstream->is_open() )
     {
-        print_error( "internal error while reading the diary file: " + m_path );
+        print_error( "Internal error while reading the diary file: " + m_path );
         clear();
         return LIFEO::COULD_NOT_START;
     }
@@ -1038,7 +1038,7 @@ Diary::parse_db_body_text_1010( std::istream& stream )
                     if( iter_tag != m_tags.end() )
                     {
                         entry_new->add_tag( iter_tag->second );
-                        if( line[1] == 'T' )
+                        if( line[ 1 ] == 'T' )
                             entry_new->set_theme_tag( iter_tag->second );
                     }
                     else
