@@ -44,6 +44,7 @@ dialog_tags_proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 }
 
 DialogTags::DialogTags()
+:   m_flag_filter( true )
 {
 
 }
@@ -158,7 +159,7 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             }
             return FALSE;
         case WM_NOTIFY:
-            if( wParam == IDTV_TAG_LIST && ( ( LPNMHDR ) lParam )->code == NM_DBLCLK )
+            if( wParam == IDTV_TAG_LIST && ( ( LPNMHDR ) lParam )->code == NM_CLICK )
             {
                 DWORD dwpos = GetMessagePos();
                 TVHITTESTINFO ht = { 0 };
@@ -176,8 +177,10 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                     if( TreeView_GetItem( m_list, &tvi ) )
                     {
                         DiaryElement* elem = Diary::d->get_element( tvi.lParam );
+                        m_flag_filter = false;
                         if( elem && elem->get_type() == DiaryElement::ET_TAG )
                             SetWindowText( m_edit, convert_utf8_to_16( elem->get_name() ) );
+                        m_flag_filter = true;
                     }
                 }
             }
@@ -228,7 +231,8 @@ DialogTags::handle_entry_changed()
         }
     }
     
-    update_list();
+    if( m_flag_filter )
+        update_list();
 }
 
 HTREEITEM

@@ -60,6 +60,8 @@ class DialogTags
         HWND                        m_button_theme;
         HWND                        m_button_action;
         HWND                        m_list;
+        
+        bool                        m_flag_filter;
 };
 
 } // end of namespace LIFEO
