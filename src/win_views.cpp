@@ -208,6 +208,7 @@ EntryView::clear()
     m_ptr2elem = NULL;
     m_richedit->set_richtext( NULL );
     m_tag_widget->set_entry( NULL );
+    m_tag_widget->update();
     m_entry_sync = NULL;
 }
 

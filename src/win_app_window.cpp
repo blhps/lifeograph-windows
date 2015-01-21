@@ -491,7 +491,7 @@ WinAppWindow::finish_editing( bool opt_save )
         
     Diary::d->clear();
     m_entry_view->clear();
-    update_entry_list();
+    TreeView_DeleteAllItems( m_list );
     update_calendar();
     update_title();
 
