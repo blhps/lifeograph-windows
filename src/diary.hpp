@@ -190,6 +190,8 @@ class Diary : public DiaryElement
         // TAGS
         PoolTags*               get_tags()
         { return &m_tags; }
+        PoolCategoriesTags*     get_tag_categories()
+        { return &m_tag_categories; }
         CategoryTags*           create_tag_ctg();
         CategoryTags*           create_tag_ctg( const Ustring& );
         void                    dismiss_tag_ctg( CategoryTags*, bool = false );

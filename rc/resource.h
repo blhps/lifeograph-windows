@@ -48,4 +48,6 @@
 // OTHERS
 #define IDCC_TAGS                               40901
 #define IDLV_MAIN                               40911
+#define IDTV_TAG_LIST                           40921
 #define IDCAL_MAIN                              40950
+

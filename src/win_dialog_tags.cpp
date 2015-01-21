@@ -20,6 +20,7 @@
 ***********************************************************************************/
 
 
+#include <windowsx.h>
 #include "win_dialog_tags.hpp"
 
 #include "../rc/resource.h"
@@ -70,21 +71,36 @@ DialogTags::launch( HWND hw_par, Diary* diary, Entry* entry, const Wstring& name
 bool
 DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
-	switch( msg )
+    switch( msg )
     {
     	case WM_INITDIALOG:
+        {
             // HWNDs
             m_hwnd = hwnd;
 
             m_edit = GetDlgItem( hwnd, IDE_TAG_NAME );
             m_button_theme = GetDlgItem( hwnd, IDB_TAG_THEME );
             m_button_action = GetDlgItem( hwnd, IDB_TAG_ACTION );
+            m_list = GetDlgItem( hwnd, IDTV_TAG_LIST );
+            
+            // IMAGELIST
+            HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_COLOR24, 0, 5 );
+            HBITMAP hbitmap = ( HBITMAP ) LoadImage( Lifeograph::p->hInst,
+                                                     MAKEINTRESOURCE( IDBM_ENTRY16 ),
+                                                     IMAGE_BITMAP, 0, 0,
+                                                     LR_LOADTRANSPARENT );
+            ImageList_Add( himagelist, hbitmap, NULL );
+            DeleteObject( hbitmap );
+            TreeView_SetImageList( m_list, himagelist, TVSIL_NORMAL );
 
             SetWindowText( m_edit, m_name.c_str() );
+
+            update_list();
 
             //EnableWindow( GetDlgItem( m_hwnd, IDOK ), false );
 
             return TRUE;
+        }
         case WM_COMMAND:
             switch( LOWORD( wParam ) )
             {
@@ -141,7 +157,31 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                 }
             }
             return FALSE;
+        case WM_NOTIFY:
+            if( wParam == IDTV_TAG_LIST && ( ( LPNMHDR ) lParam )->code == NM_DBLCLK )
+            {
+                DWORD dwpos = GetMessagePos();
+                TVHITTESTINFO ht = { 0 };
+                ht.pt.x = GET_X_LPARAM( dwpos );
+                ht.pt.y = GET_Y_LPARAM( dwpos );
+                MapWindowPoints( HWND_DESKTOP, m_list, &ht.pt, 1 );
 
+                TreeView_HitTest( m_list, &ht );
+
+                if( ht.flags & TVHT_ONITEM )
+                {
+                    TVITEM tvi;
+                    tvi.mask        = TVIF_PARAM;
+                    tvi.hItem       = ht.hItem;
+                    if( TreeView_GetItem( m_list, &tvi ) )
+                    {
+                        DiaryElement* elem = Diary::d->get_element( tvi.lParam );
+                        if( elem && elem->get_type() == DiaryElement::ET_TAG )
+                            SetWindowText( m_edit, convert_utf8_to_16( elem->get_name() ) );
+                    }
+                }
+            }
+            return FALSE;
         default:
             return FALSE;
     }
@@ -187,5 +227,87 @@ DialogTags::handle_entry_changed()
             }
         }
     }
+    
+    update_list();
+}
+
+HTREEITEM
+DialogTags::add_list_elem( DiaryElement* elem, HTREEITEM hti_root, bool flag_bold )
+{
+    TVITEM tvi;
+    TVINSERTSTRUCT tvins;
+    HTREEITEM hPrev = ( HTREEITEM ) TVI_FIRST;
+
+    tvi.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_PARAM;
+    tvi.pszText = HELPERS::convert_utf8_to_16( elem->get_list_str() );
+    tvi.cchTextMax = sizeof( tvi.pszText ) / sizeof( tvi.pszText[ 0 ] );
+    tvi.iImage = tvi.iSelectedImage = elem->get_icon();
+    tvi.lParam = ( LPARAM ) elem->get_id();
+
+    if( flag_bold )
+    {
+        tvi.mask |= TVIF_STATE;
+        tvi.state = TVIS_BOLD;
+    }
+
+    tvins.item = tvi;
+    tvins.hInsertAfter = hPrev;
+    tvins.hParent = hti_root;
+
+    elem->m_list_data = ( HTREEITEM ) SendMessage( m_list,
+                                                   TVM_INSERTITEM,
+                                                   0,
+                                                   ( LPARAM ) ( LPTVINSERTSTRUCT ) &tvins );
+
+    return elem->m_list_data;
+}
+
+void
+DialogTags::update_list()
+{
+    SendMessage( m_list, TVM_DELETEITEM, 0, ( LPARAM ) NULL );
+    Ustring filter = convert_utf16_to_8( m_name.c_str() );
+
+    // ROOT TAGS
+    for( auto& kv_tag : *Diary::d->get_tags() )
+    {
+        Tag* tag( kv_tag.second );
+        if( tag->get_category() == NULL )
+        {
+            if( !m_name.empty() && tag->get_name().find( filter ) == Ustring::npos )
+                continue;
+
+            add_list_elem( tag, ( HTREEITEM ) TVI_ROOT );
+        }
+    }
+
+    // CATEGORIES
+    for( auto& kv_category : *Diary::d->get_tag_categories() )
+    {
+        CategoryTags* category = kv_category.second;
+        HTREEITEM hti_ctg;
+        bool ctg_added( false );
+
+        for( Tag* tag : *category )
+        {
+            if( !m_name.empty() && tag->get_name().find( filter ) == Ustring::npos )
+                continue;
+
+            if( !ctg_added )
+            {
+                hti_ctg = add_list_elem( category, ( HTREEITEM ) TVI_ROOT, true );
+                ctg_added = true;
+            }
+
+            add_list_elem( tag, hti_ctg );
+        }
+
+        if( category->get_expanded() )
+            TreeView_Expand( m_list, hti_ctg, TVE_EXPAND );
+    }
+
+    // UNTAGGED PSEUDO TAG
+    if( m_name.empty() )
+        add_list_elem( Diary::d->get_untagged(), ( HTREEITEM ) TVI_ROOT );
 }
 

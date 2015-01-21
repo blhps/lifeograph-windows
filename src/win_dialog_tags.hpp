@@ -43,10 +43,12 @@ class DialogTags
 
         bool                        proc( HWND, UINT, WPARAM, LPARAM );
 
-        static DialogTags*      ptr;
+        static DialogTags*          ptr;
 
     protected:
         void                        handle_entry_changed();
+        void                        update_list();
+        HTREEITEM                   add_list_elem( DiaryElement*, HTREEITEM, bool = false );
 
         Diary*                      m_ptr2diary;
         Entry*                      m_ptr2entry;
@@ -57,6 +59,7 @@ class DialogTags
         HWND                        m_edit;
         HWND                        m_button_theme;
         HWND                        m_button_action;
+        HWND                        m_list;
 };
 
 } // end of namespace LIFEO
