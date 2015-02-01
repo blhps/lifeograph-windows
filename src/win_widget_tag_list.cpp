@@ -60,9 +60,9 @@ WidgetTagList::update_full()
 
     const int editor_width = rect.right * WinAppWindow::EDITOR_RATIO;
     handle_resize( editor_width, rect.bottom );
-    const int editor_height = rect.bottom - m_height;
+    const int editor_height = rect.bottom - m_height - WinAppWindow::TOOLBAR_HEIGHT;
 
-    MoveWindow( WinAppWindow::p->m_entry_view->m_richedit->m_hwnd, 0, 0,
+    MoveWindow( WinAppWindow::p->m_entry_view->m_richedit->m_hwnd, 0, WinAppWindow::TOOLBAR_HEIGHT,
                 editor_width, editor_height, TRUE );
 
     rect.top = editor_height;

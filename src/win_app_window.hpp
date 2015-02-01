@@ -42,6 +42,7 @@ class WinAppWindow
 {
     public:
         static constexpr float EDITOR_RATIO = 0.6;
+        static constexpr int TOOLBAR_HEIGHT = 35;
 
                                     WinAppWindow();
                                     ~WinAppWindow();
@@ -50,6 +51,7 @@ class WinAppWindow
         HWND                        get_hwnd() const
         { return m_hwnd; }
         LRESULT                     proc( HWND, UINT, WPARAM, LPARAM );
+        BOOL                        proc_toolbar( HWND, UINT, WPARAM, LPARAM );
         void                        handle_create();
         void                        handle_resize( short, short );
         void                        handle_notify( int, LPARAM );
@@ -75,6 +77,7 @@ class WinAppWindow
         bool                        authorize();
 
         bool                        confirm_dismiss_element( const DiaryElement* );
+        VOID APIENTRY               display_context_menu( HWND, HWND, int id );
 
         void                        login();
         bool                        finish_editing( bool = true );
@@ -104,9 +107,12 @@ class WinAppWindow
         int                         m_seconds_remaining;
         int                         m_auto_logout_status; // reflects the result of all factors
 
+        HWND                        m_toolbar;
         HWND                        m_hwnd;
         HWND                        m_calendar;
         HWND                        m_list;
+
+        HMENU                       m_hmenu;
 };
 
 } // end of namespace LIFEO

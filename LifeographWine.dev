@@ -28,8 +28,8 @@ Folders=
 IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=3
-CompilerSettings=0000000100000000000001000
-UnitCount=33
+CompilerSettings=0000000100000000001000000
+UnitCount=35
 
 [VersionInfo]
 Major=1
@@ -372,6 +372,26 @@ BuildCmd=
 
 [Unit33]
 FileName=src\win_dialog_tags.cpp
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit34]
+FileName=src\win_wao.cpp
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit35]
+FileName=src\win_wao.hpp
 CompileCpp=1
 Folder=
 Compile=1

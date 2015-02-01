@@ -26,6 +26,8 @@
 #include "win_app_window.hpp"
 #ifndef LIFEO_WINDOZE
 #include "dialog_preferences.hpp"
+#else
+#include "win_wao.hpp"
 #endif
 #include "helpers.hpp"
 
@@ -176,6 +178,8 @@ Lifeograph::on_startup()
 {
 #ifndef LIFEO_WINDOZE
     Gtk::Application::on_startup();
+#else
+    WAO_init();
 #endif
 
     // SETTINGS

@@ -1,12 +1,33 @@
+/***********************************************************************************
+
+    Copyright (C) 2014-2015 Ahmet Öztürk (aoz_2@yahoo.com)
+
+    This file is part of Lifeograph.
+
+    Lifeograph is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Lifeograph is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Lifeograph.  If not, see <http://www.gnu.org/licenses/>.
+
+***********************************************************************************/
+
+
 #include <windows.h>
 #include <commctrl.h>
 #include <richedit.h>
 #include "resource.h"
 
 
-
 // MENUS ===========================================================================================
-LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+/*LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDM_MAIN MENU
 {
     POPUP "&Diary"
@@ -29,9 +50,39 @@ IDM_MAIN MENU
     {
         MENUITEM "&About...", IDMI_ABOUT
     }
+}*/
+
+IDM_DIARY MENU
+{
+    POPUP "&Diary"
+    {
+        MENUITEM "&Create Diary...", IDMI_DIARY_CREATE
+        MENUITEM "&Open Diary...", IDMI_DIARY_OPEN
+        MENUITEM SEPARATOR
+        MENUITEM "&Encrypt...", IDMI_DIARY_ENCRYPT
+        MENUITEM "&Change Password...", IDMI_DIARY_CHANGE_PASSWORD
+        MENUITEM "E&xport...", IDMI_EXPORT
+        MENUITEM SEPARATOR
+        MENUITEM "Quit &without Saving", IDMI_QUIT_WO_SAVE
+        MENUITEM "&Quit", IDMI_QUIT
+    }
 }
 
-
+IDM_ENTRY MENU
+{
+    POPUP "&Entry"
+    {
+        MENUITEM "Favorite", IDMI_ENTRY_FAVORITE
+        MENUITEM SEPARATOR
+        MENUITEM "Not To Do", IDMI_ENTRY_TODO_NOT
+        MENUITEM "Open", IDMI_ENTRY_TODO_OPEN
+        MENUITEM "In Progress", IDMI_ENTRY_TODO_PROGRESSED
+        MENUITEM "Done", IDMI_ENTRY_TODO_DONE
+        MENUITEM "Canceled", IDMI_ENTRY_TODO_CANCELED
+        MENUITEM SEPARATOR
+        MENUITEM "&Dismiss...", IDMI_ENTRY_DISMISS
+    }
+}
 
 // DIALOGS =========================================================================================
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
@@ -72,6 +123,33 @@ FONT 8, "Ms Shell Dlg"
     DEFPUSHBUTTON   "Add", IDB_TAG_ACTION, 140, 200, 50, 15, 0, WS_EX_LEFT
 }
 
+
+// TOOLBARS ========================================================================================
+#define RCWAOTBSTLBTN(T, A, B, C, D, E, F) CONTROL T, A, "wao_BUTTON_0", WS_CHILD|WS_VISIBLE|B, C, D, E, F
+#define RCWAOTBSTLCBT(T, A, B, C, D, E, F) CONTROL T, A, "wao_BUTTON_Chk", WS_CHILD|WS_VISIBLE|B, C, D, E, F
+
+#define RCWAOTBBUTTON(A, B) CONTROL "", A, "wao_BUTTON_0",   WS_CHILD|WS_VISIBLE|BS_ICON, B, 3, 15, 15
+#define RCWAOTBCHKBTN(A, B) CONTROL "", A, "wao_BUTTON_Chk", WS_CHILD|WS_VISIBLE|BS_ICON, B, 3, 15, 15
+#define RCWAOTBRDOBTN(A, B) CONTROL "", A, "wao_BUTTON_Chk", WS_CHILD|WS_VISIBLE|WS_GROUP|BS_ICON|BS_RADIOBUTTON, B, 0, 15, 15
+#define RCWAOTBRDIBTN(A, B) CONTROL "", A, "wao_BUTTON_Chk", WS_CHILD|WS_VISIBLE|BS_ICON|BS_RADIOBUTTON, B, 0, 15, 15
+#define RCWAOTBBTNTXT(T, A, B, C) CONTROL T, A, "wao_BUTTON_0",   WS_CHILD|WS_VISIBLE, B, 3, C, 15
+#define RCWAOTBCHKBTX(T, A, B, C) CONTROL T, A, "wao_BUTTON_Chk", WS_CHILD|WS_VISIBLE, B, 3, C, 15
+#define RCWAOTBRDOBTX(T, A, B, C) CONTROL T, A, "wao_BUTTON_Chk", WS_CHILD|WS_VISIBLE|WS_GROUP|BS_RADIOBUTTON, B, 0, C, 15
+#define RCWAOTBRDIBTX(T, A, B, C) CONTROL T, A, "wao_BUTTON_Chk", WS_CHILD|WS_VISIBLE|BS_RADIOBUTTON, B, 0, C, 15
+
+IDTB_MAIN DIALOG 0, 0, 350, 15
+STYLE WS_CHILD | WS_VISIBLE
+FONT 8, "Ms Shell Dlg"
+{
+    RCWAOTBBTNTXT( "Diary", IDB_DIARY, 5, 25 )
+    RCWAOTBBTNTXT( "Today", IDB_TODAY, 40, 25 )
+    RCWAOTBBUTTON( IDB_ELEM, 75 )
+    RCWAOTBBTNTXT( "Entry", IDB_ELEM_TITLE, 91, 149 )
+    EDITTEXT     IDE_SEARCH,  250, 3, 80, 14, ES_AUTOHSCROLL, WS_EX_LEFT
+}
+
 // ICONS ===========================================================================================
 IDBM_ENTRY16        BITMAP          "icons\\elem-16.bmp"
+
+IDB_ELEM            ICON            "icons\\entry-16.ico"
 

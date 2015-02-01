@@ -43,17 +43,25 @@
 #include "strings.hpp"
 #include "lifeograph.hpp"
 #include "win_app_window.hpp"
+#include "win_wao.hpp"
 #include "win_dialog_password.hpp"
 #include "win_dialog_tags.hpp"
 
 
 using namespace LIFEO;
 
+
 // NON-MEMBER PROCEDURES
 inline static LRESULT CALLBACK
 app_window_proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
     return WinAppWindow::p->proc( hwnd, msg, wParam, lParam );
+}
+
+inline BOOL CALLBACK
+toolbar_proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
+{
+    return WinAppWindow::p->proc_toolbar( hwnd, msg, wParam, lParam );
 }
 
 int CALLBACK
@@ -134,7 +142,7 @@ WinAppWindow::run()
     wc.hIcon         = LoadIcon( Lifeograph::hInst, L"A" );
     wc.hCursor       = LoadCursor( NULL, IDC_ARROW );
     wc.hbrBackground = ( HBRUSH ) ( COLOR_WINDOW + 1 );
-    wc.lpszMenuName  = MAKEINTRESOURCE( IDM_MAIN );
+    wc.lpszMenuName  = L"";//MAKEINTRESOURCE( IDM_MAIN );
     wc.lpszClassName = L"WindowClass";
     wc.hIconSm       = LoadIcon( Lifeograph::hInst, L"A" ); // A is name used by project icons
     
@@ -145,7 +153,7 @@ WinAppWindow::run()
         return 0;
     }
 
-    hwnd = CreateWindowEx( WS_EX_CLIENTEDGE,
+    hwnd = CreateWindowEx( WS_EX_WINDOWEDGE,
                            L"WindowClass",
                            L"Lifeograph",
                            WS_OVERLAPPEDWINDOW,
@@ -188,7 +196,7 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
             SetFocus( GetDlgItem( hwnd, IDRT_MAIN ) );
             break;
         case WM_ENTERMENULOOP:
-            if( wParam == false )
+            if( wParam == true )
                 update_menu();
             break;
         case WM_COMMAND:
@@ -226,8 +234,8 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     m_entry_view->dismiss_entry();
                     break;
                 case IDMI_ABOUT:
-                    MessageBoxA( NULL, "Lifeograph for Windows  0.1.1\n\n"
-                                       "Copyright (C) 2014 Ahmet Öztürk\n"
+                    MessageBoxA( NULL, "Lifeograph for Windows  0.2.0.alpha1\n\n"
+                                       "Copyright (C) 2014-2015 Ahmet Öztürk\n"
                                        "Lifeograph is licensed under GNU Public License v3\n\n"
                                        "http://lifeograph.sourceforge.net",
                                  "About...", MB_OK );
@@ -267,6 +275,27 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
     return 0;
 }
 
+BOOL
+WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
+{
+    switch( msg )
+    {
+        case WM_COMMAND:
+            switch( LOWORD( wParam ) )
+            {
+                case IDB_DIARY:
+                    display_context_menu( m_hwnd, GetDlgItem( hwnd, IDB_DIARY ), IDM_DIARY );
+                    return TRUE;
+                case IDB_ELEM:
+                    display_context_menu( m_hwnd, GetDlgItem( hwnd, IDB_ELEM ), IDM_ENTRY );
+                    return TRUE;
+            }
+            return FALSE;
+        default:
+            return WAO_toolbar_proc( hwnd, msg, wParam, lParam );
+    }
+}
+
 void
 WinAppWindow::handle_create()
 {
@@ -282,6 +311,10 @@ WinAppWindow::handle_create()
         MessageBoxA( NULL, "Failed to load Rich Edit", "Error", MB_OK | MB_ICONERROR );
         return;
     }
+    
+    // TOOLBAR
+    m_toolbar = CreateDialog( Lifeograph::hInst, MAKEINTRESOURCE( IDTB_MAIN ),
+                              m_hwnd, toolbar_proc );
 
     // RICH EDIT
     m_entry_view->m_richedit->m_hwnd =
@@ -331,14 +364,18 @@ WinAppWindow::handle_resize( short width, short height )
     
     const int editor_width = width * EDITOR_RATIO;
 
+    MoveWindow( m_toolbar, 0, 0, width, TOOLBAR_HEIGHT, TRUE );
+
     m_entry_view->m_tag_widget->handle_resize( editor_width, height );
 
-    const int editor_height = height - m_entry_view->m_tag_widget->get_height();
-    
-    MoveWindow( m_entry_view->m_richedit->m_hwnd, 0, 0, editor_width, editor_height, TRUE );
+    const int editor_height = height - m_entry_view->m_tag_widget->get_height() - TOOLBAR_HEIGHT;
+
+    MoveWindow( m_entry_view->m_richedit->m_hwnd, 0, TOOLBAR_HEIGHT, editor_width, editor_height,
+                TRUE );
 
     MoveWindow( m_list,
-                editor_width, 0, width - editor_width, height - rc.bottom,
+                editor_width, TOOLBAR_HEIGHT,
+                width - editor_width, height - rc.bottom - TOOLBAR_HEIGHT,
                 TRUE );
 
     MoveWindow( m_calendar,
@@ -346,7 +383,7 @@ WinAppWindow::handle_resize( short width, short height )
                 TRUE );
 
     ListView_SetColumnWidth( m_list, 0, width - editor_width - GetSystemMetrics( SM_CXVSCROLL ) );
-    
+
     rc.left = 0;
     rc.top = editor_height;
     rc.right = editor_width;
@@ -544,6 +581,24 @@ WinAppWindow::login()
         startup_elem->show();
 }
 
+VOID APIENTRY
+WinAppWindow::display_context_menu( HWND hwnd, HWND hw_button, int id )
+{
+    RECT rect;
+    GetWindowRect( hw_button, &rect );
+
+    if( ( m_hmenu = LoadMenu( Lifeograph::hInst, MAKEINTRESOURCE( id ) ) ) == NULL )
+        return;
+
+    // TrackPopupMenu cannot display the menu bar so get a handle to the first shortcut menu
+    HMENU hmenuTrackPopup = GetSubMenu( m_hmenu, 0 );
+
+    // Display the shortcut menu. Track the right mouse button
+    TrackPopupMenu( hmenuTrackPopup, TPM_LEFTALIGN, rect.left, rect.bottom, 0, hwnd, NULL );
+
+    DestroyMenu( m_hmenu );
+}
+
 void
 WinAppWindow::update_title()
 {
@@ -564,22 +619,21 @@ WinAppWindow::update_title()
 void
 WinAppWindow::update_menu()
 {
-    HMENU hmenu = GetMenu( m_hwnd );
     bool logged_in = Lifeograph::loginstatus == Lifeograph::LOGGED_IN;
     bool encrypted = Diary::d->is_encrypted();
     
-    EnableMenuItem( hmenu, IDMI_DIARY_ENCRYPT,
+    EnableMenuItem( m_hmenu, IDMI_DIARY_ENCRYPT,
                     MF_BYCOMMAND | ( logged_in && !encrypted ? MF_ENABLED : MF_GRAYED ) );
                     
-    EnableMenuItem( hmenu, IDMI_DIARY_CHANGE_PASSWORD,
+    EnableMenuItem( m_hmenu, IDMI_DIARY_CHANGE_PASSWORD,
                     MF_BYCOMMAND | ( logged_in && encrypted ? MF_ENABLED : MF_GRAYED ) );
 
-    EnableMenuItem( hmenu, IDMI_EXPORT,
+    EnableMenuItem( m_hmenu, IDMI_EXPORT,
                     MF_BYCOMMAND | ( logged_in ? MF_ENABLED : MF_GRAYED ) );
-    EnableMenuItem( hmenu, IDMI_QUIT_WO_SAVE,
+    EnableMenuItem( m_hmenu, IDMI_QUIT_WO_SAVE,
                     MF_BYCOMMAND | ( logged_in ? MF_ENABLED : MF_GRAYED ) );
                             
-    EnableMenuItem( hmenu, IDMI_ENTRY_DISMISS,
+    EnableMenuItem( m_hmenu, IDMI_ENTRY_DISMISS,
                     MF_BYCOMMAND | ( m_entry_view->get_element() ? MF_ENABLED : MF_GRAYED ) );
                             
     //CheckMenuItem( hmenu, IDMI_, MF_BYCOMMAND | ( ? MF_CHECKED : MF_UNCHECKED ) );
