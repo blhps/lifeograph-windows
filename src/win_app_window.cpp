@@ -245,6 +245,9 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                 case IDMI_ENTRY_TODO_CANCELED:
                     m_entry_view->set_todo_status( ES::CANCELED );
                     break;
+                case IDMI_ENTRY_FAVORITE:
+                    m_entry_view->toggle_favoredness();
+                    break;
                 case IDMI_ENTRY_DISMISS:
                     m_entry_view->dismiss_entry();
                     break;
@@ -671,6 +674,10 @@ WinAppWindow::update_menu()
                        MF_BYCOMMAND | ( ( status & ES::DONE ) ? MF_CHECKED : MF_UNCHECKED ) );
         CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_CANCELED,
                        MF_BYCOMMAND | ( ( status & ES::CANCELED ) ? MF_CHECKED : MF_UNCHECKED ) );
+
+        CheckMenuItem( m_hmenu, IDMI_ENTRY_FAVORITE,
+                       MF_BYCOMMAND | ( m_entry_view->get_element()->is_favored() ?
+                                            MF_CHECKED : MF_UNCHECKED ) );
     }
 }
 
