@@ -98,7 +98,9 @@ EntryView::set_todo_status( ElemStatus status )
         return;
 
     m_ptr2elem->set_todo_status( status );
-    //AppWindow::p->panel_main->set_icon( m_ptr2elem->get_icon32() );
+    
+    //WinAppWindow::p->panel_main->set_icon( m_ptr2elem->get_icon32() );
+    WinAppWindow::p->update_list_elem( m_ptr2elem );
 }
 
 void

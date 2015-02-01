@@ -56,7 +56,7 @@
 #define IDMI_ENTRY_TODO_OPEN                    40013
 #define IDMI_ENTRY_TODO_PROGRESSED              40014
 #define IDMI_ENTRY_TODO_DONE                    40015
-#define IDMI_ENTRY_TODO_CANCELED                40015
+#define IDMI_ENTRY_TODO_CANCELED                40016
 #define IDMI_ENTRY_DISMISS                      40018
 #define IDMI_ABOUT                              40090
 #define IDMI_QUIT_WO_SAVE                       40098

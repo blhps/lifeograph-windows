@@ -230,6 +230,21 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                 case IDMI_QUIT:
                     PostMessage( hwnd, WM_CLOSE, 0, 0 );
                     break;
+                case IDMI_ENTRY_TODO_NOT:
+                    m_entry_view->set_todo_status( ES::NOT_TODO );
+                    break;
+                case IDMI_ENTRY_TODO_OPEN:
+                    m_entry_view->set_todo_status( ES::TODO );
+                    break;
+                case IDMI_ENTRY_TODO_PROGRESSED:
+                    m_entry_view->set_todo_status( ES::PROGRESSED );
+                    break;
+                case IDMI_ENTRY_TODO_DONE:
+                    m_entry_view->set_todo_status( ES::DONE );
+                    break;
+                case IDMI_ENTRY_TODO_CANCELED:
+                    m_entry_view->set_todo_status( ES::CANCELED );
+                    break;
                 case IDMI_ENTRY_DISMISS:
                     m_entry_view->dismiss_entry();
                     break;
@@ -540,6 +555,11 @@ WinAppWindow::finish_editing( bool opt_save )
 void
 WinAppWindow::logout( bool opt_save )
 {
+    EnableWindow( GetDlgItem( m_toolbar, IDB_TODAY ), FALSE );
+    EnableWindow( GetDlgItem( m_toolbar, IDB_ELEM ), FALSE );
+    EnableWindow( GetDlgItem( m_toolbar, IDB_ELEM_TITLE ), FALSE );
+    EnableWindow( GetDlgItem( m_toolbar, IDE_SEARCH ), FALSE );
+
     Lifeograph::p->m_flag_open_directly = false;   // should be reset to prevent logging in again
     if( finish_editing( opt_save ) )
         m_login->handle_logout();
@@ -574,6 +594,11 @@ WinAppWindow::login()
     Lifeograph::loginstatus = Lifeograph::LOGGED_IN;
 
     update_title();
+
+    EnableWindow( GetDlgItem( m_toolbar, IDB_TODAY ), TRUE );
+    EnableWindow( GetDlgItem( m_toolbar, IDB_ELEM ), TRUE );
+    EnableWindow( GetDlgItem( m_toolbar, IDB_ELEM_TITLE ), TRUE );
+    EnableWindow( GetDlgItem( m_toolbar, IDE_SEARCH ), TRUE );
 
     DiaryElement* startup_elem = Diary::d->get_startup_elem();
     
@@ -633,10 +658,20 @@ WinAppWindow::update_menu()
     EnableMenuItem( m_hmenu, IDMI_QUIT_WO_SAVE,
                     MF_BYCOMMAND | ( logged_in ? MF_ENABLED : MF_GRAYED ) );
                             
-    EnableMenuItem( m_hmenu, IDMI_ENTRY_DISMISS,
-                    MF_BYCOMMAND | ( m_entry_view->get_element() ? MF_ENABLED : MF_GRAYED ) );
-                            
-    //CheckMenuItem( hmenu, IDMI_, MF_BYCOMMAND | ( ? MF_CHECKED : MF_UNCHECKED ) );
+    if( logged_in )
+    {
+        ElemStatus status = m_entry_view->get_element()->get_status();
+        CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_NOT,
+                       MF_BYCOMMAND | ( ( status & ES::NOT_TODO ) ? MF_CHECKED : MF_UNCHECKED ) );
+        CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_OPEN,
+                       MF_BYCOMMAND | ( ( status & ES::TODO ) ? MF_CHECKED : MF_UNCHECKED ) );
+        CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_PROGRESSED,
+                       MF_BYCOMMAND | ( ( status & ES::PROGRESSED ) ? MF_CHECKED : MF_UNCHECKED ) );
+        CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_DONE,
+                       MF_BYCOMMAND | ( ( status & ES::DONE ) ? MF_CHECKED : MF_UNCHECKED ) );
+        CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_CANCELED,
+                       MF_BYCOMMAND | ( ( status & ES::CANCELED ) ? MF_CHECKED : MF_UNCHECKED ) );
+    }
 }
 
 BOOL
