@@ -304,6 +304,9 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                 case IDB_DIARY:
                     display_context_menu( m_hwnd, GetDlgItem( hwnd, IDB_DIARY ), IDM_DIARY );
                     return TRUE;
+                case IDB_TODAY:
+                    show_today();
+                    return TRUE;
                 case IDB_ELEM:
                     display_context_menu( m_hwnd, GetDlgItem( hwnd, IDB_ELEM ), IDM_ENTRY );
                     return TRUE;
@@ -924,6 +927,32 @@ WinAppWindow::handle_calendar_doubleclick()
     update_calendar();
 
     entry->show();
+}
+
+void
+WinAppWindow::show_today()
+{
+    Entry* entry_today = Diary::d->get_entry_today();
+    bool flag_add = false;
+
+    if( entry_today == NULL )   // add new entry if no entry exists on selected date
+    {
+        if( Diary::d->is_read_only() )
+            return;
+        else
+            flag_add = true;
+    }
+    else                        // or current entry is already at today
+    if( entry_today->get_date().get_pure() == m_entry_view->get_element()->get_date().get_pure() )
+        flag_add = true;
+
+    if( flag_add )
+    {
+        entry_today = Diary::d->add_today();
+        update_entry_list();
+    }
+
+    entry_today->show();
 }
 
 void

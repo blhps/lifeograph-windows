@@ -72,6 +72,8 @@ class WinAppWindow
         
         void                        handle_calendar_doubleclick();
         
+        void                        show_today();
+
         void                        start_tag_dialog( const Wstring& );
 
         bool                        authorize();
