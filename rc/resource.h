@@ -33,6 +33,7 @@
 #define IDD_PASSWORD                            151
 #define IDD_NEW_PASSWORD                        152
 #define IDD_TAGS                                155
+#define WAO_IDD_INPUT                           180
 
 
 // ICONS
@@ -75,7 +76,9 @@
 #define IDE_PASSWORD                            40201
 #define IDE_PASSWORD2                           40202
 #define IDE_SEARCH                              40205
+#define IDE_ELEM_DATE                           40211
 #define IDE_TAG_NAME                            40222
+#define WAO_IDE_INPUT                           40400
 
 // LABELS
 #define IDL_PASSWORD_MESSAGE                    40801

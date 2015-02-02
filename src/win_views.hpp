@@ -46,16 +46,15 @@ class EntryView : public ElementShower< Entry >
         {
             Ustring title;
 
-            if( ! m_ptr2elem->get_date().is_hidden() )
+            //if( ! m_ptr2elem->get_date().is_hidden() )
             {
                 title = m_ptr2elem->get_date().format_string();
                 title += "  ";
+                if( !m_ptr2elem->get_date().is_ordinal() )
+                    title += m_ptr2elem->get_date().get_weekday_str();
             }
-
-            if( m_ptr2elem->get_date().is_ordinal() )
-                title += m_ptr2elem->get_name();
-            else
-                title += m_ptr2elem->get_date().get_weekday_str();
+            //else
+              //  title = ;
 
             return title;
         }

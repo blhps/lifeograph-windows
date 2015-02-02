@@ -24,17 +24,22 @@
 #define LIFEOGRAPH_WIN_TOOLBARS_HEADER
 
 
+#include "../rc/resource.h"
+#include "helpers.hpp"
+
+
 // MESSAGES
-#define WAOM_TBBTNCREATED       0x7FA0  // toolbar button created
-#define WAOM_TBBTNCREATED_LW    9867    // really WAO msg (loword of wparam)
+#define WAOM_EDITACTIVATED      0x7FA0  // enter pressed
+#define WAOM_EDITACTIVATED_HW   9847    // to check if really WAO msg (hiword of wparam)
+#define WAOM_EDITABORTED        0x7FA1  // escape pressed
+#define WAON_EDITACTIVATED      157559847   // this is sent via WM_COMMAND
+#define WAOM_TBBTNCREATED       0x7FA2  // toolbar button created
+#define WAOM_TBBTNCREATED_LW    9867    // to check if really WAO msg (loword of wparam)
 
 // TIMER IDS
 #define WAO_TMR_TBRPW   1808  // toolbar button repeat wait
 #define WAO_TMR_TBRPT   1809  // toolbar button repeat
 
-// toolbar button messages
-#define WAOM_TBBTNCREATED       0x7FA0  // toolbar button created
-#define WAOM_TBBTNCREATED_LW    9867    // really WAO msg (loword of wparam)
 // toolbar button states
 #define WAO_TBBS_NORMAL     0
 #define WAO_TBBS_HOVERED    1
@@ -54,6 +59,25 @@
 bool WAO_init ();		// WAO INITIALIZATION
 
 BOOL CALLBACK WAO_toolbar_proc( HWND, UINT, WPARAM, LPARAM );
+
+LRESULT CALLBACK WAO_advanced_edit_proc( HWND, UINT, WPARAM, LPARAM, UINT_PTR, DWORD_PTR );
+
+class WAO_InputDlg
+{
+    public:
+                            WAO_InputDlg( const Wstring&, const Wstring& );
+
+        bool                launch( HWND, DLGPROC );
+
+        bool                proc( HWND, UINT, WPARAM, LPARAM );
+
+        Wstring             m_text;
+
+    private:
+        Wstring             m_title;
+        bool                m_result;
+        HWND                m_hwnd;
+};
 
 #endif
 

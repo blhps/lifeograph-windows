@@ -31,6 +31,7 @@
 #include "lifeograph.hpp"
 #include "win_app_window.hpp"
 #include "win_views.hpp"
+#include "../rc/resource.h"
 
 
 using namespace LIFEO;
@@ -191,8 +192,8 @@ void
 EntryView::show( Entry& entry )
 {
     // do nothing if entry is already the current element:
-    //if( AppWindow::p->panel_main->is_cur_elem( &entry ) )
-        //return;
+    if( m_ptr2elem && m_ptr2elem->get_id() == entry.get_id() )
+        return;
 
     m_ptr2elem = &entry; // must be first thing
 
@@ -200,6 +201,10 @@ EntryView::show( Entry& entry )
     m_tag_widget->set_entry( m_ptr2elem );
     m_tag_widget->update_full();
     WinAppWindow::p->select_list_elem( m_ptr2elem );
+    HWND button = GetDlgItem( WinAppWindow::p->m_toolbar, IDB_ELEM_TITLE );
+    SetWindowText( button, HELPERS::convert_utf8_to_16( get_title_str() ) );
+    EnableWindow( button, entry.get_date().is_hidden() ? FALSE : TRUE );
+    InvalidateRect( button, NULL, TRUE );
 
     m_entry_sync = m_ptr2elem;
 }

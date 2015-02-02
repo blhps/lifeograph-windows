@@ -21,6 +21,7 @@
 
 
 #include <windows.h>
+#include <commctrl.h>
 
 #include "win_wao.hpp"
 
@@ -277,6 +278,30 @@ waoWC_buttonChkProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
     }
 }
 
+LRESULT CALLBACK
+WAO_advanced_edit_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam,
+                        UINT_PTR uIdSubclass, DWORD_PTR dwRefData )
+{
+    switch( msg )
+    {
+        case WM_KEYDOWN:
+            if( wparam == VK_RETURN )
+                SendMessage( GetParent( hwnd ),
+                             WAOM_EDITACTIVATED,
+                             MAKEWPARAM( GetWindowLong( hwnd, GWL_ID ), WAOM_EDITACTIVATED_HW ),
+                             ( LPARAM ) hwnd );
+            else if( wparam == VK_ESCAPE )
+                SendMessage( GetParent( hwnd ),
+                             WAOM_EDITABORTED,
+                             MAKEWPARAM( GetWindowLong( hwnd, GWL_ID ), WAOM_EDITACTIVATED_HW ),
+                             ( LPARAM ) hwnd );
+            break;
+        default:
+            return DefSubclassProc( hwnd, msg, wparam, lparam );
+    }
+    return 0;
+}
+
 #include <ctime>
 
 bool
@@ -309,6 +334,7 @@ WAO_init()
         MessageBoxA( NULL, "waoWC_buttonChk Registration Failed!", "WAO", MB_OK );
         return false;
     }
+
     return true;
 }
 
@@ -316,5 +342,51 @@ BOOL CALLBACK
 WAO_toolbar_proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
     return FALSE;
+}
+
+// INPUT DIALOG ====================================================================================
+WAO_InputDlg::WAO_InputDlg( const Wstring& title, const Wstring& text )
+:   m_title( title ), m_text( text )
+{
+}
+
+bool
+WAO_InputDlg::launch( HWND hWPar, DLGPROC redirProc )
+{
+    DialogBox( GetModuleHandle( NULL ), MAKEINTRESOURCE( WAO_IDD_INPUT ), hWPar, redirProc );
+    return m_result;
+}
+
+bool
+WAO_InputDlg::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
+{   
+    switch( msg )
+    {
+        case WM_INITDIALOG:
+            m_hwnd = hwnd;
+            SetWindowText( m_hwnd, m_title.c_str() );
+            SetDlgItemText( m_hwnd, WAO_IDE_INPUT, m_text.c_str() );
+            m_result = false;
+            return TRUE;
+        case WM_COMMAND:
+            switch( LOWORD( wParam ) )
+            {
+                case IDOK:
+                {
+                    m_result = true;
+                    wchar_t buffer[ 1024 ];
+                    GetDlgItemText( m_hwnd, WAO_IDE_INPUT, buffer, 1023 );
+                    m_text = buffer;
+                    EndDialog( m_hwnd, 0 );
+                }
+                return FALSE;
+            }
+            return FALSE;
+        case WM_DESTROY:
+            m_hwnd = NULL;	// whenever window is destroyed hW is nullified
+            return FALSE;
+        default:
+            return FALSE;
+    }
 }
 

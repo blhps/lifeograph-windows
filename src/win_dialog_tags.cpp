@@ -74,7 +74,7 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
     switch( msg )
     {
-    	case WM_INITDIALOG:
+        case WM_INITDIALOG:
         {
             // HWNDs
             m_hwnd = hwnd;

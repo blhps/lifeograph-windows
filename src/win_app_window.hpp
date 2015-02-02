@@ -29,6 +29,7 @@
 //#define _WIN32_IE 0x0400
 #include <commctrl.h>
 
+#include "win_wao.hpp"
 #include "win_login.hpp"
 #include "win_views.hpp"
 #include "helpers.hpp"
@@ -104,6 +105,8 @@ class WinAppWindow
         WinLogin*                   m_login;
         EntryView*                  m_entry_view;
         DiaryView*                  m_diary_view;
+
+        WAO_InputDlg*               m_input_dlg;
 
     //protected:
         int                         m_seconds_remaining;

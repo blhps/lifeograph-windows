@@ -43,7 +43,6 @@
 #include "strings.hpp"
 #include "lifeograph.hpp"
 #include "win_app_window.hpp"
-#include "win_wao.hpp"
 #include "win_dialog_password.hpp"
 #include "win_dialog_tags.hpp"
 
@@ -298,6 +297,37 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
     switch( msg )
     {
+        case WM_INITDIALOG:
+        {
+            HWND edit_date = GetDlgItem( hwnd, IDE_ELEM_DATE );
+            HWND button_title = GetDlgItem( hwnd, IDB_ELEM_TITLE );
+            SetWindowSubclass( edit_date, WAO_advanced_edit_proc, 0, 0 );
+            ShowWindow( edit_date, SW_HIDE );
+
+            return TRUE;
+        }
+        case WAOM_EDITACTIVATED:
+        {
+            wchar_t cstr[ 128 ];
+            GetWindowText( GetDlgItem( hwnd, IDE_ELEM_DATE ), cstr, 128 );
+            std::string str = convert_utf16_to_8( cstr );
+            Date date( str );
+            if( !date.is_set() )
+                return TRUE;
+
+            if( !date.is_ordinal() )
+                date.reset_order_1();
+
+            Diary::d->set_entry_date( m_entry_view->get_element(), date );
+
+            update_entry_list();
+            SetWindowText( GetDlgItem( hwnd, IDB_ELEM_TITLE ),
+                           HELPERS::convert_utf8_to_16( m_entry_view->get_title_str() ) );
+            //AppWindow::p->panel_diary->select_date_in_calendar( m_ptr2elem->get_date() );
+        }
+        case WAOM_EDITABORTED:
+            SetFocus( m_entry_view->m_richedit->m_hwnd );
+            return TRUE;
         case WM_COMMAND:
             switch( LOWORD( wParam ) )
             {
@@ -310,6 +340,24 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                 case IDB_ELEM:
                     display_context_menu( m_hwnd, GetDlgItem( hwnd, IDB_ELEM ), IDM_ENTRY );
                     return TRUE;
+                case IDE_ELEM_DATE:
+                    if( HIWORD( wParam ) == EN_KILLFOCUS )
+                    {
+                        ShowWindow( GetDlgItem( hwnd, IDE_ELEM_DATE ), SW_HIDE );
+                        ShowWindow( GetDlgItem( hwnd, IDB_ELEM_TITLE ) , SW_SHOW );
+                    }
+                    return TRUE;
+                case IDB_ELEM_TITLE:
+                {
+                    HWND edit_date = GetDlgItem( hwnd, IDE_ELEM_DATE );
+                    ShowWindow( GetDlgItem( hwnd, IDB_ELEM_TITLE ), SW_HIDE );
+                    ShowWindow( edit_date, SW_SHOW );
+                    SetWindowText( edit_date,
+                            HELPERS::convert_utf8_to_16(
+                                    m_entry_view->get_element()->get_date().format_string() ) );
+                    SetFocus( edit_date );
+                    return TRUE;
+                }
             }
             return FALSE;
         default:
