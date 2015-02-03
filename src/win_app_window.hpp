@@ -73,6 +73,8 @@ class WinAppWindow
         
         void                        handle_calendar_doubleclick();
         
+        void                        handle_search_string_changed();
+        
         void                        show_today();
 
         void                        start_tag_dialog( const Wstring& );
@@ -112,8 +114,13 @@ class WinAppWindow
         int                         m_seconds_remaining;
         int                         m_auto_logout_status; // reflects the result of all factors
 
-        HWND                        m_toolbar;
         HWND                        m_hwnd;
+
+        HWND                        m_toolbar;
+        HWND                        m_edit_search;
+        HWND                        m_edit_date;
+        HWND                        m_button_title;
+
         HWND                        m_calendar;
         HWND                        m_list;
 

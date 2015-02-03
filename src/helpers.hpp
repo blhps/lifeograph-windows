@@ -484,10 +484,18 @@ parse_color_sub( const std::string& color, int begin, int end )
 inline COLORREF
 parse_color( const std::string& color )
 {
-    return RGB( parse_color_sub( color, 1, 2 ),
-                parse_color_sub( color, 5, 6 ),
-                parse_color_sub( color, 9, 10 ) );
+    if( color.size() == 13 ) // #RRRRGGGGBBBB
+        return RGB( parse_color_sub( color, 1, 2 ),
+                    parse_color_sub( color, 5, 6 ),
+                    parse_color_sub( color, 9, 10 ) );
+    else // #RRGGBB
+        return RGB( parse_color_sub( color, 1, 2 ),
+                    parse_color_sub( color, 3, 4 ),
+                    parse_color_sub( color, 5, 6 ) );
 }
+
+COLORREF
+contrast2( COLORREF, COLORREF, COLORREF );
 
 COLORREF
 midtone( int, int, int, int, int, int, float );

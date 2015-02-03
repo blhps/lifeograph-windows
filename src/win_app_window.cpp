@@ -299,17 +299,18 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
     {
         case WM_INITDIALOG:
         {
-            HWND edit_date = GetDlgItem( hwnd, IDE_ELEM_DATE );
-            HWND button_title = GetDlgItem( hwnd, IDB_ELEM_TITLE );
-            SetWindowSubclass( edit_date, WAO_advanced_edit_proc, 0, 0 );
-            ShowWindow( edit_date, SW_HIDE );
+            m_edit_search = GetDlgItem( hwnd, IDE_SEARCH );
+            m_edit_date = GetDlgItem( hwnd, IDE_ELEM_DATE );
+            m_button_title = GetDlgItem( hwnd, IDB_ELEM_TITLE );
+            SetWindowSubclass( m_edit_date, WAO_advanced_edit_proc, 0, 0 );
+            ShowWindow( m_edit_date, SW_HIDE );
 
             return TRUE;
         }
         case WAOM_EDITACTIVATED:
         {
             wchar_t cstr[ 128 ];
-            GetWindowText( GetDlgItem( hwnd, IDE_ELEM_DATE ), cstr, 128 );
+            GetWindowText( m_edit_date, cstr, 128 );
             std::string str = convert_utf16_to_8( cstr );
             Date date( str );
             if( !date.is_set() )
@@ -321,7 +322,7 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             Diary::d->set_entry_date( m_entry_view->get_element(), date );
 
             update_entry_list();
-            SetWindowText( GetDlgItem( hwnd, IDB_ELEM_TITLE ),
+            SetWindowText( m_button_title,
                            HELPERS::convert_utf8_to_16( m_entry_view->get_title_str() ) );
             //AppWindow::p->panel_diary->select_date_in_calendar( m_ptr2elem->get_date() );
         }
@@ -343,21 +344,22 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                 case IDE_ELEM_DATE:
                     if( HIWORD( wParam ) == EN_KILLFOCUS )
                     {
-                        ShowWindow( GetDlgItem( hwnd, IDE_ELEM_DATE ), SW_HIDE );
-                        ShowWindow( GetDlgItem( hwnd, IDB_ELEM_TITLE ) , SW_SHOW );
+                        ShowWindow( m_edit_date, SW_HIDE );
+                        ShowWindow( m_button_title, SW_SHOW );
                     }
                     return TRUE;
                 case IDB_ELEM_TITLE:
-                {
-                    HWND edit_date = GetDlgItem( hwnd, IDE_ELEM_DATE );
-                    ShowWindow( GetDlgItem( hwnd, IDB_ELEM_TITLE ), SW_HIDE );
-                    ShowWindow( edit_date, SW_SHOW );
-                    SetWindowText( edit_date,
+                    ShowWindow( m_button_title, SW_HIDE );
+                    ShowWindow( m_edit_date, SW_SHOW );
+                    SetWindowText( m_edit_date,
                             HELPERS::convert_utf8_to_16(
                                     m_entry_view->get_element()->get_date().format_string() ) );
-                    SetFocus( edit_date );
+                    SetFocus( m_edit_date );
                     return TRUE;
-                }
+                case IDE_SEARCH:
+                    if( HIWORD( wParam ) == EN_CHANGE )
+                        handle_search_string_changed();
+                    return TRUE;
             }
             return FALSE;
         default:
@@ -591,6 +593,12 @@ WinAppWindow::finish_editing( bool opt_save )
 //    panel_diary->handle_logout();
 //    m_entry_view->get_buffer()->handle_logout();
 //    panel_extra->handle_logout();
+    SetWindowText( m_edit_search, L"" );
+
+    EnableWindow( GetDlgItem( m_toolbar, IDB_TODAY ), FALSE );
+    EnableWindow( GetDlgItem( m_toolbar, IDB_ELEM ), FALSE );
+    EnableWindow( m_button_title, FALSE );
+    EnableWindow( m_edit_search, FALSE );
 
     if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
         Lifeograph::loginstatus = Lifeograph::LOGGED_OUT;
@@ -609,11 +617,6 @@ WinAppWindow::finish_editing( bool opt_save )
 void
 WinAppWindow::logout( bool opt_save )
 {
-    EnableWindow( GetDlgItem( m_toolbar, IDB_TODAY ), FALSE );
-    EnableWindow( GetDlgItem( m_toolbar, IDB_ELEM ), FALSE );
-    EnableWindow( GetDlgItem( m_toolbar, IDB_ELEM_TITLE ), FALSE );
-    EnableWindow( GetDlgItem( m_toolbar, IDE_SEARCH ), FALSE );
-
     Lifeograph::p->m_flag_open_directly = false;   // should be reset to prevent logging in again
     if( finish_editing( opt_save ) )
         m_login->handle_logout();
@@ -651,8 +654,8 @@ WinAppWindow::login()
 
     EnableWindow( GetDlgItem( m_toolbar, IDB_TODAY ), TRUE );
     EnableWindow( GetDlgItem( m_toolbar, IDB_ELEM ), TRUE );
-    EnableWindow( GetDlgItem( m_toolbar, IDB_ELEM_TITLE ), TRUE );
-    EnableWindow( GetDlgItem( m_toolbar, IDE_SEARCH ), TRUE );
+    EnableWindow( m_button_title, TRUE );
+    EnableWindow( m_edit_search, TRUE );
 
     DiaryElement* startup_elem = Diary::d->get_startup_elem();
     
@@ -1044,5 +1047,47 @@ WinAppWindow::confirm_dismiss_element( const DiaryElement* elem )
                                           elem->get_name() ) ),
                     L"Confirm Dismiss",
                     MB_YESNO | MB_ICONWARNING ) == IDYES );
+}
+
+void
+WinAppWindow::handle_search_string_changed()
+{
+    if( Lifeograph::m_internaloperation ) return;
+    // current entry must be closed here or else it loses...
+    // ...changes since it was selected:
+    //AppWindow::p->m_entry_view->sync(); update_entry_list() does the syncing
+
+    int size( GetWindowTextLength( m_edit_search ) + 1 );
+    wchar_t *buffer = new wchar_t[ size ];
+    GetWindowText( m_edit_search, buffer, size );
+    const Wstring filterstring( buffer );
+
+    Diary::d->set_search_text( HELPERS::convert_utf16_to_8( buffer ) );
+    update_entry_list();    // syncs current entry
+
+    if( filterstring.size() > 0 )
+    {
+        m_entry_view->m_richedit->set_search_str( filterstring );
+
+        /*if( panel_diary->get_entry_count() > 0 )
+        {
+            if( AppWindow::p->panel_main->get_cur_elem_type() == DiaryElement::ET_ENTRY )
+                AppWindow::p->m_entry_view->get_buffer()->select_searchstr_next();
+        }*/
+
+        /*m_E_search->set_tooltip_markup(
+                Glib::ustring::compose(
+                        _( "Found in <b>%1</b> of <b>%2</b> entrie(s)" ),
+                        AppWindow::p->panel_diary->get_entry_count(), Diary::d->get_size() ) );*/
+    }
+    else
+    {
+        m_entry_view->m_richedit->set_search_str( L"" );
+        //m_E_search->set_tooltip_text( _( "Search text within entries" ) );
+    }
+
+    update_calendar();
+
+    delete buffer;
 }
 

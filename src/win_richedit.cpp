@@ -1446,11 +1446,12 @@ RichEdit::set_theme( const Theme* theme )
     m_format_comment->property_background_rgba() = theme->color_base; // to disable highlighting
 
     m_format_region->property_paragraph_background_rgba() = midtone(
-            theme->color_base, theme->color_text, 0.9 );
-    m_format_match->property_foreground_rgba() = theme->color_base;
-    m_format_match->property_background_rgba() = contrast2(
-            theme->color_base, Theme::s_color_match1, Theme::s_color_match2 );
-    m_format_markup_link->property_foreground_rgba() = color_mid;
+            theme->color_base, theme->color_text, 0.9 );*/
+    m_format_match.crTextColor = color_base;
+    m_format_match.crBackColor = contrast2( color_base,
+                                            parse_color( Theme::s_color_match1 ),
+                                            parse_color( Theme::s_color_match2 ) );
+    /*m_format_markup_link->property_foreground_rgba() = color_mid;
     m_format_link->property_foreground_rgba() = contrast2(
             theme->color_base, Theme::s_color_link1, Theme::s_color_link2 );
     m_format_link_broken->property_foreground_rgba() = contrast2(

@@ -506,6 +506,23 @@ midtone( const Gdk::RGBA& c1, const Gdk::RGBA& c2, float ratio )
 #else
 
 COLORREF
+contrast2( COLORREF bg, COLORREF c1, COLORREF c2 )
+{
+    double dist1 = ( fabs( GetRValue( bg ) - GetRValue( c1 ) ) +
+                     fabs( GetGValue( bg ) - GetGValue( c1 ) ) +
+                     fabs( GetBValue( bg ) - GetBValue( c1 ) ) );
+
+    double dist2 = ( fabs( GetRValue( bg ) - GetRValue( c2 ) ) +
+                     fabs( GetGValue( bg ) - GetGValue( c2 ) ) +
+                     fabs( GetBValue( bg ) - GetBValue( c2 ) ) );
+
+    if( dist1 > dist2 )
+        return c1;
+    else
+        return c2;
+}
+
+COLORREF
 midtone( int r1, int g1, int b1, int r2, int g2, int b2, float ratio )
 {
     return RGB(
