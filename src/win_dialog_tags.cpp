@@ -85,7 +85,7 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             m_list = GetDlgItem( hwnd, IDTV_TAG_LIST );
             
             // IMAGELIST
-            HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_COLOR24, 0, 5 );
+            HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_COLOR24, 0, 12 );
             HBITMAP hbitmap = ( HBITMAP ) LoadImage( Lifeograph::p->hInst,
                                                      MAKEINTRESOURCE( IDBM_ENTRY16 ),
                                                      IMAGE_BITMAP, 0, 0,

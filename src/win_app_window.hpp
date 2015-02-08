@@ -117,9 +117,11 @@ class WinAppWindow
         HWND                        m_hwnd;
 
         HWND                        m_toolbar;
-        HWND                        m_edit_search;
-        HWND                        m_edit_date;
+        HWND                        m_button_today;
+        HWND                        m_button_elem;
         HWND                        m_button_title;
+        HWND                        m_edit_date;
+        HWND                        m_edit_search;
 
         HWND                        m_calendar;
         HWND                        m_list;

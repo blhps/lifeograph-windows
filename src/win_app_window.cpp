@@ -302,8 +302,15 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             m_edit_search = GetDlgItem( hwnd, IDE_SEARCH );
             m_edit_date = GetDlgItem( hwnd, IDE_ELEM_DATE );
             m_button_title = GetDlgItem( hwnd, IDB_ELEM_TITLE );
+            m_button_today = GetDlgItem( hwnd, IDB_TODAY );
+            m_button_elem = GetDlgItem( hwnd, IDB_ELEM );
             SetWindowSubclass( m_edit_date, WAO_advanced_edit_proc, 0, 0 );
+
+            ShowWindow( m_button_today, SW_HIDE );
+            ShowWindow( m_button_elem, SW_HIDE );
+            ShowWindow( m_button_title, SW_HIDE );
             ShowWindow( m_edit_date, SW_HIDE );
+            ShowWindow( m_edit_search, SW_HIDE );
 
             return TRUE;
         }
@@ -595,10 +602,10 @@ WinAppWindow::finish_editing( bool opt_save )
 //    panel_extra->handle_logout();
     SetWindowText( m_edit_search, L"" );
 
-    EnableWindow( GetDlgItem( m_toolbar, IDB_TODAY ), FALSE );
-    EnableWindow( GetDlgItem( m_toolbar, IDB_ELEM ), FALSE );
-    EnableWindow( m_button_title, FALSE );
-    EnableWindow( m_edit_search, FALSE );
+    ShowWindow( m_button_today, SW_HIDE );
+    ShowWindow( m_button_elem, SW_HIDE );
+    ShowWindow( m_button_title, SW_HIDE );
+    ShowWindow( m_edit_search, SW_HIDE );
 
     if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
         Lifeograph::loginstatus = Lifeograph::LOGGED_OUT;
@@ -652,10 +659,10 @@ WinAppWindow::login()
 
     update_title();
 
-    EnableWindow( GetDlgItem( m_toolbar, IDB_TODAY ), TRUE );
-    EnableWindow( GetDlgItem( m_toolbar, IDB_ELEM ), TRUE );
-    EnableWindow( m_button_title, TRUE );
-    EnableWindow( m_edit_search, TRUE );
+    ShowWindow( m_button_today, SW_SHOW );
+    ShowWindow( m_button_elem, SW_SHOW );
+    ShowWindow( m_button_title, SW_SHOW );
+    ShowWindow( m_edit_search, SW_SHOW );
 
     DiaryElement* startup_elem = Diary::d->get_startup_elem();
     
@@ -762,7 +769,7 @@ WinAppWindow::init_list()
         //DestroyIcon( hicon );
     }*/
 
-    HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_COLOR24, 0, 5 );
+    HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_COLOR24, 0, 12 );
     HBITMAP hbitmap = ( HBITMAP ) LoadImage( Lifeograph::p->hInst,
                                              MAKEINTRESOURCE( IDBM_ENTRY16 ),
                                              IMAGE_BITMAP, 0, 0,
