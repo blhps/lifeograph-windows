@@ -229,6 +229,18 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                 case IDMI_QUIT:
                     PostMessage( hwnd, WM_CLOSE, 0, 0 );
                     break;
+                case IDMI_DIARY_ADD_NCHAPTER:
+                    add_chapter( Diary::d->get_topics(), NULL );
+                    break;
+                case IDMI_DIARY_ADD_FCHAPTER:
+                    add_chapter( Diary::d->get_groups(), NULL );
+                    break;
+                case IDMI_DIARY_ADD_DCHAPTER:
+                {
+                    Date date( m_date_selected );
+                    add_chapter( Diary::d->get_current_chapter_ctg(), &date );
+                    break;
+                }
                 case IDMI_ENTRY_TODO_NOT:
                     m_entry_view->set_todo_status( ES::NOT_TODO );
                     break;
@@ -633,18 +645,20 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
                 //if( Lifeograph::m_internaloperation ) return;
 
                 NMSELCHANGE* sc = ( LPNMSELCHANGE ) lparam;
-                Date date( sc->stSelStart.wYear, sc->stSelStart.wMonth, sc->stSelStart.wDay );
+                m_date_selected = Date::make_date( sc->stSelStart.wYear,
+                                                   sc->stSelStart.wMonth,
+                                                   sc->stSelStart.wDay );
                 Entry* entry;
 
                 if( m_entry_view->get_element() &&
-                    date.m_date == ( m_entry_view->get_element()->get_date().get_pure() ) )
+                    m_date_selected == ( m_entry_view->get_element()->get_date().get_pure() ) )
                 {
                     entry = Diary::d->get_entry_next_in_day(
                             m_entry_view->get_element()->get_date() );
                 }
                 else
                 {
-                    entry = Diary::d->get_entry( date.m_date + 1 ); // 1 increment to fix order
+                    entry = Diary::d->get_entry( m_date_selected + 1 ); // 1 increment to fix order
                 }
 
                 if( entry )
@@ -841,6 +855,11 @@ WinAppWindow::update_menu()
         CheckMenuItem( m_hmenu, IDMI_ENTRY_FAVORITE,
                        MF_BYCOMMAND | ( m_entry_view->get_element()->is_favored() ?
                                             MF_CHECKED : MF_UNCHECKED ) );
+
+        EnableMenuItem( m_hmenu, IDMI_DIARY_ADD_DCHAPTER,
+                        MF_BYCOMMAND |
+                        ( Diary::d->get_current_chapter_ctg()->get_chapter( m_date_selected ) ?
+                            MF_GRAYED : MF_ENABLED ) );
     }
 }
 
@@ -1115,6 +1134,22 @@ WinAppWindow::show_today()
     entry_today->show();
 }
 
+void
+WinAppWindow::add_chapter( CategoryChapters* cc, const Date* d )
+{
+    Chapter* c =
+        d ?
+            cc->create_chapter( "New chapter", *d ) :
+            cc->create_chapter_ordinal( "New chapter" );
+
+    Diary::d->update_entries_in_chapters();
+    update_entry_list();
+    select_list_elem( c );
+    HTREEITEM item = TreeView_GetSelection( m_list );
+    if( item )
+        TreeView_EditLabel( m_list, item );
+}
+                
 void
 WinAppWindow::start_tag_dialog( const Wstring& name )
 {

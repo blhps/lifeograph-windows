@@ -76,6 +76,8 @@ class WinAppWindow
         void                        handle_search_string_changed();
         
         void                        show_today();
+        
+        void                        add_chapter( CategoryChapters*, const Date* );
 
         void                        start_tag_dialog( const Wstring& );
 
@@ -128,6 +130,8 @@ class WinAppWindow
         HWND                        m_list_edit_item;
 
         HMENU                       m_hmenu;
+        
+        Date::date_t                m_date_selected;
 };
 
 } // end of namespace LIFEO
