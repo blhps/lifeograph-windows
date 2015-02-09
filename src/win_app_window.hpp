@@ -55,7 +55,7 @@ class WinAppWindow
         BOOL                        proc_toolbar( HWND, UINT, WPARAM, LPARAM );
         void                        handle_create();
         void                        handle_resize( short, short );
-        void                        handle_notify( int, LPARAM );
+        BOOL                        handle_notify( int, LPARAM );
 
         BOOL                        init_list();
         bool                        select_list_elem( const DiaryElement* );
@@ -82,7 +82,7 @@ class WinAppWindow
         bool                        authorize();
 
         bool                        confirm_dismiss_element( const DiaryElement* );
-        VOID APIENTRY               display_context_menu( HWND, HWND, int id );
+        VOID APIENTRY               display_context_menu( HWND, int, int, int );
 
         void                        login();
         bool                        finish_editing( bool = true );
@@ -125,6 +125,7 @@ class WinAppWindow
 
         HWND                        m_calendar;
         HWND                        m_list;
+        HWND                        m_list_edit_item;
 
         HMENU                       m_hmenu;
 };

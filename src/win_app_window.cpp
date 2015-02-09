@@ -219,7 +219,7 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                 case IDMI_DIARY_ENCRYPT:
                     DialogPassword::launch( m_hwnd, Diary::d, DialogPassword::PD_NEW );
                     break;
-                case IDMI_EXPORT:
+                case IDMI_DIARY_EXPORT:
                     if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
                         m_diary_view->export_diary();
                     break;
@@ -250,6 +250,13 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                 case IDMI_ENTRY_DISMISS:
                     m_entry_view->dismiss_entry();
                     break;
+                case IDMI_CHAPTER_RENAME:
+                {
+                    HTREEITEM item = TreeView_GetSelection( m_list );
+                    if( item )
+                        TreeView_EditLabel( m_list, item );
+                    break;
+                }
                 case IDMI_ABOUT:
                     MessageBoxA( NULL, "Lifeograph for Windows  0.2.0.alpha1\n\n"
                                        "Copyright (C) 2014-2015 Ahmet Öztürk\n"
@@ -263,8 +270,7 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
             }
             break;
         case WM_NOTIFY:
-            handle_notify( ( int ) wParam, lParam );
-            break;
+            return handle_notify( ( int ) wParam, lParam );
         case WM_MOUSEMOVE:
             if( !wParam )
                 m_entry_view->m_tag_widget->handle_mouse_move( LOWORD( lParam ), HIWORD( lParam ) );
@@ -340,14 +346,22 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             switch( LOWORD( wParam ) )
             {
                 case IDB_DIARY:
-                    display_context_menu( m_hwnd, GetDlgItem( hwnd, IDB_DIARY ), IDM_DIARY );
+                {
+                    RECT rect;
+                    GetWindowRect( GetDlgItem( hwnd, IDB_DIARY ), &rect );
+                    display_context_menu( m_hwnd, rect.left, rect.bottom, IDM_DIARY );
                     return TRUE;
+                }
                 case IDB_TODAY:
                     show_today();
                     return TRUE;
                 case IDB_ELEM:
-                    display_context_menu( m_hwnd, GetDlgItem( hwnd, IDB_ELEM ), IDM_ENTRY );
+                {
+                    RECT rect;
+                    GetWindowRect( GetDlgItem( hwnd, IDB_ELEM ), &rect );
+                    display_context_menu( m_hwnd, rect.left, rect.bottom, IDM_ENTRY );
                     return TRUE;
+                }
                 case IDE_ELEM_DATE:
                     if( HIWORD( wParam ) == EN_KILLFOCUS )
                     {
@@ -410,7 +424,7 @@ WinAppWindow::handle_create()
     m_list =
             CreateWindowExW( 0, WC_TREEVIEW, L"",
                              WS_CHILD | WS_VISIBLE | WS_VSCROLL | TVS_HASLINES | TVS_HASBUTTONS |
-                             TVS_FULLROWSELECT,
+                             TVS_FULLROWSELECT | TVS_EDITLABELS,
                              CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                              m_hwnd, ( HMENU ) IDLV_MAIN, GetModuleHandle( NULL ), NULL );
     init_list();
@@ -469,47 +483,136 @@ WinAppWindow::handle_resize( short width, short height )
     InvalidateRect( m_hwnd, &rc, true );
 }
 
-void
+BOOL
 WinAppWindow::handle_notify( int id, LPARAM lparam )
 {
     switch( id )
     {
         case IDLV_MAIN:
-            if( ( ( LPNMHDR ) lparam )->code == NM_CLICK )
+        {
+            bool flag_rclick( false );
+
+            switch( ( ( LPNMHDR ) lparam )->code )
             {
-                DWORD dwpos = GetMessagePos();
-                TVHITTESTINFO ht = { 0 };
-                ht.pt.x = GET_X_LPARAM( dwpos );
-                ht.pt.y = GET_Y_LPARAM( dwpos );
-                MapWindowPoints( HWND_DESKTOP, m_list, &ht.pt, 1 );
-
-                TreeView_HitTest( m_list, &ht );
-
-                if( ht.flags & TVHT_ONITEM )
+                case NM_RCLICK:
+                    flag_rclick = true;
+                case NM_CLICK:
                 {
+                    DWORD dwpos = GetMessagePos();
+                    TVHITTESTINFO ht = { 0 };
+                    ht.pt.x = GET_X_LPARAM( dwpos );
+                    ht.pt.y = GET_Y_LPARAM( dwpos );
+                    MapWindowPoints( HWND_DESKTOP, m_list, &ht.pt, 1 );
+
+                    TreeView_HitTest( m_list, &ht );
+
+                    if( ht.flags & TVHT_ONITEM )
+                    {
+                        TVITEM tvi;
+                        tvi.mask        = TVIF_PARAM;
+                        tvi.hItem       = ht.hItem;
+                        if( TreeView_GetItem( m_list, &tvi ) )
+                        {
+                            SendMessage( m_list, TVM_SELECTITEM, TVGN_CARET, ( LPARAM ) ht.hItem );
+                            DiaryElement* elem = Diary::d->get_element( tvi.lParam );
+                            if( !elem )
+                                if( tvi.lParam == Diary::d->get_id() )
+                                    elem = Diary::d;
+                                else
+                                    break;
+                            switch( elem->get_type() )
+                            {
+                                case DiaryElement::ET_ENTRY:
+                                    elem->show();
+                                    break;
+                                case DiaryElement::ET_DIARY:
+                                    if( !flag_rclick )
+                                        break;
+                                    display_context_menu( m_hwnd,
+                                                          GET_X_LPARAM( dwpos ),
+                                                          GET_Y_LPARAM( dwpos ),
+                                                          IDM_DIARY_R );
+                                    break;
+                                case DiaryElement::ET_CHAPTER:
+                                    if( !flag_rclick )
+                                        break;
+                                    display_context_menu( m_hwnd,
+                                                          GET_X_LPARAM( dwpos ),
+                                                          GET_Y_LPARAM( dwpos ),
+                                                          IDM_CHAPTER );
+                                    break;
+                                case DiaryElement::ET_GROUP:
+                                case DiaryElement::ET_TOPIC:
+                                    if( !flag_rclick )
+                                        break;
+                                    display_context_menu( m_hwnd,
+                                                          GET_X_LPARAM( dwpos ),
+                                                          GET_Y_LPARAM( dwpos ),
+                                                          IDM_TOPIC );
+                                    break;
+                            }
+                        }
+                    }
+                    break;
+                }
+                case TVN_ITEMEXPANDED:
+                {
+                    TVITEM tvi = ( ( LPNMTREEVIEW ) lparam )->itemNew;
+                    DiaryElement* elem = Diary::d->get_element( tvi.lParam );
+                    if( elem && ( elem->get_type() == DiaryElement::ET_CHAPTER ||
+                                  elem->get_type() == DiaryElement::ET_TOPIC ) )
+                    {
+                        Chapter* chapter = dynamic_cast< Chapter* >( elem );
+                        chapter->set_expanded( tvi.state & TVIS_EXPANDED );
+                    }
+                    break;
+                }
+                case TVN_BEGINLABELEDIT:
+                {
+                    HTREEITEM item = TreeView_GetSelection( m_list );
                     TVITEM tvi;
                     tvi.mask        = TVIF_PARAM;
-                    tvi.hItem       = ht.hItem;
+                    tvi.hItem       = item;
                     if( TreeView_GetItem( m_list, &tvi ) )
                     {
                         DiaryElement* elem = Diary::d->get_element( tvi.lParam );
-                        if( elem && elem->get_type() == DiaryElement::ET_ENTRY )
-                            elem->show();
+                        if( !elem )
+                            return TRUE;
+                        if( elem->get_type() != DiaryElement::ET_CHAPTER &&
+                            elem->get_type() != DiaryElement::ET_TOPIC &&
+                            elem->get_type() != DiaryElement::ET_GROUP )
+                            return TRUE;
+
+                        m_list_edit_item = TreeView_GetEditControl( m_list );
+                        
+                        SetWindowText( m_list_edit_item,
+                                       HELPERS::convert_utf8_to_16( elem->get_name() ) );
+                    }
+                    else
+                        return TRUE;
+                    break;
+                }
+                case TVN_ENDLABELEDIT:
+                {
+                    wchar_t buffer[ 256 ] = L"";
+                    GetWindowText( m_list_edit_item, buffer, sizeof( buffer ) );
+                    if( wcslen( buffer ) > 0 )
+                    {
+                        HTREEITEM item = TreeView_GetSelection( m_list );
+                        TVITEM tvi;
+                        tvi.mask        = TVIF_PARAM;
+                        tvi.hItem       = item;
+                        if( TreeView_GetItem( m_list, &tvi ) )
+                        {
+                            DiaryElement* elem = Diary::d->get_element( tvi.lParam );
+                            elem->set_name( HELPERS::convert_utf16_to_8( buffer ) );
+                            update_list_elem( elem );
+                        }
                     }
                 }
             }
-            else if( ( ( LPNMHDR ) lparam )->code == TVN_ITEMEXPANDED )
-            {
-                TVITEM tvi = ( ( LPNMTREEVIEW ) lparam )->itemNew;
-                DiaryElement* elem = Diary::d->get_element( tvi.lParam );
-                if( elem && ( elem->get_type() == DiaryElement::ET_CHAPTER ||
-                              elem->get_type() == DiaryElement::ET_TOPIC ) )
-                {
-                    Chapter* chapter = dynamic_cast< Chapter* >( elem );
-                    chapter->set_expanded( tvi.state & TVIS_EXPANDED );
-                }
-            }
             break;
+        }
         case IDCAL_MAIN:
             if( ( ( LPNMHDR ) lparam )->code == MCN_GETDAYSTATE )
             {
@@ -526,7 +629,7 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
             else if( ( ( LPNMHDR ) lparam )->code == MCN_SELECT )
             {
                 if( Lifeograph::loginstatus != Lifeograph::LOGGED_IN )
-                    return;
+                    break;
                 //if( Lifeograph::m_internaloperation ) return;
 
                 NMSELCHANGE* sc = ( LPNMSELCHANGE ) lparam;
@@ -549,6 +652,8 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
             }
             break;
     }
+    
+    return FALSE;
 }
 
 // LOG OUT
@@ -671,11 +776,8 @@ WinAppWindow::login()
 }
 
 VOID APIENTRY
-WinAppWindow::display_context_menu( HWND hwnd, HWND hw_button, int id )
+WinAppWindow::display_context_menu( HWND hwnd, int x, int y, int id )
 {
-    RECT rect;
-    GetWindowRect( hw_button, &rect );
-
     if( ( m_hmenu = LoadMenu( Lifeograph::hInst, MAKEINTRESOURCE( id ) ) ) == NULL )
         return;
 
@@ -683,7 +785,7 @@ WinAppWindow::display_context_menu( HWND hwnd, HWND hw_button, int id )
     HMENU hmenuTrackPopup = GetSubMenu( m_hmenu, 0 );
 
     // Display the shortcut menu. Track the right mouse button
-    TrackPopupMenu( hmenuTrackPopup, TPM_LEFTALIGN, rect.left, rect.bottom, 0, hwnd, NULL );
+    TrackPopupMenu( hmenuTrackPopup, TPM_LEFTALIGN, x, y, 0, hwnd, NULL );
 
     DestroyMenu( m_hmenu );
 }
@@ -717,7 +819,7 @@ WinAppWindow::update_menu()
     EnableMenuItem( m_hmenu, IDMI_DIARY_CHANGE_PASSWORD,
                     MF_BYCOMMAND | ( logged_in && encrypted ? MF_ENABLED : MF_GRAYED ) );
 
-    EnableMenuItem( m_hmenu, IDMI_EXPORT,
+    EnableMenuItem( m_hmenu, IDMI_DIARY_EXPORT,
                     MF_BYCOMMAND | ( logged_in ? MF_ENABLED : MF_GRAYED ) );
     EnableMenuItem( m_hmenu, IDMI_QUIT_WO_SAVE,
                     MF_BYCOMMAND | ( logged_in ? MF_ENABLED : MF_GRAYED ) );

@@ -27,31 +27,6 @@
 
 
 // MENUS ===========================================================================================
-/*LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-IDM_MAIN MENU
-{
-    POPUP "&Diary"
-    {
-        MENUITEM "&Create Diary...", IDMI_DIARY_CREATE
-        MENUITEM "&Open Diary...", IDMI_DIARY_OPEN
-        MENUITEM SEPARATOR
-        MENUITEM "&Encrypt...", IDMI_DIARY_ENCRYPT
-        MENUITEM "&Change Password...", IDMI_DIARY_CHANGE_PASSWORD
-        MENUITEM "E&xport...", IDMI_EXPORT
-        MENUITEM SEPARATOR
-        MENUITEM "Quit &without Saving", IDMI_QUIT_WO_SAVE
-        MENUITEM "&Quit", IDMI_QUIT
-    }
-    POPUP "&Entry"
-    {
-        MENUITEM "&Dismiss...", IDMI_ENTRY_DISMISS
-    }
-    POPUP "&Help"
-    {
-        MENUITEM "&About...", IDMI_ABOUT
-    }
-}*/
-
 IDM_DIARY MENU
 {
     POPUP "&Diary"
@@ -61,10 +36,20 @@ IDM_DIARY MENU
         MENUITEM SEPARATOR
         MENUITEM "&Encrypt...", IDMI_DIARY_ENCRYPT
         MENUITEM "&Change Password...", IDMI_DIARY_CHANGE_PASSWORD
-        MENUITEM "E&xport...", IDMI_EXPORT
+        MENUITEM "E&xport...", IDMI_DIARY_EXPORT
         MENUITEM SEPARATOR
         MENUITEM "Quit &without Saving", IDMI_QUIT_WO_SAVE
         MENUITEM "&Quit", IDMI_QUIT
+    }
+}
+
+IDM_DIARY_R MENU
+{
+    POPUP "&Diary"
+    {
+        MENUITEM "Add &Dated Chapter", IDMI_DIARY_ADD_DCHAPTER
+        MENUITEM "Add &Numbered Chapter", IDMI_DIARY_ADD_NCHAPTER
+        MENUITEM "Add &Free Chapter", IDMI_DIARY_ADD_FCHAPTER
     }
 }
 
@@ -81,6 +66,27 @@ IDM_ENTRY MENU
         MENUITEM "Canceled", IDMI_ENTRY_TODO_CANCELED
         MENUITEM SEPARATOR
         MENUITEM "&Dismiss...", IDMI_ENTRY_DISMISS
+    }
+}
+
+IDM_CHAPTER MENU
+{
+    POPUP "&Chapter"
+    {
+        MENUITEM "&Rename", IDMI_CHAPTER_RENAME
+        MENUITEM SEPARATOR
+        MENUITEM "&Dismiss...", IDMI_CHAPTER_DISMISS
+    }
+}
+
+IDM_TOPIC MENU
+{
+    POPUP "&Numbered Chapter"
+    {
+        MENUITEM "&Rename", IDMI_CHAPTER_RENAME
+        MENUITEM "&Add Entry", IDMI_CHAPTER_ADD_ENTRY
+        MENUITEM SEPARATOR
+        MENUITEM "&Dismiss...", IDMI_CHAPTER_DISMISS
     }
 }
 
