@@ -63,6 +63,8 @@ class WinAppWindow
         HTREEITEM                   add_list_elem( DiaryElement*, HTREEITEM, bool = false );
         void                        add_chapter_category_to_list( const CategoryChapters*,
                                                                   HTREEITEM );
+        DiaryElement*               get_selected_list_elem();
+
         void                        update_entry_list();
 
         void                        update_menu();

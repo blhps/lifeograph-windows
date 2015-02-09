@@ -269,6 +269,21 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                         TreeView_EditLabel( m_list, item );
                     break;
                 }
+                case IDMI_CHAPTER_DISMISS:
+                {
+                    DiaryElement* elem = get_selected_list_elem();
+                    if( elem && ( elem->get_type() == DiaryElement::ET_CHAPTER ||
+                                  elem->get_type() == DiaryElement::ET_TOPIC ||
+                                  elem->get_type() == DiaryElement::ET_GROUP ) )
+                    {
+                        if( confirm_dismiss_element( elem ) )
+                        {
+                            Diary::d->dismiss_chapter( dynamic_cast< Chapter* >( elem ), false );
+                            update_entry_list();
+                        }
+                    }
+                    break;
+                }
                 case IDMI_ABOUT:
                     MessageBoxA( NULL, "Lifeograph for Windows  0.2.0.alpha1\n\n"
                                        "Copyright (C) 2014-2015 Ahmet Öztürk\n"
@@ -572,7 +587,8 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
                     TVITEM tvi = ( ( LPNMTREEVIEW ) lparam )->itemNew;
                     DiaryElement* elem = Diary::d->get_element( tvi.lParam );
                     if( elem && ( elem->get_type() == DiaryElement::ET_CHAPTER ||
-                                  elem->get_type() == DiaryElement::ET_TOPIC ) )
+                                  elem->get_type() == DiaryElement::ET_TOPIC ||
+                                  elem->get_type() == DiaryElement::ET_GROUP ) )
                     {
                         Chapter* chapter = dynamic_cast< Chapter* >( elem );
                         chapter->set_expanded( tvi.state & TVIS_EXPANDED );
@@ -581,22 +597,13 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
                 }
                 case TVN_BEGINLABELEDIT:
                 {
-                    HTREEITEM item = TreeView_GetSelection( m_list );
-                    TVITEM tvi;
-                    tvi.mask        = TVIF_PARAM;
-                    tvi.hItem       = item;
-                    if( TreeView_GetItem( m_list, &tvi ) )
+                    DiaryElement* elem = get_selected_list_elem();
+                    if( elem && ( elem->get_type() == DiaryElement::ET_CHAPTER ||
+                                  elem->get_type() == DiaryElement::ET_TOPIC ||
+                                  elem->get_type() == DiaryElement::ET_GROUP ) )
                     {
-                        DiaryElement* elem = Diary::d->get_element( tvi.lParam );
-                        if( !elem )
-                            return TRUE;
-                        if( elem->get_type() != DiaryElement::ET_CHAPTER &&
-                            elem->get_type() != DiaryElement::ET_TOPIC &&
-                            elem->get_type() != DiaryElement::ET_GROUP )
-                            return TRUE;
-
                         m_list_edit_item = TreeView_GetEditControl( m_list );
-                        
+
                         SetWindowText( m_list_edit_item,
                                        HELPERS::convert_utf8_to_16( elem->get_name() ) );
                     }
@@ -610,13 +617,9 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
                     GetWindowText( m_list_edit_item, buffer, sizeof( buffer ) );
                     if( wcslen( buffer ) > 0 )
                     {
-                        HTREEITEM item = TreeView_GetSelection( m_list );
-                        TVITEM tvi;
-                        tvi.mask        = TVIF_PARAM;
-                        tvi.hItem       = item;
-                        if( TreeView_GetItem( m_list, &tvi ) )
+                        DiaryElement* elem = get_selected_list_elem();
+                        if( elem )
                         {
-                            DiaryElement* elem = Diary::d->get_element( tvi.lParam );
                             elem->set_name( HELPERS::convert_utf16_to_8( buffer ) );
                             update_list_elem( elem );
                         }
@@ -1029,6 +1032,19 @@ WinAppWindow::update_entry_list()
     tvscb.lpfnCompare = list_compare_func;
     tvscb.lParam = 0;
     SendMessage( m_list, TVM_SORTCHILDRENCB, 0, ( WPARAM ) &tvscb );
+}
+
+DiaryElement*
+WinAppWindow::get_selected_list_elem()
+{
+    HTREEITEM item = TreeView_GetSelection( m_list );
+    TVITEM tvi;
+    tvi.mask        = TVIF_PARAM;
+    tvi.hItem       = item;
+    if( TreeView_GetItem( m_list, &tvi ) )
+        return Diary::d->get_element( tvi.lParam );
+    else
+        return NULL;
 }
 
 #define BOLDDAY(ds, iDay)  if(iDay > 0 && iDay < 32) (ds) |= (0x00000001 << (iDay - 1))
