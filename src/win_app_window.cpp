@@ -262,6 +262,24 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                 case IDMI_ENTRY_DISMISS:
                     m_entry_view->dismiss_entry();
                     break;
+                case IDMI_CHAPTER_ADD_ENTRY:
+                {
+                    DiaryElement* elem = get_selected_list_elem();
+                    if( elem && ( elem->get_type() == DiaryElement::ET_TOPIC ||
+                                  elem->get_type() == DiaryElement::ET_GROUP ) )
+                    {
+                        Entry* entry = Diary::d->create_entry(
+                                dynamic_cast< Chapter* >( elem )->get_free_order().m_date );
+
+                        update_entry_list();
+                        update_calendar();
+
+                        entry->show();
+
+                        SetFocus( m_entry_view->m_richedit->m_hwnd );
+                    }
+                    break;
+                }
                 case IDMI_CHAPTER_RENAME:
                 {
                     HTREEITEM item = TreeView_GetSelection( m_list );
