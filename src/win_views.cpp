@@ -201,10 +201,13 @@ EntryView::show( Entry& entry )
     m_tag_widget->set_entry( m_ptr2elem );
     m_tag_widget->update_full();
     WinAppWindow::p->select_list_elem( m_ptr2elem );
-    HWND button = GetDlgItem( WinAppWindow::p->m_toolbar, IDB_ELEM_TITLE );
-    SetWindowText( button, HELPERS::convert_utf8_to_16( get_title_str() ) );
-    EnableWindow( button, entry.get_date().is_hidden() ? FALSE : TRUE );
-    InvalidateRect( button, NULL, TRUE );
+
+    ShowWindow( WinAppWindow::p->m_button_elem, SW_SHOW );
+
+    ShowWindow( WinAppWindow::p->m_button_title, SW_SHOW );
+    SetWindowText( WinAppWindow::p->m_button_title, HELPERS::convert_utf8_to_16( get_title_str() ) );
+    EnableWindow( WinAppWindow::p->m_button_title, entry.get_date().is_hidden() ? FALSE : TRUE );
+    InvalidateRect( WinAppWindow::p->m_button_title, NULL, TRUE );
 
     m_entry_sync = m_ptr2elem;
 }
@@ -241,6 +244,9 @@ void
 DiaryView::show( Diary& diary )
 {
     WinAppWindow::p->m_entry_view->clear();
+
+    ShowWindow( WinAppWindow::p->m_button_title, SW_HIDE );
+    ShowWindow( WinAppWindow::p->m_button_elem, SW_HIDE );
 }
 
 LIFEO::Result

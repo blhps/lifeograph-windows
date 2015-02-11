@@ -302,6 +302,83 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     }
                     break;
                 }
+                case IDMI_FILTER_TODO_NOT:
+                {
+                    ElemStatus fs( Diary::d->get_filter_status() );
+                    Diary::d->get_filter()->set_todo( !( fs & ES::SHOW_NOT_TODO ),
+                                                      fs & ES::SHOW_TODO,
+                                                      fs & ES::SHOW_PROGRESSED,
+                                                      fs & ES::SHOW_DONE,
+                                                      fs & ES::SHOW_CANCELED );
+                    update_entry_list();
+                    update_calendar();
+                    break;
+                }
+                case IDMI_FILTER_TODO_OPEN:
+                {
+                    ElemStatus fs( Diary::d->get_filter_status() );
+                    Diary::d->get_filter()->set_todo( fs & ES::SHOW_NOT_TODO,
+                                                      !( fs & ES::SHOW_TODO ),
+                                                      fs & ES::SHOW_PROGRESSED,
+                                                      fs & ES::SHOW_DONE,
+                                                      fs & ES::SHOW_CANCELED );
+                    update_entry_list();
+                    update_calendar();
+                    break;
+                }
+                case IDMI_FILTER_TODO_PROGRESSED:
+                {
+                    ElemStatus fs( Diary::d->get_filter_status() );
+                    Diary::d->get_filter()->set_todo( fs & ES::SHOW_NOT_TODO,
+                                                      fs & ES::SHOW_TODO,
+                                                      !( fs & ES::SHOW_PROGRESSED ),
+                                                      fs & ES::SHOW_DONE,
+                                                      fs & ES::SHOW_CANCELED );
+                    update_entry_list();
+                    update_calendar();
+                    break;
+                }
+                case IDMI_FILTER_TODO_DONE:
+                {
+                    ElemStatus fs( Diary::d->get_filter_status() );
+                    Diary::d->get_filter()->set_todo( fs & ES::SHOW_NOT_TODO,
+                                                      fs & ES::SHOW_TODO,
+                                                      fs & ES::SHOW_PROGRESSED,
+                                                      !( fs & ES::SHOW_DONE ),
+                                                      fs & ES::SHOW_CANCELED );
+                    update_entry_list();
+                    update_calendar();
+                    break;
+                }
+                case IDMI_FILTER_TODO_CANCELED:
+                {
+                    ElemStatus fs( Diary::d->get_filter_status() );
+                    Diary::d->get_filter()->set_todo( fs & ES::SHOW_NOT_TODO,
+                                                      fs & ES::SHOW_TODO,
+                                                      fs & ES::SHOW_PROGRESSED,
+                                                      fs & ES::SHOW_DONE,
+                                                      !( fs & ES::SHOW_CANCELED ) );
+                    update_entry_list();
+                    update_calendar();
+                    break;
+                }
+                case IDMI_FILTER_FAVORITES:
+                    if( Diary::d->get_filter_status() & ES::SHOW_NOT_FAVORED )
+                        Diary::d->get_filter()->set_favorites( true, false );
+                    else
+                        Diary::d->get_filter()->set_favorites( true, true );
+                    update_entry_list();
+                    update_calendar();
+                    break;
+                case IDMI_FILTER_RESET:
+                    Diary::d->get_filter()->set( Diary::d->get_filter_default() );
+                    Diary::d->get_filter()->set_status_outstanding();
+                    update_entry_list();
+                    update_calendar();
+                    break;
+                case IDMI_FILTER_SAVE:
+                    Diary::d->get_filter_default()->set( Diary::d->get_filter() );
+                    break;
                 case IDMI_ABOUT:
                     MessageBoxA( NULL, "Lifeograph for Windows  0.2.0.alpha1\n\n"
                                        "Copyright (C) 2014-2015 Ahmet Öztürk\n"
@@ -355,11 +432,13 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             m_button_title = GetDlgItem( hwnd, IDB_ELEM_TITLE );
             m_button_today = GetDlgItem( hwnd, IDB_TODAY );
             m_button_elem = GetDlgItem( hwnd, IDB_ELEM );
+            m_button_filter = GetDlgItem( hwnd, IDB_FILTER );
             SetWindowSubclass( m_edit_date, WAO_advanced_edit_proc, 0, 0 );
 
             ShowWindow( m_button_today, SW_HIDE );
             ShowWindow( m_button_elem, SW_HIDE );
             ShowWindow( m_button_title, SW_HIDE );
+            ShowWindow( m_button_filter, SW_HIDE );
             ShowWindow( m_edit_date, SW_HIDE );
             ShowWindow( m_edit_search, SW_HIDE );
 
@@ -403,8 +482,15 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                 case IDB_ELEM:
                 {
                     RECT rect;
-                    GetWindowRect( GetDlgItem( hwnd, IDB_ELEM ), &rect );
+                    GetWindowRect( m_button_elem, &rect );
                     display_context_menu( m_hwnd, rect.left, rect.bottom, IDM_ENTRY );
+                    return TRUE;
+                }
+                case IDB_FILTER:
+                {
+                    RECT rect;
+                    GetWindowRect( m_button_filter, &rect );
+                    display_context_menu( m_hwnd, rect.left, rect.bottom, IDM_FILTER );
                     return TRUE;
                 }
                 case IDE_ELEM_DATE:
@@ -745,6 +831,7 @@ WinAppWindow::finish_editing( bool opt_save )
     ShowWindow( m_button_today, SW_HIDE );
     ShowWindow( m_button_elem, SW_HIDE );
     ShowWindow( m_button_title, SW_HIDE );
+    ShowWindow( m_button_filter, SW_HIDE );
     ShowWindow( m_edit_search, SW_HIDE );
 
     if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
@@ -800,8 +887,7 @@ WinAppWindow::login()
     update_title();
 
     ShowWindow( m_button_today, SW_SHOW );
-    ShowWindow( m_button_elem, SW_SHOW );
-    ShowWindow( m_button_title, SW_SHOW );
+    ShowWindow( m_button_filter, SW_SHOW );
     ShowWindow( m_edit_search, SW_SHOW );
 
     DiaryElement* startup_elem = Diary::d->get_startup_elem();
@@ -861,26 +947,46 @@ WinAppWindow::update_menu()
                             
     if( logged_in )
     {
-        ElemStatus status = m_entry_view->get_element()->get_status();
-        CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_NOT,
-                       MF_BYCOMMAND | ( ( status & ES::NOT_TODO ) ? MF_CHECKED : MF_UNCHECKED ) );
-        CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_OPEN,
-                       MF_BYCOMMAND | ( ( status & ES::TODO ) ? MF_CHECKED : MF_UNCHECKED ) );
-        CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_PROGRESSED,
-                       MF_BYCOMMAND | ( ( status & ES::PROGRESSED ) ? MF_CHECKED : MF_UNCHECKED ) );
-        CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_DONE,
-                       MF_BYCOMMAND | ( ( status & ES::DONE ) ? MF_CHECKED : MF_UNCHECKED ) );
-        CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_CANCELED,
-                       MF_BYCOMMAND | ( ( status & ES::CANCELED ) ? MF_CHECKED : MF_UNCHECKED ) );
+        if( m_entry_view->get_element() )
+        {
+            ElemStatus status = m_entry_view->get_element()->get_status();
+            CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_NOT,
+                           MF_BYCOMMAND | ( ( status & ES::NOT_TODO ) ? MF_CHECKED : MF_UNCHECKED ) );
+            CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_OPEN,
+                           MF_BYCOMMAND | ( ( status & ES::TODO ) ? MF_CHECKED : MF_UNCHECKED ) );
+            CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_PROGRESSED,
+                           MF_BYCOMMAND | ( ( status & ES::PROGRESSED ) ? MF_CHECKED : MF_UNCHECKED ) );
+            CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_DONE,
+                           MF_BYCOMMAND | ( ( status & ES::DONE ) ? MF_CHECKED : MF_UNCHECKED ) );
+            CheckMenuItem( m_hmenu, IDMI_ENTRY_TODO_CANCELED,
+                           MF_BYCOMMAND | ( ( status & ES::CANCELED ) ? MF_CHECKED : MF_UNCHECKED ) );
 
-        CheckMenuItem( m_hmenu, IDMI_ENTRY_FAVORITE,
-                       MF_BYCOMMAND | ( m_entry_view->get_element()->is_favored() ?
-                                            MF_CHECKED : MF_UNCHECKED ) );
+            CheckMenuItem( m_hmenu, IDMI_ENTRY_FAVORITE,
+                           MF_BYCOMMAND | ( m_entry_view->get_element()->is_favored() ?
+                                                MF_CHECKED : MF_UNCHECKED ) );
+        }
 
         EnableMenuItem( m_hmenu, IDMI_DIARY_ADD_DCHAPTER,
                         MF_BYCOMMAND |
                         ( Diary::d->get_current_chapter_ctg()->get_chapter( m_date_selected ) ?
                             MF_GRAYED : MF_ENABLED ) );
+                            
+        ElemStatus fs = Diary::d->get_filter_status();
+        CheckMenuItem( m_hmenu, IDMI_FILTER_TODO_NOT,
+                       MF_BYCOMMAND | ( ( fs & ES::SHOW_NOT_TODO ) ? MF_CHECKED : MF_UNCHECKED ) );
+        CheckMenuItem( m_hmenu, IDMI_FILTER_TODO_OPEN,
+                       MF_BYCOMMAND | ( ( fs & ES::SHOW_TODO ) ? MF_CHECKED : MF_UNCHECKED ) );
+        CheckMenuItem( m_hmenu, IDMI_FILTER_TODO_PROGRESSED,
+                       MF_BYCOMMAND | ( ( fs & ES::SHOW_PROGRESSED ) ?
+                                MF_CHECKED : MF_UNCHECKED ) );
+        CheckMenuItem( m_hmenu, IDMI_FILTER_TODO_DONE,
+                       MF_BYCOMMAND | ( ( fs & ES::SHOW_DONE ) ? MF_CHECKED : MF_UNCHECKED ) );
+        CheckMenuItem( m_hmenu, IDMI_FILTER_TODO_CANCELED,
+                       MF_BYCOMMAND | ( ( fs & ES::SHOW_CANCELED ) ? MF_CHECKED : MF_UNCHECKED ) );
+
+        CheckMenuItem( m_hmenu, IDMI_FILTER_FAVORITES,
+                       MF_BYCOMMAND | ( ( fs & ES::SHOW_FAVORED ) && !( fs & ES::SHOW_NOT_FAVORED )
+                                ? MF_CHECKED : MF_UNCHECKED ) );
     }
 }
 
@@ -1076,7 +1182,7 @@ WinAppWindow::fill_monthdaystate( int year, int month, MONTHDAYSTATE mds[], int 
         {
             Entry* entry = kv_entry.second;
 
-            if( /*entry->get_filtered_out() ||*/ entry->get_date().is_ordinal() )
+            if( entry->get_filtered_out() || entry->get_date().is_ordinal() )
                 continue;
 
             if( entry->get_date().get_year() == year )
@@ -1236,7 +1342,7 @@ WinAppWindow::handle_search_string_changed()
     //AppWindow::p->m_entry_view->sync(); update_entry_list() does the syncing
 
     int size( GetWindowTextLength( m_edit_search ) + 1 );
-    wchar_t *buffer = new wchar_t[ size ];
+    wchar_t* buffer = new wchar_t[ size ];
     GetWindowText( m_edit_search, buffer, size );
     const Wstring filterstring( buffer );
 

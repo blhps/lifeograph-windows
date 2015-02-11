@@ -29,6 +29,7 @@
 #define IDM_ENTRY                               102
 #define IDM_CHAPTER                             104
 #define IDM_TOPIC                               105
+#define IDM_FILTER                              107
 #define IDTB_MAIN                               111
 
 // DIALOGS
@@ -67,6 +68,14 @@
 #define IDMI_CHAPTER_RENAME                     40041
 #define IDMI_CHAPTER_ADD_ENTRY                  40042
 #define IDMI_CHAPTER_DISMISS                    40043
+#define IDMI_FILTER_RESET                       40050
+#define IDMI_FILTER_SAVE                        40051
+#define IDMI_FILTER_TODO_NOT                    40052
+#define IDMI_FILTER_TODO_OPEN                   40053
+#define IDMI_FILTER_TODO_PROGRESSED             40054
+#define IDMI_FILTER_TODO_DONE                   40055
+#define IDMI_FILTER_TODO_CANCELED               40056
+#define IDMI_FILTER_FAVORITES                   40057
 #define IDMI_ABOUT                              40090
 #define IDMI_QUIT_WO_SAVE                       40098
 #define IDMI_QUIT                               40099
@@ -76,6 +85,7 @@
 #define IDB_TODAY                               40104
 #define IDB_ELEM                                40107
 #define IDB_ELEM_TITLE                          40108
+#define IDB_FILTER                              40109
 #define IDB_TAG_THEME                           40119
 #define IDB_TAG_ACTION                          40120
 

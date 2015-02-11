@@ -124,6 +124,7 @@ class WinAppWindow
         HWND                        m_button_today;
         HWND                        m_button_elem;
         HWND                        m_button_title;
+        HWND                        m_button_filter;
         HWND                        m_edit_date;
         HWND                        m_edit_search;
 

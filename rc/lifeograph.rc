@@ -90,6 +90,23 @@ IDM_TOPIC MENU
     }
 }
 
+IDM_FILTER MENU
+{
+    POPUP "&Filter"
+    {
+        MENUITEM "Show Not To Do", IDMI_FILTER_TODO_NOT
+        MENUITEM "Show Open", IDMI_FILTER_TODO_OPEN
+        MENUITEM "Show In Progress", IDMI_FILTER_TODO_PROGRESSED
+        MENUITEM "Show Done", IDMI_FILTER_TODO_DONE
+        MENUITEM "Show Canceled", IDMI_FILTER_TODO_CANCELED
+        MENUITEM SEPARATOR
+        MENUITEM "Hide Non-Favorites", IDMI_FILTER_FAVORITES
+        MENUITEM SEPARATOR
+        MENUITEM "Reset Filter", IDMI_FILTER_RESET
+        MENUITEM "Save Filter", IDMI_FILTER_SAVE
+    }
+}
+
 // DIALOGS =========================================================================================
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDD_PASSWORD DIALOG 0, 0, 200, 85
@@ -155,12 +172,14 @@ FONT 8, "Ms Shell Dlg"
     RCWAOTBBTNTXT( "Today", IDB_TODAY, 40, 25, 0x0 )
     RCWAOTBBUTTON( IDB_ELEM, 75, 0x0 )
     RCWAOTBBTNTXT( "", IDB_ELEM_TITLE, 91, 149, 0x0 )
-    EDITTEXT     IDE_ELEM_DATE,  91, 3, 149, 14, ES_AUTOHSCROLL, WS_EX_LEFT
-    EDITTEXT     IDE_SEARCH,  250, 3, 80, 14, ES_AUTOHSCROLL, WS_EX_LEFT
+    EDITTEXT     IDE_ELEM_DATE, 91, 3, 149, 14, ES_AUTOHSCROLL, WS_EX_LEFT
+    EDITTEXT     IDE_SEARCH, 250, 3, 80, 14, ES_AUTOHSCROLL, WS_EX_LEFT
+    RCWAOTBBUTTON( IDB_FILTER, 335, 0x0 )
 }
 
 // ICONS ===========================================================================================
 IDBM_ENTRY16        BITMAP          "icons\\elem-16.bmp"
 
 IDB_ELEM            ICON            "icons\\entry-16.ico"
+IDB_FILTER          ICON            "icons\\filter-16.ico"
 
