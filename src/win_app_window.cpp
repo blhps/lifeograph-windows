@@ -485,7 +485,7 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                 }
                 case IDB_ABOUT:
                     MessageBoxA( NULL,
-                                 "Lifeograph for Windows  0.2.0.beta1\n\n"
+                                 "Lifeograph for Windows  0.2.0.rc1\n\n"
                                  "Copyright (C) 2014-2015 Ahmet Öztürk\n"
                                  "Lifeograph is licensed under GNU Public License v3\n\n"
                                  "http://lifeograph.sourceforge.net",
