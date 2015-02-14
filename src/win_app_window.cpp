@@ -93,8 +93,13 @@ calendar_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam,
     switch( msg )
     {
         case WM_LBUTTONDBLCLK:
-            WinAppWindow::p->handle_calendar_doubleclick();
+        {
+            POINT pt;
+            pt.x = LOWORD( lparam );
+            pt.y = HIWORD( lparam );
+            WinAppWindow::p->handle_calendar_doubleclick( pt );
             return TRUE;
+        }
         // TODO: add a menu for chapters..
         //case WM_RBUTTONUP:
             //return TRUE;
@@ -1244,9 +1249,15 @@ WinAppWindow::update_calendar()
 }
 
 void
-WinAppWindow::handle_calendar_doubleclick()
+WinAppWindow::handle_calendar_doubleclick( const POINT& pt )
 {
     if( Lifeograph::loginstatus != Lifeograph::LOGGED_IN || Diary::d->is_read_only() )
+        return;
+
+    MCHITTESTINFO cal_ht = { 0 };
+    cal_ht.cbSize = sizeof( MCHITTESTINFO );
+    cal_ht.pt = pt;
+    if( MonthCal_HitTest( m_calendar, &cal_ht ) != MCHT_CALENDARDATE )
         return;
 
     SYSTEMTIME st;

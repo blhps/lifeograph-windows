@@ -73,7 +73,7 @@ class WinAppWindow
         void                        update_calendar();
         void                        update_title();
         
-        void                        handle_calendar_doubleclick();
+        void                        handle_calendar_doubleclick( const POINT& );
         
         void                        handle_search_string_changed();
         
