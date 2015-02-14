@@ -39,7 +39,8 @@ class DialogTags
 
                                     DialogTags();
 
-        static Result               launch( HWND, Diary*, Entry*, const Wstring& );
+        static Result               launch( HWND, Diary*, Entry*, const Wstring& ); // Assigning
+        static Result               launch( HWND, Diary* ); // Filtering
 
         bool                        proc( HWND, UINT, WPARAM, LPARAM );
 
@@ -54,11 +55,14 @@ class DialogTags
         Entry*                      m_ptr2entry;
         Wstring                     m_name;
         TagOperation                m_tag_operation_cur;
+        Tag*                        m_tag_cur;
 
         HWND                        m_hwnd;
         HWND                        m_edit;
         HWND                        m_button_theme;
         HWND                        m_button_action;
+        HWND                        m_button_filter_clear;
+        HWND                        m_button_filter_set;
         HWND                        m_list;
         
         bool                        m_flag_filter;

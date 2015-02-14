@@ -44,7 +44,7 @@ dialog_tags_proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 }
 
 DialogTags::DialogTags()
-:   m_flag_filter( true )
+:   m_tag_cur( NULL ), m_flag_filter( true )
 {
 
 }
@@ -57,6 +57,25 @@ DialogTags::launch( HWND hw_par, Diary* diary, Entry* entry, const Wstring& name
     ptr->m_ptr2diary = diary;
     ptr->m_ptr2entry = entry;
     ptr->m_name = name;
+
+    Result res = ( Result ) DialogBox( NULL,
+                                       MAKEINTRESOURCE( IDD_TAGS ),
+                                       hw_par,
+                                       dialog_tags_proc );
+
+    delete ptr;
+    ptr = NULL;
+
+    return res;
+}
+
+Result
+DialogTags::launch( HWND hw_par, Diary* diary )
+{
+    ptr = new DialogTags;
+
+    ptr->m_ptr2diary = diary;
+    ptr->m_ptr2entry = NULL;
 
     Result res = ( Result ) DialogBox( NULL,
                                        MAKEINTRESOURCE( IDD_TAGS ),
@@ -82,7 +101,23 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             m_edit = GetDlgItem( hwnd, IDE_TAG_NAME );
             m_button_theme = GetDlgItem( hwnd, IDB_TAG_THEME );
             m_button_action = GetDlgItem( hwnd, IDB_TAG_ACTION );
+            m_button_filter_clear = GetDlgItem( hwnd, IDB_TAG_FILTER_CLEAR );
+            m_button_filter_set = GetDlgItem( hwnd, IDB_TAG_FILTER_SET );
             m_list = GetDlgItem( hwnd, IDTV_TAG_LIST );
+            
+            if( m_ptr2entry )
+            {
+                ShowWindow( m_button_filter_clear, SW_HIDE );
+                ShowWindow( m_button_filter_set, SW_HIDE );
+            }
+            else
+            {
+                ShowWindow( m_button_theme, SW_HIDE );
+                ShowWindow( m_button_action, SW_HIDE );
+                
+                if( !m_ptr2diary->get_filter_tag() )
+                    EnableWindow( m_button_filter_clear, FALSE );
+            }
             
             // IMAGELIST
             HIMAGELIST himagelist = ImageList_Create( 16, 16, ILC_COLOR24, 0, 12 );
@@ -129,9 +164,6 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                 }
                 case IDB_TAG_ACTION:
                 {
-                    Ustring filter = convert_utf16_to_8( m_name.c_str() );
-
-                    Tag* tag;
                     Result result( SUCCESS );
 
                     switch( m_tag_operation_cur )
@@ -140,22 +172,29 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                             result = ABORTED;
                             break;
                         case TO_REMOVE:
-                            tag = Diary::d->get_tags()->get_tag( filter );
-                            m_ptr2entry->remove_tag( tag );
+                            m_ptr2entry->remove_tag( m_tag_cur );
                             break;
                         case TO_CREATE_AND_ADD:
-                            tag = Diary::d->create_tag( filter );
-                            m_ptr2entry->add_tag( tag );
+                            m_tag_cur =
+                                    Diary::d->create_tag( convert_utf16_to_8( m_name.c_str() ) );
+                            m_ptr2entry->add_tag( m_tag_cur );
                             break;
                         case TO_ADD:
-                            tag = Diary::d->get_tags()->get_tag( filter );
-                            m_ptr2entry->add_tag( tag );
+                            m_ptr2entry->add_tag( m_tag_cur );
                             break;
                     }
 
                     EndDialog( m_hwnd, result );
                     return TRUE;
                 }
+                case IDB_TAG_FILTER_CLEAR:
+                    m_ptr2diary->set_filter_tag( NULL );
+                    EndDialog( m_hwnd, SUCCESS );
+                    return TRUE;
+                case IDB_TAG_FILTER_SET:
+                    m_ptr2diary->set_filter_tag( m_tag_cur );
+                    EndDialog( m_hwnd, SUCCESS );
+                    return TRUE;
             }
             return FALSE;
         case WM_NOTIFY:
@@ -203,31 +242,38 @@ DialogTags::handle_entry_changed()
     {
         EnableWindow( m_button_action, false );
         m_tag_operation_cur = TO_NONE;
+        m_tag_cur = NULL;
+
+        EnableWindow( m_button_filter_set, false );
     }
     else
     {
         EnableWindow( m_button_action, true );
-        Tag* tag = Diary::d->get_tags()->get_tag( convert_utf16_to_8( filter ) );
-        if( tag == NULL )
+        m_tag_cur = Diary::d->get_tags()->get_tag( convert_utf16_to_8( filter ) );
+        if( m_tag_cur == NULL )
         {
-            SetWindowTextA( m_button_action, "Create Tag" );
+            SetWindowText( m_button_action, L"Create Tag" );
             m_tag_operation_cur = TO_CREATE_AND_ADD;
+
+            EnableWindow( m_button_filter_set, false );
         }
         else
         {
-            if( m_ptr2entry->get_tags().checkfor_member( tag ) )
+            if( m_ptr2entry && m_ptr2entry->get_tags().checkfor_member( m_tag_cur ) )
             {
-                SetWindowTextA( m_button_action, "Remove Tag" );
+                SetWindowText( m_button_action, L"Remove Tag" );
                 m_tag_operation_cur = TO_REMOVE;
 
-                if( tag->get_has_own_theme() && m_ptr2entry->get_theme_tag() != tag )
+                if( m_tag_cur->get_has_own_theme() && m_ptr2entry->get_theme_tag() != m_tag_cur )
                     EnableWindow( m_button_theme, true );
             }
             else
             {
-                SetWindowTextA( m_button_action, "Add Tag" );
+                SetWindowText( m_button_action, L"Add Tag" );
                 m_tag_operation_cur = TO_ADD;
             }
+
+            EnableWindow( m_button_filter_set, true );
         }
     }
     

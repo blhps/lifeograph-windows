@@ -76,6 +76,7 @@
 #define IDMI_FILTER_TODO_DONE                   40055
 #define IDMI_FILTER_TODO_CANCELED               40056
 #define IDMI_FILTER_FAVORITES                   40057
+#define IDMI_FILTER_TAGS                        40058
 #define IDMI_ABOUT                              40090
 #define IDMI_QUIT_WO_SAVE                       40098
 #define IDMI_QUIT                               40099
@@ -88,6 +89,8 @@
 #define IDB_FILTER                              40109
 #define IDB_TAG_THEME                           40119
 #define IDB_TAG_ACTION                          40120
+#define IDB_TAG_FILTER_CLEAR                    40121
+#define IDB_TAG_FILTER_SET                      40122
 
 // TEXT EDITS
 #define IDRT_MAIN                               40200

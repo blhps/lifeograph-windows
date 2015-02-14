@@ -370,6 +370,13 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     update_entry_list();
                     update_calendar();
                     break;
+                case IDMI_FILTER_TAGS:
+                    if( DialogTags::launch( m_hwnd, Diary::d ) == SUCCESS )
+                    {
+                        update_entry_list();
+                        update_calendar();
+                    }
+                    break;
                 case IDMI_FILTER_RESET:
                     Diary::d->get_filter()->set( Diary::d->get_filter_default() );
                     Diary::d->get_filter()->set_status_outstanding();
