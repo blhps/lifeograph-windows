@@ -121,6 +121,7 @@ class WinAppWindow
         HWND                        m_hwnd;
 
         HWND                        m_toolbar;
+        HWND                        m_button_about;
         HWND                        m_button_today;
         HWND                        m_button_elem;
         HWND                        m_button_title;

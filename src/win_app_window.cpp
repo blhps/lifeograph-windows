@@ -386,16 +386,10 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                 case IDMI_FILTER_SAVE:
                     Diary::d->get_filter_default()->set( Diary::d->get_filter() );
                     break;
-                case IDMI_ABOUT:
-                    MessageBoxA( NULL, "Lifeograph for Windows  0.2.0.alpha1\n\n"
-                                       "Copyright (C) 2014-2015 Ahmet Öztürk\n"
-                                       "Lifeograph is licensed under GNU Public License v3\n\n"
-                                       "http://lifeograph.sourceforge.net",
-                                 "About...", MB_OK );
-                    break;
                 case IDRT_MAIN:
                     if( HIWORD( wParam ) == EN_CHANGE )
                         m_entry_view->m_richedit->handle_change();
+                    break;
             }
             break;
         case WM_NOTIFY:
@@ -440,6 +434,7 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             m_button_today = GetDlgItem( hwnd, IDB_TODAY );
             m_button_elem = GetDlgItem( hwnd, IDB_ELEM );
             m_button_filter = GetDlgItem( hwnd, IDB_FILTER );
+            m_button_about = GetDlgItem( hwnd, IDB_ABOUT );
             SetWindowSubclass( m_edit_date, WAO_advanced_edit_proc, 0, 0 );
 
             ShowWindow( m_button_today, SW_HIDE );
@@ -483,6 +478,15 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                     display_context_menu( m_hwnd, rect.left, rect.bottom, IDM_DIARY );
                     return TRUE;
                 }
+                case IDB_ABOUT:
+                    MessageBoxA( NULL,
+                                 "Lifeograph for Windows  0.2.0.beta1\n\n"
+                                 "Copyright (C) 2014-2015 Ahmet Öztürk\n"
+                                 "Lifeograph is licensed under GNU Public License v3\n\n"
+                                 "http://lifeograph.sourceforge.net",
+                                 "About...",
+                                 MB_OK );
+                    return TRUE;
                 case IDB_TODAY:
                     show_today();
                     return TRUE;
@@ -841,6 +845,8 @@ WinAppWindow::finish_editing( bool opt_save )
     ShowWindow( m_button_filter, SW_HIDE );
     ShowWindow( m_edit_search, SW_HIDE );
 
+    ShowWindow( m_button_about, SW_SHOW );
+
     if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
         Lifeograph::loginstatus = Lifeograph::LOGGED_OUT;
         
@@ -893,6 +899,7 @@ WinAppWindow::login()
 
     update_title();
 
+    ShowWindow( m_button_about, SW_HIDE );
     ShowWindow( m_button_today, SW_SHOW );
     ShowWindow( m_button_filter, SW_SHOW );
     ShowWindow( m_edit_search, SW_SHOW );

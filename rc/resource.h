@@ -77,11 +77,11 @@
 #define IDMI_FILTER_TODO_CANCELED               40056
 #define IDMI_FILTER_FAVORITES                   40057
 #define IDMI_FILTER_TAGS                        40058
-#define IDMI_ABOUT                              40090
 #define IDMI_QUIT_WO_SAVE                       40098
 #define IDMI_QUIT                               40099
 
 // BUTTONS
+#define IDB_ABOUT                               40100
 #define IDB_DIARY                               40101
 #define IDB_TODAY                               40104
 #define IDB_ELEM                                40107

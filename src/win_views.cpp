@@ -65,7 +65,7 @@ EntryView::sync()
 void
 EntryView::handle_login()
 {
-
+    m_richedit->handle_login();
 }
 
 void
