@@ -1127,6 +1127,12 @@ WinAppWindow::add_chapter_category_to_list( const CategoryChapters* chapters, HT
 
         if( chapter->get_expanded() )
             TreeView_Expand( m_list, hti_chapter, TVE_EXPAND );
+
+        TVSORTCB tvscb;
+        tvscb.hParent = hti_chapter;
+        tvscb.lpfnCompare = list_compare_func;
+        tvscb.lParam = 0;
+        SendMessage( m_list, TVM_SORTCHILDRENCB, 0, ( WPARAM ) &tvscb );
     }
 }
 
