@@ -1,6 +1,19 @@
 LIFEOGRAPH FOR WINDOWS RELEASE HISTORY
 ======================================
 
+0.2.0 - 2015-02-16
+
+    * Converted the entry list into a tree view
+    * Added support for chapters
+    * Implemented searching text within entries
+    * Added filtering by status, being favorite, and tag
+    * Implemented editing entry date/number
+    * Added marking entries as favorite
+    * Added setting entry completion status
+    * Added a tag list to the tag dialog
+
+
+
 0.1.1 - 2014-12-16
 
     * Fixed crash when dismissing entries
