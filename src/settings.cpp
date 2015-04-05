@@ -164,13 +164,13 @@ Settings::read()
 bool
 Settings::write()
 {
+#ifndef LIFEO_WINDOZE
     if( access( m_path.c_str(), F_OK ) != 0 )
     {
-#ifndef LIFEO_WINDOZE
         if( ! Glib::file_test( Glib::path_get_dirname( m_path ), Glib::FILE_TEST_IS_DIR ) )
             g_mkdir_with_parents( Glib::path_get_dirname( m_path ).c_str(), 0700 );
-#endif
     }
+#endif
 
     std::ofstream file( m_path.c_str(), std::ios::out | std::ios::trunc );
 
