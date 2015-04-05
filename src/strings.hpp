@@ -131,7 +131,7 @@ static const char NEW_CHAPTER_NAME[] =
 
 static const char NEW_CATEGORY_NAME[] =
         N_( "New category" );
-        
+
 static const char DEFAULT_CHAPTER_CTG_NAME[] =
         N_( "Default" );
 
