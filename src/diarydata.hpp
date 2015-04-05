@@ -40,7 +40,7 @@ using namespace HELPERS;
 
 typedef char SortingCriteria;
 static const SortingCriteria SC_DATE    = 'd';
-static const SortingCriteria SC_SIZE_   = 's';
+static const SortingCriteria SC_SIZE_C  = 's';  // size (char count)
 static const SortingCriteria SC_CHANGE  = 'c';  // last change date
 
 typedef unsigned long DEID; // unique diary element id
@@ -54,7 +54,7 @@ static const DEID HOME_FIXED_ELEM = 3;      // element shown at startup (defines
 typedef unsigned long ElemStatus;
 namespace ES
 {
-    static const ElemStatus VOID_            = 0x0;
+    static const ElemStatus _VOID_           = 0x0;
     static const ElemStatus EXPANDED         = 0x40;
 
     static const ElemStatus NOT_FAVORED      = 0x100;
@@ -156,8 +156,8 @@ class DiaryElement : public NamedElement
         };
                                 DiaryElement(); // only for pseudo elements
                                 DiaryElement( Diary* const, const Ustring&,
-                                              ElemStatus = ES::VOID_ );
-                                DiaryElement( Diary* const, DEID, ElemStatus = ES::VOID_ );
+                                              ElemStatus = ES::_VOID_ );
+                                DiaryElement( Diary* const, DEID, ElemStatus = ES::_VOID_ );
         virtual                 ~DiaryElement();
 
         virtual Type            get_type() const = 0;
@@ -185,6 +185,7 @@ class DiaryElement : public NamedElement
 #define ICON_NO_TAG_CTG        11
         virtual int             get_icon() const { return 0; }
 #endif
+
         virtual Date            get_date() const
         { return Date( Date::NOT_APPLICABLE ); }
         Date::date_t            get_date_t() const
@@ -277,7 +278,11 @@ create_unique_name_for_map( const std::map< Ustring, T*, FuncCompareStrings > &m
     Ustring name = name0;
     for( int i = 1; map.find( name ) != map.end(); i++ )
     {
+#ifndef LIFEO_WINDOZE
+        name = Glib::ustring::compose( "%1 %2", name0, i );
+#else
         name = STR::compose( name0, " ", i );
+#endif
     }
 
     return name;
@@ -430,6 +435,7 @@ class CategoryTags : public DiaryElementReferrer< Tag >
 
         Type                    get_type() const
         { return ET_TAG_CTG; }
+
 #ifndef LIFEO_WINDOZE
         const Icon&             get_icon() const;
         const Icon&             get_icon32() const;
@@ -438,7 +444,7 @@ class CategoryTags : public DiaryElementReferrer< Tag >
 #endif
         Ustring                 get_list_str() const
 #ifndef LIFEO_WINDOZE
-        { return str_compose( "<b>", Glib::Markup::escape_text( m_name ), "</b>" ); }
+        { return Glib::ustring::compose( "<b>%1</b>", Glib::Markup::escape_text( m_name ) ); }
 #else
         { return m_name; }
 #endif
@@ -496,6 +502,7 @@ class Tag : public DiaryElementReferrer< Entry >
         //Date                  get_date() const; // if earliest entry's date is needed
         virtual Type            get_type() const
         { return ET_TAG; }
+
 #ifndef LIFEO_WINDOZE
         virtual const Icon&     get_icon() const;
         virtual const Icon&     get_icon32() const;

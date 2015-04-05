@@ -52,11 +52,14 @@ LIFEO::compare_names( const Ustring& name_l, const Ustring& name_r )
 // STATIC MEMBERS
 #ifndef LIFEO_WINDOZE
 ListData::Colrec*                   ListData::colrec;
+const Icon                          DiaryElement::s_pixbuf_null;
+#else
+const Icon                          DiaryElement::s_pixbuf_null = NULL;
 #endif
 bool                                DiaryElement::FLAG_ALLOCATE_GUI_FOR_DIARY = true;
-const Icon                          DiaryElement::s_pixbuf_null = NULL;
-const Ustring DiaryElement::s_type_names[] =
-{   "", _( "Tag" ), _( "Untagged" ), _( "Tag Category" ), _( "Chapter Category" ),
+const Ustring                       DiaryElement::s_type_names[] =
+{
+    "", _( "Tag" ), _( "Untagged" ), _( "Tag Category" ), _( "Chapter Category" ),
     // TRANSLATORS: filter is a noun here
     _( "Filter" ),
     _( "Diary" ), _( "Dated Chapter" ), _( "Numbered Chapter" ),
@@ -65,7 +68,7 @@ const Ustring DiaryElement::s_type_names[] =
 
 DiaryElement::DiaryElement()
 :   NamedElement( "" ), m_list_data( NULL ), m_ptr2diary( NULL ), m_id( DEID_UNSET ),
-    m_status( ES::VOID_ )
+    m_status( ES::_VOID_ )
 {
 }
 DiaryElement::DiaryElement( Diary* const ptr2diary,
@@ -107,7 +110,7 @@ DiaryElement::set_todo_status( ElemStatus s )
 ElementShower< Tag >* Tag::shower( NULL );
 
 Tag::Tag( Diary* const d, const Ustring& name, CategoryTags* category )
-:   DiaryElementReferrer( d, name, ES::VOID_ ), m_ptr2category( category ), m_theme( NULL )
+:   DiaryElementReferrer( d, name, ES::_VOID_ ), m_ptr2category( category ), m_theme( NULL )
 {
     if( category != NULL )
         category->insert( this );
