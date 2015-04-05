@@ -23,6 +23,7 @@
 #ifndef LIFEOGRAPH_ENTRY_PARSER_HEADER
 #define LIFEOGRAPH_ENTRY_PARSER_HEADER
 
+
 #ifndef LIFEO_WINDOZE
 #include <gtkmm.h>
 #else
@@ -82,7 +83,7 @@ enum CharFlag
 
 enum CharClass
 {
-    CC_NONE_            = 0,
+    CC_NOT_SET          = 0,
     CC_NUMBER           = 0x10,
     CC_ALPHA            = 0x20,
     CC_ALPHANUM         = 0x30,

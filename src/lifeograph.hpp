@@ -206,7 +206,7 @@ class Lifeograph
         Glib::RefPtr< Gio::Menu >   m_menu;
 
         // POOL OF THUMBNAILS FOR IMAGE LINKS IN DIARY
-        typedef std::map< std::string, Icon                        > MapPixbufs;
+        typedef std::map< std::string, Icon > MapPixbufs;
         MapPixbufs                  map_thumbnails;
 #endif
 };

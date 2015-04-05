@@ -33,7 +33,7 @@ EntryParser::reset( Ustring::size_type start, Ustring::size_type end )
     m_pos_end = end;
     pos_current = pos_word = pos_alpha = pos_regular = start;
 
-    m_cc_last = CC_NONE_;
+    m_cc_last = CC_NOT_SET;
     m_cc_req = CC_ANY;
     word_last.clear();
     alpha_last.clear();

@@ -1,6 +1,6 @@
 /***********************************************************************************
 
-    Copyright (C) 2007-2011 Ahmet Öztürk (aoz_2@yahoo.com)
+    Copyright (C) 2007-2015 Ahmet Öztürk (aoz_2@yahoo.com)
 
     This file is part of Lifeograph.
 
@@ -39,7 +39,7 @@
 using namespace LIFEO;
 
 // STATIC MEMBERS
-const char                          Lifeograph::PROGRAM_VERSION_STRING[] = "1.2.0"
+const char                          Lifeograph::PROGRAM_VERSION_STRING[] = "0.2.0"
 #if LIFEOGRAPH_DEBUG_BUILD
         "\n" BUILD_TIMESTAMP
 #endif
