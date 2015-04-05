@@ -34,7 +34,7 @@
 using namespace LIFEO;
 
 
-const std::string Settings::s_date_format_orders[ 3 ]  = { "YMD", "DMY", "DMY" };
+const std::string Settings::s_date_format_orders[ 3 ]  = { "YMD", "DMY", "MDY" };
 const std::string Settings::s_date_format_separators   = "./-";
 
 Settings::Settings()
