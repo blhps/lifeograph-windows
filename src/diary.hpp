@@ -76,12 +76,12 @@ class Diary : public DiaryElement
         const Icon&             get_icon() const;
         const Icon&             get_icon32() const;
 #else
-        virtual int             get_icon() const;
+        int                     get_icon() const;
 #endif
 
         Ustring                 get_list_str() const
 #ifndef LIFEO_WINDOZE
-        { return str_compose( "<b>", Glib::Markup::escape_text( m_name ), "</b>" ); }
+        { return Glib::ustring::compose( "<b>%1</b>", Glib::Markup::escape_text( m_name ) ); }
 #else
         { return m_name; }
 #endif

@@ -28,29 +28,19 @@
 #endif
 
 #include <iomanip>
+
+#ifdef LIFEO_WINDOZE
 #include <sstream>
 #include <cmath>
 #include <unistd.h>
 #include <sys/stat.h>
+#endif
 
 #include "helpers.hpp"
 
 
 namespace HELPERS
 {
-
-/*
-void
-DONTCALLDIRECTLY::print_internal( std::stringstream& str )
-{ }
-
-template< typename Arg1, typename... Args >
-void
-print_internal( std::stringstream& str, Arg1 arg1, Args... args )
-{
-    str << arg1;
-    print_internal( str, args... );
-}*/
 
 Error::Error( const Ustring& error_message )
 {
@@ -61,7 +51,7 @@ Error::Error( const Ustring& error_message )
 std::string Date::s_date_format_order = "YMD";
 char        Date::s_date_format_separator = '.';
 
-Date::Date( const Ustring& str_date )
+Date::Date( const std::string& str_date )
 :   m_date( 0 )
 {
     if( parse_string( &m_date, str_date ) != OK )
@@ -226,24 +216,21 @@ Date::parse_string( Date::date_t* date, const Ustring& str_date )
 Ustring
 Date::format_string( const date_t d, const std::string& format, const char separator )
 {
+    std::stringstream result;
+
     if( d & ORDINAL_FLAG )
     {
-        return( get_order( d ) ? STR::compose( get_ordinal_order( d ) + 1, ".", get_order( d ) ) :
-                STR::compose( get_ordinal_order( d ) + 1 ) );
+        result << ( get_ordinal_order( d ) + 1 );
+        if( get_order( d ) )
+            result << "." << get_order( d );
     }
     else
     {
-        std::stringstream result;
-        
-        result << std::setfill( '0' ) << std::setw( 2 ) <<
-                  get_YMD( d, format[ 0 ] ) << separator <<
-                  std::setfill( '0' ) << std::setw( 2 ) <<
-                  get_YMD( d, format[ 1 ] ) << separator <<
-                  std::setfill( '0' ) << std::setw( 2 ) <<
-                  get_YMD( d, format[ 2 ] );
-                  
-        return result.str();
+        result << std::setfill( '0' ) << std::setw( 2 ) << get_YMD( d, format[ 0 ] ) << separator
+               << std::setfill( '0' ) << std::setw( 2 ) << get_YMD( d, format[ 1 ] ) << separator
+               << std::setfill( '0' ) << std::setw( 2 ) << get_YMD( d, format[ 2 ] );
     }
+    return result.str();
 }
 
 Ustring
@@ -251,14 +238,12 @@ Date::format_string_dt( const time_t time )
 {
     struct tm* timeinfo = localtime( &time );
     std::stringstream result;
-    
-    // TODO: does not respect field order preference
-    result << 1900 + timeinfo->tm_year << s_date_format_separator <<
-              std::setfill( '0' ) << std::setw( 2 ) <<
-              timeinfo->tm_mon + 1 << s_date_format_separator <<
-              timeinfo->tm_mday << ", " <<
-              timeinfo->tm_hour << ":" << timeinfo->tm_min;
-           
+
+    result << format_string( make_date_from_ctime( timeinfo ) )
+           << ", "
+           << std::setfill( '0' ) << std::setw( 2 ) << timeinfo->tm_hour << ":"
+           << std::setfill( '0' ) << std::setw( 2 ) << timeinfo->tm_min;
+
     return result.str();
 }
 
@@ -267,18 +252,15 @@ Ustring
 Date::format_string_d( const time_t time )
 {
     struct tm* timeinfo = localtime( &time );
-    std::stringstream result;
-    
-    // TODO: does not respect field order preference
-    result << 1900 + timeinfo->tm_year << s_date_format_separator <<
-              std::setfill( '0' ) << std::setw( 2 ) <<
-              timeinfo->tm_mon + 1 << s_date_format_separator << timeinfo->tm_mday;
+    return format_string( make_date_from_ctime( timeinfo ) );
 }
 
-Ustring
+std::string
 Date::get_year_str() const
 {
-    return STR::compose( get_year() );
+    std::stringstream result;
+    result << get_year();
+    return result.str();
 }
 
 #ifndef LIFEO_WINDOZE
@@ -383,7 +365,7 @@ Date::forward_month()
 void
 Date::forward_day()
 {
-    int day = get_day();
+    unsigned int day = get_day();
     if( day >= get_days_in_month() )
     {
         set_day( 1 );
@@ -434,37 +416,9 @@ print_info( const Ustring& description )
     std::cout << "INFO: " << description << std::endl;
 }
 
-// STRING PROCESSING
-long
-convert_string( const std::string& str )
-{
-    //TODO: add negative number support
-    long result( 0 );   // result
-    for( unsigned int i = 0;
-         i < str.size() && i < 10 && int ( str[ i ] ) >= '0' && int ( str[ i ] ) <= '9';
-         i++ )
-    {
-        result = ( result * 10 ) + int ( str[ i ] ) - '0';
-    }
-    return( result );
-}
-
-bool
-str_ends_with ( const std::string& str, const std::string& end )
-{
-    if( str.length() > end.length() )
-    {
-        return( str.compare( str.length() - end.length(), end.length(), end ) == 0 );
-    }
-    else
-    {
-        return false;
-    }
-}
-
-// COLOR PROCESSING
+// COLOR OPERATIONS ================================================================================
 #ifndef LIFEO_WINDOZE
-Color
+Gdk::RGBA
 contrast2( const Gdk::RGBA& bg, const Gdk::RGBA& c1, const Gdk::RGBA& c2 )
 {
     double dist1 = ( fabs( bg.get_red() - c1.get_red() ) +
@@ -481,7 +435,7 @@ contrast2( const Gdk::RGBA& bg, const Gdk::RGBA& c1, const Gdk::RGBA& c2 )
         return c2;
 }
 
-Color
+Gdk::RGBA
 midtone( const Gdk::RGBA& c1, const Gdk::RGBA& c2 )
 {
     Gdk::RGBA midtone;
@@ -492,7 +446,7 @@ midtone( const Gdk::RGBA& c1, const Gdk::RGBA& c2 )
     return midtone;
 }
 
-Color
+Gdk::RGBA
 midtone( const Gdk::RGBA& c1, const Gdk::RGBA& c2, float ratio )
 {
     Gdk::RGBA midtone;
@@ -533,7 +487,7 @@ midtone( int r1, int g1, int b1, int r2, int g2, int b2, float ratio )
     
 #endif
 
-// FILE FUNCTIONS
+// FILE OPERATIONS =================================================================================
 std::ios::pos_type
 get_file_size( std::ifstream& file )
 {
@@ -547,7 +501,6 @@ get_file_size( std::ifstream& file )
    return size;
 }
 
-// FILE I/O
 bool
 copy_file_suffix( const std::string& source_path, const std::string& suffix1, int suffix2 )
 {
@@ -555,7 +508,7 @@ copy_file_suffix( const std::string& source_path, const std::string& suffix1, in
     try
     {
         Glib::RefPtr< Gio::File > file_src = Gio::File::create_for_path( source_path );
-        
+
         if( file_src )
 #endif
         {
@@ -607,11 +560,38 @@ is_dir( const char* path )
             return false;
     }
     else
-        Error( "Stat failed" );
+        throw Error( "Stat failed" );
+}
+
+// TEXT OPERATIONS =================================================================================
+long
+convert_string( const std::string& str )
+{
+    //TODO: add negative number support
+    long result( 0 );   // result
+    for( unsigned int i = 0;
+         i < str.size() && i < 10 && int ( str[ i ] ) >= '0' && int ( str[ i ] ) <= '9';
+         i++ )
+    {
+        result = ( result * 10 ) + int ( str[ i ] ) - '0';
+    }
+    return( result );
+}
+
+bool
+str_ends_with ( const std::string& str, const std::string& end )
+{
+    if( str.length() > end.length() )
+    {
+        return( str.compare( str.length() - end.length(), end.length(), end ) == 0 );
+    }
+    else
+    {
+        return false;
+    }
 }
 
 #ifndef LIFEO_WINDOZE
-// ENVIRONMENT VARIABLES
 std::string
 get_env_lang()
 {
@@ -678,10 +658,10 @@ command_line_to_argvA( PCHAR CmdLine, int* _argc )
 {
     PCHAR* argv;
     PCHAR  _argv;
-    ULONG   len;
-    ULONG   argc;
+    ULONG  len;
+    ULONG  argc;
     CHAR   a;
-    ULONG   i, j;
+    ULONG  i, j;
 
     BOOLEAN  in_QM;
     BOOLEAN  in_TEXT;
@@ -1047,531 +1027,6 @@ EntryClear::on_key_release_event( GdkEventKey* event )
     return Gtk::Entry::on_key_release_event( event );
 }
 
-// MENUBUTTON ======================================================================================
-#if( GTKMM_MAJOR_VERSION < 3 )
-
-Glib::ustring       Menubutton::s_builder_name;
-
-Menubutton::Menubutton( const Gtk::StockID& stockid,
-                        const Glib::ustring& label,
-                        Gtk::ReliefStyle style,
-                        Gtk::IconSize iconsize,
-                        Menu2* menu )
-    :   Gtk::ToggleButton(), m_menu( menu )
-{
-    set_relief( style );
-
-    if( menu == NULL )
-        m_menu = new Menu2;
-    Gtk::Box* hbox = Gtk::manage( new Gtk::Box );
-    Gtk::Image* icon = Gtk::manage( new Gtk::Image( stockid, iconsize ) );
-    m_label = Gtk::manage( new Gtk::Label( label ) );
-    Gtk::Arrow* arrow = Gtk::manage(
-            new Gtk::Arrow( Gtk::ARROW_DOWN, Gtk::SHADOW_IN ) );
-
-    hbox->pack_start( *icon, Gtk::PACK_SHRINK );
-    hbox->pack_start( *m_label, Gtk::PACK_EXPAND_WIDGET );
-    hbox->pack_start( *arrow, Gtk::PACK_SHRINK );
-    add( *hbox );
-    m_menu->attach_to_widget( *this );
-    m_connection = m_menu->signal_deactivate().connect(
-            sigc::mem_fun( *this, &Menubutton::release ) );
-    add_events( Gdk::BUTTON_PRESS_MASK );
-}
-
-//FIXME: code duplication
-Menubutton::Menubutton( const Glib::RefPtr< Gdk::Pixbuf >* pixbuf,
-                        const Glib::ustring& label,
-                        Gtk::ReliefStyle style,
-                        Menu2* menu )
-:   Gtk::ToggleButton(), m_menu( menu )
-{
-    set_relief( style );
-    Gtk::Arrow* arrow( NULL );
-    Gtk::Image* icon( NULL );
-    Gtk::Box* hbox( NULL );
-    try
-    {
-        if( menu == NULL )
-            m_menu = new Menu2;
-        hbox = Gtk::manage( new Gtk::Box );
-        if( pixbuf )
-            icon = Gtk::manage( new Gtk::Image( *pixbuf ) );
-        m_label = Gtk::manage( new Gtk::Label( label ) );
-        arrow = Gtk::manage( new Gtk::Arrow( Gtk::ARROW_DOWN, Gtk::SHADOW_IN ) );
-    }
-    catch( ... )
-    {
-        throw Error( "Menubutton creation failed" );
-    }
-
-    if( pixbuf )
-        hbox->pack_start( *icon, Gtk::PACK_SHRINK );
-    hbox->pack_start( *m_label, Gtk::PACK_EXPAND_WIDGET );
-    hbox->pack_start( *arrow, Gtk::PACK_SHRINK );
-    add( *hbox );
-    m_menu->attach_to_widget( *this );
-    m_connection = m_menu->signal_deactivate().connect(
-            sigc::mem_fun( *this, &Menubutton::release ) );
-    add_events( Gdk::BUTTON_PRESS_MASK );
-}
-
-Menubutton::Menubutton( BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& builder )
-:   Gtk::ToggleButton( cobject ), m_menu( NULL )
-{
-    if( !s_builder_name.empty() )
-    {
-        try
-        {
-            builder->get_widget_derived( s_builder_name + "_menu", m_menu );
-            //builder->get_widget( s_builder_name + "_icon", m_icon );
-            //builder->get_widget( s_builder_name + "_label", m_label );
-            s_builder_name = "";
-        }
-        catch( ... )
-        {
-            throw Error( "Menubutton creation failed" );
-        }
-
-        m_menu->attach_to_widget( *this );
-        m_connection = m_menu->signal_deactivate().connect(
-                sigc::mem_fun( this, &Menubutton::release ) );
-    }
-
-    add_events( Gdk::BUTTON_PRESS_MASK );
-}
-
-Menubutton::~Menubutton()
-{
-    delete m_menu;
-}
-
-Menu2*
-Menubutton::get_menu() const
-{
-    return m_menu;
-}
-
-void
-Menubutton::set_menu( Menu2* menu )
-{
-    if( m_menu == menu )
-        return;
-
-    if( m_menu )
-    {
-        m_menu->detach();
-        m_connection.disconnect();
-    }
-
-    m_menu = menu;
-
-    set_sensitive( menu != NULL );
-
-    if( menu )
-    {
-        m_menu->attach_to_widget( *this );
-        m_connection = m_menu->signal_deactivate().connect(
-                sigc::mem_fun( this, &Menubutton::release ) );
-    }
-}
-
-bool
-Menubutton::clear_menu()
-{
-    if( m_menu->get_children().size() > 0 )
-    {
-        m_menu->detach();
-        delete m_menu;
-        m_menu = new Menu2;
-        m_menu->attach_to_widget( *this );
-        m_menu->signal_deactivate().connect( sigc::mem_fun( *this, &Menubutton::release ) );
-
-        return true;
-    }
-    else
-        return false;
-}
-
-void
-Menubutton::release()
-{
-    set_active( false );
-}
-
-void
-Menubutton::set_label( const Glib::ustring& string )
-{
-    m_label->set_label( string );
-}
-
-void
-Menubutton::get_menu_position( int& x, int& y, bool& push_in )
-{
-    get_window()->get_origin( x, y );
-    x += get_allocation().get_x();
-    y += get_allocation().get_y() + get_allocation().get_height();
-    push_in = true;
-}
-
-bool
-Menubutton::on_button_press_event( GdkEventButton* l_event )
-{
-    m_menu->popup( sigc::mem_fun(
-            *this, &Menubutton::get_menu_position), l_event->button, l_event->time);
-
-    set_active( true );
-
-    return true;
-}
-
-#endif
-
-// MENUITEMRECENT ==================================================================================
-#if( GTKMM_MAJOR_VERSION < 3 ) // to be ported to gtkmm3 if needed
-MenuitemRecent::MenuitemRecent( const std::string& path )
-:   Gtk::MenuItem(), m_icon_remove( Gtk::Stock::DELETE, Gtk::ICON_SIZE_MENU ),
-    m_path( path ), m_flag_deletepressed( false )
-{
-    Gtk::Label      *label = Gtk::manage( new Gtk::Label(
-                                            Glib::filename_display_basename( path ) ) );
-    Gtk::Box        *hbox = Gtk::manage( new Gtk::Box );
-
-    label->set_justify( Gtk::JUSTIFY_LEFT );
-    label->set_alignment( Gtk::ALIGN_START );
-    label->set_ellipsize( Pango::ELLIPSIZE_START );
-    label->set_tooltip_text( path );
-    m_icon_remove.set_tooltip_text( _( "Remove from the list" ) );
-    hbox->set_spacing( 5 );
-
-    hbox->pack_start( *label );
-    hbox->pack_start( m_icon_remove, Gtk::PACK_SHRINK );
-    this->add( *hbox );
-
-    hbox->show();
-    label->show();
-}
-
-bool
-MenuitemRecent::on_motion_notify_event( GdkEventMotion* event )
-{
-    if( !( event->state &
-            ( Gdk::BUTTON1_MASK | Gdk::BUTTON2_MASK | Gdk::BUTTON3_MASK ) ) )
-        m_icon_remove.show();
-
-    return Gtk::MenuItem::on_motion_notify_event( event );
-}
-
-bool
-MenuitemRecent::on_leave_notify_event( GdkEventCrossing* event )
-{
-    m_icon_remove.hide();
-
-    return Gtk::MenuItem::on_leave_notify_event( event );
-}
-
-bool
-MenuitemRecent::on_button_press_event( GdkEventButton* event )
-{
-    if( event->x >= m_icon_remove.get_allocation().get_x() &&
-        event->x < m_icon_remove.get_allocation().get_x() +
-                    m_icon_remove.get_allocation().get_width() )
-        m_flag_deletepressed = true;
-    else
-        m_flag_deletepressed = false;
-
-    return Gtk::MenuItem::on_button_press_event( event );
-}
-
-bool
-MenuitemRecent::on_button_release_event( GdkEventButton* event )
-{
-    if( m_flag_deletepressed )
-    {
-        if( event->x >= m_icon_remove.get_allocation().get_x() &&
-            event->x < m_icon_remove.get_allocation().get_x() +
-                        m_icon_remove.get_allocation().get_width() )
-        {
-            m_signal_removerecent.emit( m_path );
-            return true;
-        }
-    }
-
-    return Gtk::MenuItem::on_button_release_event( event );
-}
-
-// FILEBUTTONRECENT ================================================================================
-Glib::ustring   FilebuttonRecent::fallback_label = _( "Select or Create a Diary" );
-
-/*
-FilebuttonRecent::FilebuttonRecent( const Glib::RefPtr< Gdk::Pixbuf >& pixbuf,
-                                    ListPaths* list_recent,
-                                    const Glib::ustring& label_fallback )
-:   Menubutton( &pixbuf, label_fallback, Gtk::RELIEF_NORMAL ),
-    m_icon_new( Gtk::Stock::NEW, Gtk::ICON_SIZE_MENU ),
-    m_icon_browse( Gtk::Stock::OPEN, Gtk::ICON_SIZE_MENU ),
-    m_list_recent( list_recent )
-{
-    // TODO: m_hbox->set_spacing( 4 );
-
-    m_label->set_ellipsize( Pango::ELLIPSIZE_START );
-    m_label->set_alignment( Gtk::ALIGN_LEFT );
-
-    m_menu->items().push_back( Gtk::Menu_Helpers::SeparatorElem() );
-
-    m_menu->items().push_back(
-            Gtk::Menu_Helpers::ImageMenuElem( _("_Browse For a Diary..."), m_icon_browse,
-                    sigc::mem_fun( *this,
-                            &FilebuttonRecent::show_filechooser) ) );
-    m_menu->items().push_back(
-            Gtk::Menu_Helpers::ImageMenuElem( _("_Create A New Diary..."), m_icon_new,
-                    sigc::mem_fun( *this,
-                            &FilebuttonRecent::on_create_file) ) );
-
-    m_menu->show_all_children();
-
-    // ACCEPT DROPPED FILES
-    //~ std::list< Gtk::TargetEntry > list_targets;
-    //~ list_targets.push_back( Gtk::TargetEntry( "STRING" ) );
-    //~ list_targets.push_back( Gtk::TargetEntry( "text/plain" ) );
-    //~ this->drag_dest_set( list_targets );
-    // TODO: i could not figure out how this is supposed to work and replicated
-    // almost blindly bmpx' approach.
-    drag_dest_set( Gtk::DEST_DEFAULT_ALL, ( Gdk::ACTION_COPY | Gdk::ACTION_MOVE ) );
-    drag_dest_add_uri_targets();
-}*/
-
-FilebuttonRecent::FilebuttonRecent( BaseObjectType* cobj, const Glib::RefPtr<Gtk::Builder>& bui )
-:   Menubutton( cobj, bui ),
-    m_icon_new( Gtk::Stock::NEW, Gtk::ICON_SIZE_MENU ),
-    m_icon_browse( Gtk::Stock::OPEN, Gtk::ICON_SIZE_MENU ),
-    m_list_recent( NULL )
-{
-    m_label->set_ellipsize( Pango::ELLIPSIZE_START );
-    m_label->set_alignment( Gtk::ALIGN_START );
-    m_label->set_text( fallback_label );
-
-    m_menu->items().push_back( Gtk::Menu_Helpers::SeparatorElem() );
-
-    m_menu->items().push_back(
-            Gtk::Menu_Helpers::ImageMenuElem( _("_Browse For a Diary..."), m_icon_browse,
-                    sigc::mem_fun( *this,
-                            &FilebuttonRecent::show_filechooser) ) );
-    m_menu->items().push_back(
-            Gtk::Menu_Helpers::ImageMenuElem( _("_Create A New Diary..."), m_icon_new,
-                    sigc::mem_fun( *this,
-                            &FilebuttonRecent::on_create_file) ) );
-
-    m_menu->show_all_children();
-
-    // ACCEPT DROPPED FILES
-    drag_dest_set( Gtk::DEST_DEFAULT_ALL, ( Gdk::ACTION_COPY | Gdk::ACTION_MOVE ) );
-    drag_dest_add_uri_targets();
-}
-
-void
-FilebuttonRecent::set( ListPaths* list_recent )
-{
-    m_list_recent = list_recent;
-}
-
-std::string
-FilebuttonRecent::get_filename() const
-{
-    return( * m_list_recent->begin() );
-}
-
-void
-FilebuttonRecent::set_filename( const std::string& path )
-{
-    if( ! m_list_recent->empty() )
-        if( path == * m_list_recent->begin() )
-            return;
-
-    m_label->set_label( Glib::filename_display_basename( path ) );
-    set_tooltip_text( path );
-    add_recent( path );
-    m_signal_selectionchanged.emit();
-}
-
-void
-FilebuttonRecent::update_filenames()
-{
-    if( ! m_list_recent->empty() )
-    {
-        for( ListPaths::reverse_iterator iter = m_list_recent->rbegin();
-             iter != m_list_recent->rend(); ++iter )
-        {
-            MenuitemRecent* menuitem = Gtk::manage( new MenuitemRecent( *iter ) );
-
-            menuitem->signal_activate().connect(
-                    sigc::bind( sigc::mem_fun( this, &FilebuttonRecent::set_filename ), *iter ) );
-            menuitem->signal_removerecent().connect(
-                    sigc::mem_fun( this, &FilebuttonRecent::remove_recent ) );
-
-            m_menu->items().push_front( Gtk::Menu_Helpers::Element( *menuitem ) );
-
-            menuitem->show();
-        }
-
-        m_label->set_label( Glib::filename_display_basename( * m_list_recent->begin() ) );
-        set_tooltip_text( * m_list_recent->begin() );
-    }
-}
-
-bool
-FilebuttonRecent::add_recent( const std::string& path )
-{
-    // do not add a file twice:
-    Gtk::Menu_Helpers::MenuList::iterator iter_menu = m_menu->items().begin();
-    ListPaths::iterator iter_recent = m_list_recent->begin();
-    for( ; iter_recent != m_list_recent->end(); ++iter_recent )
-    {
-        if( ( *iter_recent ) == path )
-        {
-            m_menu->items().erase( iter_menu );
-            m_list_recent->erase( iter_recent );
-            break;
-        }
-        else
-            ++iter_menu;
-    }
-
-    MenuitemRecent* menuitem = Gtk::manage( new MenuitemRecent( path ) );
-
-    menuitem->signal_activate().connect(
-            sigc::bind( sigc::mem_fun( *this, &FilebuttonRecent::set_filename ),
-                        path ) );
-    menuitem->signal_removerecent().connect(
-            sigc::mem_fun( *this, &FilebuttonRecent::remove_recent ) );
-
-    m_menu->items().push_front( Gtk::Menu_Helpers::Element( *menuitem ) );
-
-    menuitem->show();
-
-    m_list_recent->push_front( path );
-
-    if( m_list_recent->size() > MAX_RECENT_FILE_COUNT )
-    {
-        m_menu->items().erase( --iter_menu );
-        m_list_recent->erase( --iter_recent );
-    }
-
-    return true;    // reserved
-}
-
-void
-FilebuttonRecent::remove_recent( const std::string& path )
-{
-    Gtk::Menu_Helpers::MenuList::iterator   iter_menu = m_menu->items().begin();
-    std::list< std::string >::iterator      iter_recent = m_list_recent->begin();
-    bool flag_update = false;
-    for( ; iter_recent != m_list_recent->end(); ++iter_recent )
-    {
-        if( ( *iter_recent ) == path )
-        {
-            if( iter_recent == m_list_recent->begin() )
-                flag_update = true;
-            m_menu->items().erase( iter_menu );
-            m_list_recent->erase( iter_recent );
-            break;
-        }
-        else
-            ++iter_menu;
-    }
-    // update current path if first item is deleted
-    if( flag_update )
-    {
-        if( m_list_recent->empty() )
-        {
-            m_label->set_label( fallback_label );
-            set_tooltip_text( "" );
-        }
-        else
-        {
-            m_label->set_label( Glib::filename_display_basename( m_list_recent->front() ) );
-            set_tooltip_text( m_list_recent->front() );
-        }
-        m_signal_selectionchanged.emit();
-    }
-}
-
-void
-FilebuttonRecent::show_filechooser()
-{
-    m_filechooserdialog = new Gtk::FileChooserDialog(
-            _( "Select a Diary" ), Gtk::FILE_CHOOSER_ACTION_OPEN );
-
-    if( m_list_recent->size() > 0 )
-        m_filechooserdialog->set_filename( * m_list_recent->begin() );
-    else
-        m_filechooserdialog->set_current_folder( Glib::get_home_dir() );
-
-    m_filechooserdialog->add_button( Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL );
-    m_filechooserdialog->add_button( Gtk::Stock::OPEN, Gtk::RESPONSE_ACCEPT );
-    FilefilterAny       filter_any;
-    FilefilterDiary     filter_diary;
-    m_filechooserdialog->add_filter( filter_any );
-    m_filechooserdialog->add_filter( filter_diary );
-    m_filechooserdialog->set_filter( filter_diary );
-    if( m_filechooserdialog->run() == Gtk::RESPONSE_ACCEPT )
-    {
-        set_filename( m_filechooserdialog->get_filename() );
-    }
-
-    delete m_filechooserdialog;
-    m_filechooserdialog= NULL;
-}
-
-void
-FilebuttonRecent::on_create_file()
-{
-    m_signal_createfile.emit();
-}
-
-void
-FilebuttonRecent::on_drag_data_received( const Glib::RefPtr<Gdk::DragContext>& context,
-                                         int, int,
-                                         const Gtk::SelectionData& seldata,
-                                         guint info,
-                                         guint time )
-{
-    if( seldata.get_length() < 0 )
-        return;
-
-    Glib::ustring uri = seldata.get_data_as_string();
-    std::string filename = uri.substr( 0, uri.find('\n') - 1 );
-    filename = Glib::filename_from_uri( filename );
-
-    if( Glib::file_test( filename, Glib::FILE_TEST_IS_DIR ) )
-        return;
-
-    set_filename( filename );
-    PRINT_DEBUG( Glib::ustring::compose( "dropped: %1", filename ) );
-
-    context->drag_finish( true, false, time );
-}
-
-void
-FilebuttonRecent::on_size_allocate( Gtk::Allocation& allocation )
-{
-    Menubutton::on_size_allocate( allocation );
-    m_menu->set_size_request( allocation.get_width(), -1 );
-}
-
-SignalVoid
-FilebuttonRecent::signal_selection_changed()
-{
-    return m_signal_selectionchanged;
-}
-
-SignalVoid
-FilebuttonRecent::signal_create_file()
-{
-    return m_signal_createfile;
-}
-
-#endif
 // DIALOGEVENT =====================================================================================
 // the rest of the DialogEvent needs to be defined within the user application
 void

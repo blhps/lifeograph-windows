@@ -37,6 +37,8 @@
 
 #ifndef LIFEO_WINDOZE
 #include <gtkmm.h>
+#else
+#include <shlwapi.h>
 #endif
 
 #ifndef LIFEO_WINDOZE
@@ -59,6 +61,7 @@ typedef std::string Color;
 namespace HELPERS
 {
 
+#ifdef LIFEO_WINDOZE
 class STR
 {
     private:
@@ -82,6 +85,7 @@ class STR
             return str.str();
         }
 };
+#endif
 
 class Error
 {
@@ -240,9 +244,9 @@ class Date
         }
 
         std::string                 get_year_str() const;
-        std::string                 get_month_str() const;
-        std::string                 get_day_str() const;
-        std::string                 get_weekday_str() const;
+        Ustring                     get_month_str() const;
+        //std::string                 get_day_str() const;
+        Ustring                     get_weekday_str() const;
 
         unsigned int                get_days_in_month() const;
 
@@ -326,14 +330,15 @@ class Date
         static void                 reset_order_1( date_t& date )
         { date &= ORDER_FILTER_INV; date |= 0x1; }
 
-        static Result               parse_string( Date::date_t*, const std::string& );
-        std::string                 format_string() const
+        static Result               parse_string( Date::date_t*, const Ustring& );
+
+        Ustring                     format_string() const
         { return format_string( m_date, s_date_format_order, s_date_format_separator ); }
-        static std::string          format_string( const date_t date )
+        static Ustring              format_string( const date_t date )
         { return format_string( date, s_date_format_order, s_date_format_separator ); }
-        static std::string          format_string( const date_t, const std::string&, const char );
-        static std::string          format_string_dt( const time_t );
-        static std::string          format_string_d( const time_t );
+        static Ustring              format_string( const date_t, const std::string&, const char );
+        static Ustring              format_string_dt( const time_t );
+        static Ustring              format_string_d( const time_t );
 
         bool                        is_valid() const
         {
@@ -376,6 +381,10 @@ class Date
         { return( ( y << 19 ) | ( m << 15 ) | ( d << 10 ) | o ); }
         static date_t               make_date( unsigned int c, unsigned int o = 0 )
         { return( TOPIC_MIN | ( ( c - 1 ) * ORDINAL_STEP ) | o ); }
+        static date_t               make_date_from_ctime( const tm* timeinfo )
+        {
+            return make_date( timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday );
+        }
 
         unsigned int                calculate_days_between( const Date& ) const;
         unsigned int                calculate_months_between( Date::date_t ) const;
@@ -402,9 +411,9 @@ compare_dates( const Date::date_t& date_l, const Date::date_t& date_r )
 
 typedef bool( *FuncCompareDates )( const Date::date_t&, const Date::date_t& ) ;
 
-// GLOBAL FUNCTIONS ================================================================================
-void                print_error( const std::string& );
-void                print_info( const std::string& );
+// CONSOLE MESSAGES ================================================================================
+void                print_error( const Ustring& );
+void                print_info( const Ustring& );
 
 #if LIFEOGRAPH_DEBUG_BUILD
 #define PRINT_DEBUG( msg )  std::cout << "DEBUG: " << msg << std::endl
@@ -418,12 +427,9 @@ void                print_info( const std::string& );
 #define PRINT_DEBUG4( a1, a2, a3, a4 )  ;
 #endif
 
-long                convert_string( const std::string& );
-bool                str_ends_with ( const std::string&, const std::string& );
-
+// COLOR OPERATIONS ================================================================================
 #ifndef LIFEO_WINDOZE
 Gdk::RGBA           contrast2( const Gdk::RGBA&, const Gdk::RGBA&, const Gdk::RGBA& );
-//Gdk::RGBA           contrast( const Gdk::RGBA&, const Gdk::RGBA& ); DEPRECATED
 Gdk::RGBA           midtone( const Gdk::RGBA&, const Gdk::RGBA& );
 Gdk::RGBA           midtone( const Gdk::RGBA&, const Gdk::RGBA&, float );
 
@@ -502,22 +508,38 @@ midtone( int, int, int, int, int, int, float );
 
 #endif
 
-// FILE OPERATIONS
+// FILE OPERATIONS =================================================================================
 std::ios::pos_type  get_file_size( std::ifstream& );
 
 bool                copy_file_suffix( const std::string&, const std::string&, int );
 
 bool                is_dir( const char* );
 
+inline std::string
+get_filename_base( const std::string& path )
+{
 #ifndef LIFEO_WINDOZE
-std::string         get_env_lang();
+    return Glib::filename_display_basename( path );
+#else
+    char* stripped_path = new char[ path.size() + 1 ];
+    strcpy( stripped_path, path.c_str() );
+    PathStripPathA( stripped_path );
+    return std::string( stripped_path );
+#endif
+}
 
-Gtk::MenuItem*      create_menuitem_markup( const Glib::ustring&,
-                                            const Glib::SignalProxy0< void >::SlotType& );
-                                            
+typedef std::set< std::string > ListPaths;
+
+// TEXT OPERATIONS =================================================================================
+long                convert_string( const std::string& );
+bool                str_ends_with( const std::string&, const std::string& );
+
+#ifndef LIFEO_WINDOZE
 gunichar            char_lower( gunichar );
 bool                is_char_alpha( gunichar );
-                                            
+
+std::string         get_env_lang();
+
 #else
 wchar_t*            convert_utf8_to_16( const Ustring& );
 char*               convert_utf16_to_8( const wchar_t* );
@@ -527,13 +549,6 @@ bool                is_char_alpha( wchar_t );
 
 PCHAR*              command_line_to_argvA( PCHAR, int* );
 #endif
-
-// COMMON SIGNALS ==================================================================================
-#ifndef LIFEO_WINDOZE
-typedef sigc::signal< void >        SignalVoid;
-#endif
-
-typedef std::set< std::string >     ListPaths;
 
 // ENCRYPTION ======================================================================================
 class Cipher
@@ -647,7 +662,13 @@ Gtk::Frame* create_frame( const Glib::ustring&, Gtk::Widget& );
 bool is_treepath_less( const Gtk::TreePath&, const Gtk::TreePath& );
 bool is_treepath_more( const Gtk::TreePath&, const Gtk::TreePath& );
 
-#endif
+// OTHER GTK HELPERS ===============================================================================
+Gtk::MenuItem*      create_menuitem_markup( const Glib::ustring&,
+                                            const Glib::SignalProxy0< void >::SlotType& );
+
+typedef sigc::signal< void >        SignalVoid;
+
+#endif // ifndef LIFEO_WINDOZE
 
 } // end of namespace HELPERS
 

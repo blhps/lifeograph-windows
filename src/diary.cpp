@@ -32,15 +32,14 @@
 #include <gcrypt.h>
 #include <cerrno>
 #include <cassert>
-#include <unistd.h>
 
 #include "diary.hpp"
 #include "helpers.hpp"
 #include "lifeograph.hpp"
-#include "strings.hpp"
 
 #ifdef LIFEO_WINDOZE
-#include <shlwapi.h>
+#include <unistd.h>
+#include "strings.hpp"
 #endif
 
 using namespace LIFEO;
@@ -74,7 +73,7 @@ get_db_line_date( const Ustring& line )
 Ustring
 get_db_line_name( const Ustring& line )
 {
-    std::string::size_type begin( line.find( '\t' ) );
+    Ustring::size_type begin( line.find( '\t' ) );
     if( begin == std::string::npos )
         begin = 2;
     else
@@ -247,14 +246,7 @@ Diary::set_path( const std::string& path, SetPathType type )
 
     // ACCEPT PATH
     m_path = path;
-#ifndef LIFEO_WINDOZE
-    m_name = Glib::filename_display_basename( path );
-#else
-    char* stripped_path = new char[ path.size() + 1 ];
-    strcpy( stripped_path, path.c_str() );
-    PathStripPathA( stripped_path );
-    m_name = stripped_path;
-#endif
+    m_name = get_filename_base( path );
     m_flag_read_only = ( type == SPT_READ_ONLY );
 
     return LIFEO::SUCCESS;
@@ -323,8 +315,6 @@ LIFEO::Result
 Diary::read_header()
 {
     m_ifstream = new std::ifstream( m_path.c_str() );
-    
-size_t size = m_ifstream->tellg();
 
     if( ! m_ifstream->is_open() )
     {
@@ -335,8 +325,6 @@ size_t size = m_ifstream->tellg();
     std::string line;
 
     getline( *m_ifstream, line );
-    
-size = m_ifstream->tellg();
 
     if( line != LIFEO::DB_FILE_HEADER )
     {
@@ -413,9 +401,10 @@ Diary::read_encrypted()
         clear();
         return LIFEO::COULD_NOT_START;
     }
-    
+
     CipherBuffers buf;
 
+#ifdef LIFEO_WINDOZE
     m_ifstream->close();
     m_ifstream->open( m_path.c_str(),
                       std::ifstream::in | std::ifstream::binary | std::ifstream::ate );
@@ -438,6 +427,9 @@ Diary::read_encrypted()
         else
             ch_count = 0;
     }
+#else
+    size_t fsize = LIFEO::get_file_size( *m_ifstream );
+#endif
 
     try
     {
@@ -554,52 +546,47 @@ parse_theme( Theme* ptr2theme, const std::string& line )
 {
     switch( line[ 1 ] )
     {
-        case 'f':   // font
-            ptr2theme->font =
 #ifndef LIFEO_WINDOZE
-                    Pango::FontDescription( line.substr( 2 ) );
-#else
-                    line.substr( 2 );
-#endif
+        case 'f':   // font
+            ptr2theme->font = Pango::FontDescription( line.substr( 2 ) );
             break;
         case 'b':   // base color
-#ifndef LIFEO_WINDOZE
             ptr2theme->color_base.set( line.substr( 2 ) );
-#else
-            ptr2theme->color_base = line.substr( 2 );
-#endif
             break;
         case 't':   // text color
-#ifndef LIFEO_WINDOZE
             ptr2theme->color_text.set( line.substr( 2 ) );
-#else
-            ptr2theme->color_text = line.substr( 2 );
-#endif
             break;
         case 'h':   // heading color
-#ifndef LIFEO_WINDOZE
             ptr2theme->color_heading.set( line.substr( 2 ) );
-#else
-            ptr2theme->color_heading = line.substr( 2 );
-#endif
             break;
         case 's':   // subheading color
-#ifndef LIFEO_WINDOZE
             ptr2theme->color_subheading.set( line.substr( 2 ) );
-#else
-            ptr2theme->color_subheading = line.substr( 2 );
-#endif
             break;
         case 'l':   // highlight color
-#ifndef LIFEO_WINDOZE
             ptr2theme->color_highlight.set( line.substr( 2 ) );
-#else
-            ptr2theme->color_highlight = line.substr( 2 );
-#endif
             break;
+#else
+        case 'f':   // font
+            ptr2theme->font = line.substr( 2 );
+            break;
+        case 'b':   // base color
+            ptr2theme->color_base = line.substr( 2 );
+            break;
+        case 't':   // text color
+            ptr2theme->color_text = line.substr( 2 );
+            break;
+        case 'h':   // heading color
+            ptr2theme->color_heading = line.substr( 2 );
+            break;
+        case 's':   // subheading color
+            ptr2theme->color_subheading = line.substr( 2 );
+            break;
+        case 'l':   // highlight color
+            ptr2theme->color_highlight = line.substr( 2 );
+            break;
+#endif
     }
 }
-
 
 // PARSING FUNCTIONS
 inline LIFEO::Result
@@ -1292,7 +1279,7 @@ Diary::write()
     // DAILY BACKUP SAVES
 #if LIFEOGRAPH_DEBUG_BUILD
     if( copy_file_suffix(
-            m_path, "." + Date::format_string( Date::get_today(), "%1-%2-%3" ), -1 ) )
+            m_path, "." + Date::format_string( Date::get_today(), "YMD", '-' ), -1 ) )
         print_info( "daily backup has been written successfully" );
 #endif
 
@@ -1351,11 +1338,7 @@ Diary::write_txt( const std::string& path, bool flag_filtered )
     const std::string separator_chapter = ":::::::::::::::::::::::::::::::::::::::::::::\n";
 
     // DIARY TITLE
-#ifndef LIFEO_WINDOZE
-    file << separator_thick << Glib::filename_display_basename( path ) << '\n' << separator_thick;
-#else
-    file << separator_thick << path << '\n' << separator_thick; // FIX ME
-#endif
+    file << separator_thick << get_filename_base( path ) << '\n' << separator_thick;
 
     // ENTRIES
     for( int i = 0; i < 4; i++ )
