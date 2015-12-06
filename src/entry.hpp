@@ -58,13 +58,19 @@ class Entry : virtual public DiaryElement
         { m_text = text; calculate_title( text ); }
 
         Date                    get_date() const { return m_date; }
-        time_t                  get_date_created() const { return m_date_created; }
-        void                    set_date_changed( Date::date_t d ) { m_date_changed = d; }
-        time_t                  get_date_changed() const { return m_date_changed; }
-        Ustring                 get_date_created_str() const;
-        Ustring                 get_date_changed_str() const;
         void                    set_date( Date::date_t date )
         { m_date.m_date = date; }
+
+        time_t                  get_date_created() const { return m_date_created; }
+        Ustring                 get_date_created_str() const;
+
+        time_t                  get_date_edited() const { return m_date_edited; }
+        Ustring                 get_date_edited_str() const;
+        void                    set_date_edited( Date::date_t d ) { m_date_edited = d; }
+
+        time_t                  get_date_status() const { return m_date_status; }
+        Ustring                 get_date_status_str() const;
+        void                    set_date_status( Date::date_t d ) { m_date_status = d; }
 
         int                     get_size() const
         { return m_text.size(); }
@@ -130,7 +136,8 @@ class Entry : virtual public DiaryElement
     protected:
         Date                    m_date;
         time_t                  m_date_created;
-        time_t                  m_date_changed;
+        time_t                  m_date_edited;
+        time_t                  m_date_status;
         Ustring                 m_text;
         Tagset                  m_tags;
         const Tag*              m_ptr2theme_tag; // NULL means theme is not set

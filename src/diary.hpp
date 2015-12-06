@@ -33,7 +33,7 @@ namespace LIFEO
 {
 
 const char                      DB_FILE_HEADER[] = "LIFEOGRAPHDB";
-const int                       DB_FILE_VERSION_INT( 1020 );
+const int                       DB_FILE_VERSION_INT( 1030 );
 const int                       DB_FILE_VERSION_INT_MIN( 110 );
 const std::string::size_type    PASSPHRASE_MIN_SIZE( 4 );
 const char                      LOCK_SUFFIX[] = ".~LOCK~";
@@ -238,8 +238,16 @@ class Diary : public DiaryElement
         static bool             s_flag_ignore_locks;
 
     protected:
+        // IDS (must be first)
+        PoolDEIDs               m_ids;
+        DEID                    m_current_id;
+        DEID                    m_force_id;
+        DEID                    m_startup_elem_id;
+        DEID                    m_last_elem_id;
+        // PROPERTIES
         std::string             m_path;
         std::string             m_passphrase;
+        std::string             m_language;
         // CONTENT
         PoolEntries             m_entries;
         Untagged                m_untagged; // pseudo tag "untagged"
@@ -250,30 +258,23 @@ class Diary : public DiaryElement
         CategoryChapters*       m_topics; // ordinal chapters
         CategoryChapters*       m_groups; // chapters with invisible order
         Chapter                 m_orphans; // entries that remain out of defined chapters
-
-        DEID                    m_startup_elem_id;
-        DEID                    m_last_elem_id;
         // OPTIONS & FLAGS
         SortingCriteria	        m_option_sorting_criteria;
         int                     m_read_version;
         bool                    m_flag_only_save_filtered;
         bool                    m_flag_read_only;
-        // filtering
+        // FILTERING
         Ustring                 m_search_text;
         Filter*                 m_filter_active;
         Filter*                 m_filter_default;
         // TODO FilterVector            m_filters;  // user defined filters
 
-        // BASE
-        DEID                    m_current_id;
-        DEID                    m_force_id;
-        PoolDEIDs               m_ids;
-        std::string             m_language;
-
         LIFEO::Result           parse_db_body_text( std::istream& );
-        LIFEO::Result           parse_db_body_text_1020( std::istream& );
+        LIFEO::Result           parse_db_body_text_1030( std::istream& );
         LIFEO::Result           parse_db_body_text_1010( std::istream& );
         LIFEO::Result           parse_db_body_text_110( std::istream& );
+
+        void                    upgrade_entries();
 
         void                    do_standard_checks_after_parse();
 

@@ -35,9 +35,9 @@ ElementShower< Entry >* Entry::shower( NULL );
 Entry::Entry( Diary* const d, const Date::date_t date, const Ustring& text,
               bool favored )
 :   DiaryElement( d, "", favored ? ES::ENTRY_DEFAULT_FAV : ES::ENTRY_DEFAULT ), m_date( date ),
-    m_date_created( time( NULL ) ), m_date_changed( m_date_created ),
-    m_text( text ), m_ptr2theme_tag( NULL ),
-    m_option_lang( LANG_INHERIT_DIARY )
+    m_date_created( time( NULL ) ),
+    m_date_edited( m_date_created ), m_date_status( m_date_created ),
+    m_text( text ), m_ptr2theme_tag( NULL ), m_option_lang( LANG_INHERIT_DIARY )
 {
     calculate_title( text );
 }
@@ -46,9 +46,9 @@ Entry::Entry( Diary* const d, const Date::date_t date, bool favored )
 :   DiaryElement( d, _( STRING::EMPTY_ENTRY_TITLE ),
                   favored ?  ES::ENTRY_DEFAULT_FAV : ES::ENTRY_DEFAULT ),
     m_date( date ),
-    m_date_created( time( NULL ) ), m_date_changed( m_date_created ),
-    m_text( "" ), m_ptr2theme_tag( NULL ),
-    m_option_lang( LANG_INHERIT_DIARY )
+    m_date_created( time( NULL ) ),
+    m_date_edited( m_date_created ), m_date_status( m_date_created ),
+    m_text( "" ), m_ptr2theme_tag( NULL ), m_option_lang( LANG_INHERIT_DIARY )
 {
 }
 
@@ -150,9 +150,15 @@ Entry::get_date_created_str() const
 }
 
 Ustring
-Entry::get_date_changed_str() const
+Entry::get_date_edited_str() const
 {
-    return Date::format_string_dt( m_date_changed );
+    return Date::format_string_dt( m_date_edited );
+}
+
+Ustring
+Entry::get_date_status_str() const
+{
+    return Date::format_string_dt( m_date_status );
 }
 
 std::string

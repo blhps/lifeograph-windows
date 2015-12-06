@@ -51,7 +51,7 @@ EntryView::sync()
 {
     if( m_flag_entrychanged )
     {
-        m_entry_sync->set_date_changed( time( NULL ) );
+        m_entry_sync->set_date_edited( time( NULL ) );
         
         Wstring text( m_richedit->get_text() );
         std::replace( text.begin(), text.end(), '\r', '\n' );

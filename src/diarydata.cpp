@@ -580,9 +580,9 @@ CategoryChapters::get_chapter( const Date::date_t date ) const
 }
 
 Chapter*
-CategoryChapters::create_chapter( const Ustring& name, const Date& date )
+CategoryChapters::create_chapter( const Ustring& name, const Date::date_t date )
 {
-    Chapter* chapter = new Chapter( m_ptr2diary, name, date.m_date );
+    Chapter* chapter = new Chapter( m_ptr2diary, name, date );
 
     add( chapter );
 
@@ -598,6 +598,7 @@ bool
 CategoryChapters::set_chapter_date( Chapter* chapter, Date::date_t date )
 {
     assert( chapter->is_ordinal() == false );
+    assert( find( date ) == end() );
 
     if( chapter->m_date_begin.m_date != Date::NOT_SET )
     {
@@ -615,33 +616,6 @@ CategoryChapters::set_chapter_date( Chapter* chapter, Date::date_t date )
         }
 
         erase( chapter->m_date_begin.m_date );
-
-        if( find( date ) != end() ) // if target is taken move chapters
-        {
-            // FIXME "chapter->m_date_begin.is_ordinal() ?" conflicts with the assertion above:
-            Date::date_t d( chapter->m_date_begin.is_ordinal() ?
-                            chapter->m_date_begin.m_date : get_free_order_ordinal().m_date );
-                            // if a temporal chapter is being converted..
-                            // ..assume that it was the last
-            Date::date_t step( chapter->m_date_begin.m_date > date ?
-                                        -Date::ORDINAL_STEP : Date::ORDINAL_STEP );
-
-            for( d += step; ; d += step )
-            {
-                iter = find( d );
-                if( iter == end() )
-                    break;
-
-                Chapter *chapter_shift( iter->second );
-                erase( d );
-                chapter_shift->set_date( d - step );
-                insert( CategoryChapters::value_type( chapter_shift->m_date_begin.m_date,
-                                                      chapter_shift ) );
-
-                if( d == date )
-                    break;
-            }
-        }
     }
 
     chapter->set_date( date );
@@ -681,17 +655,17 @@ CategoryChapters::clear()
     std::map< Date::date_t, Chapter*, FuncCompareDates >::clear();
 }
 
-Date
+Date::date_t
 CategoryChapters::get_free_order_ordinal() const
 {
     assert( m_date_min );   // only for ordinal chapter categories
 
     if( empty() )
-        return Date( m_date_min );
+        return m_date_min;
 
     Date d( begin()->first );
     d.forward_ordinal_order();
-    return d;
+    return d.m_date;
 
 }
 
@@ -718,6 +692,13 @@ const Color Theme::s_color_link1( "#3333FF" );
 const Color Theme::s_color_link2( "#000099" );
 const Color Theme::s_color_broken1( "#FF3333" );
 const Color Theme::s_color_broken2( "#990000" );
+
+const Color Theme::s_color_todo( "#FF0000" );
+const Color Theme::s_color_progressed( "#FF8811" );
+const Color Theme::s_color_done( "#66BB00" );
+const Color Theme::s_color_done1( "#77CC11" );
+const Color Theme::s_color_done2( "#409000" );
+const Color Theme::s_color_canceled( "#AA8855" );
 
 Theme::Theme()
 {

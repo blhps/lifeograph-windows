@@ -402,6 +402,13 @@ class Theme
         static const Color          s_color_link2;
         static const Color          s_color_broken1;
         static const Color          s_color_broken2;
+
+        static const Color          s_color_todo;
+        static const Color          s_color_progressed;
+        static const Color          s_color_done;
+        static const Color          s_color_done1;
+        static const Color          s_color_done2;
+        static const Color          s_color_canceled;
 };
 
 class ThemeSystem : public Theme
@@ -660,18 +667,18 @@ class CategoryChapters :
 
         Chapter*                get_chapter( const Date::date_t ) const;
 
-        Chapter*                create_chapter( const Ustring&, const Date& );
+        Chapter*                create_chapter( const Ustring&, const Date::date_t );
         Chapter*                create_chapter_ordinal( const Ustring& );
         bool                    set_chapter_date( Chapter*, Date::date_t );
 
-        bool                    add( Chapter* );
-
         void                    clear();
 
-        Date                    get_free_order_ordinal() const;
+        Date::date_t            get_free_order_ordinal() const;
 
     protected:
         const Date::date_t      m_date_min;
+
+        bool                    add( Chapter* );
 };
 
 class PoolCategoriesChapters :
@@ -692,6 +699,25 @@ class Filter : public DiaryElement
         static ElementShower< Filter >* shower;
 
                                     Filter( Diary* const, const Ustring& );
+
+        bool                        operator==( const Filter& f )
+        {
+            if( m_status != f.m_status )
+                return false;
+            if( m_date_begin != f.m_date_begin )
+                return false;
+
+            if( m_date_end != f.m_date_end )
+                return false;
+
+            if( m_tag != f.m_tag )
+                return false;
+
+            if( m_entries != f.m_entries )
+                return false;
+
+            return true;
+        }
 
         void                        show();
 

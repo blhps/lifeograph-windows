@@ -1310,7 +1310,7 @@ WinAppWindow::add_chapter( CategoryChapters* cc, const Date* d )
 {
     Chapter* c =
         d ?
-            cc->create_chapter( "New chapter", *d ) :
+            cc->create_chapter( "New chapter", d->m_date ) :
             cc->create_chapter_ordinal( "New chapter" );
 
     Diary::d->update_entries_in_chapters();

@@ -84,12 +84,14 @@ get_db_line_name( const Ustring& line )
 
 // DIARY ===========================================================================================
 Diary::Diary()
-:   DiaryElement( NULL, DEID_DIARY ), m_path( "" ), m_passphrase( "" ),
-    m_ptr2chapter_ctg_cur( NULL ), m_orphans( NULL, "", Date::DATE_MAX ),
+:   DiaryElement( NULL, DEID_DIARY ),
+    m_current_id( DEID_FIRST ), m_force_id( DEID_UNSET ),
     m_startup_elem_id( HOME_CURRENT_ELEM ), m_last_elem_id( DEID_DIARY ),
+    m_path( "" ), m_passphrase( "" ), m_language( "" ),
+    m_ptr2chapter_ctg_cur( NULL ), m_orphans( NULL, "", Date::DATE_MAX ),
     m_option_sorting_criteria( SC_DATE ), m_read_version( 0 ),
     m_flag_read_only( false ), m_search_text( "" ),
-    m_current_id( DEID_FIRST ), m_force_id( DEID_UNSET ), m_language( "" ), m_ifstream( NULL )
+    m_ifstream( NULL )
 {
     m_filter_active = new Filter( NULL, _( "Active Filter" ) );
     m_filter_default = new Filter( NULL, "Default Filter" );
@@ -186,8 +188,20 @@ Diary::get_icon() const
 #endif
 
 LIFEO::Result
-Diary::set_path( const std::string& path, SetPathType type )
+Diary::set_path( const std::string& path0, SetPathType type )
 {
+    std::string path( path0 );
+
+#ifndef LIFEO_WINDOZE
+    // RESOLVE SYMBOLIC LINK
+    if( g_file_test( path0.c_str(), G_FILE_TEST_IS_SYMLINK ) )
+    {
+        GError* err = NULL;
+        path = g_file_read_link( path0.c_str(), &err );
+        print_info( "Symbolic link resolved to path = " + path );
+    }
+#endif
+
     // CHECK FILE SYSTEM PERMISSIONS
     if( access( path.c_str(), F_OK ) != 0 ) // check existence
     {
@@ -592,16 +606,21 @@ parse_theme( Theme* ptr2theme, const std::string& line )
 inline LIFEO::Result
 Diary::parse_db_body_text( std::istream& stream )
 {
-    if( m_read_version == 1020 )
-        return parse_db_body_text_1020( stream );
-    else if( m_read_version == 1010 || m_read_version == 1011 )
-        return parse_db_body_text_1010( stream );
-    else
-        return parse_db_body_text_110( stream );
+    switch( m_read_version )
+    {
+        case 1030:
+        case 1020:
+            return parse_db_body_text_1030( stream );
+        case 1011:
+        case 1010:
+            return parse_db_body_text_1010( stream );
+        default:
+            return parse_db_body_text_110( stream );
+    }
 }
 
 LIFEO::Result
-Diary::parse_db_body_text_1020( std::istream& stream )
+Diary::parse_db_body_text_1030( std::istream& stream )
 {
     std::string         line( "" );
     Entry*              entry_new = NULL;
@@ -693,16 +712,16 @@ Diary::parse_db_body_text_1020( std::istream& stream )
                                 break;
                             }
                             ptr2chapter = ptr2chapter_ctg->create_chapter(
-                                    get_db_line_name( line ), get_db_line_date( line ) );
+                                    get_db_line_name( line ), get_db_line_date( line ).m_date );
                             break;
                         case 'O':   // ordinal chapter (used to be called topic)
                             ptr2chapter = m_topics->create_chapter(
-                                    get_db_line_name( line ), get_db_line_date( line ) );
+                                    get_db_line_name( line ), get_db_line_date( line ).m_date );
                             break;
                         case 'G':   // free chapter (replaced todo_group in v1020)
                         case 'S':
                             ptr2chapter = m_groups->create_chapter(
-                                    get_db_line_name( line ), get_db_line_date( line ) );
+                                    get_db_line_name( line ), get_db_line_date( line ).m_date );
                             break;
                         case 'p':   // chapter preferences
                             ptr2chapter->set_expanded( line[ 2 ] == 'e' );
@@ -768,10 +787,18 @@ Diary::parse_db_body_text_1020( std::istream& stream )
                     print_error( "No entry declared" );
                     break;
                 }
-                if( line[ 1 ] == 'r' )
-                    entry_new->m_date_created = LIFEO::convert_string( line.substr( 2 ) );
-                else    // it should be 'h'
-                    entry_new->m_date_changed = LIFEO::convert_string( line.substr( 2 ) );
+                switch( line[ 1 ] )
+                {
+                    case 'r':
+                        entry_new->m_date_created = LIFEO::convert_string( line.substr( 2 ) );
+                        break;
+                    case 'h':
+                        entry_new->m_date_edited = LIFEO::convert_string( line.substr( 2 ) );
+                        break;
+                    case 's':
+                        entry_new->m_date_status = LIFEO::convert_string( line.substr( 2 ) );
+                        break;
+                }
                 break;
             case 'T':   // tag
                 if( entry_new == NULL )
@@ -824,6 +851,9 @@ Diary::parse_db_body_text_1020( std::istream& stream )
     do_standard_checks_after_parse();
 
     m_filter_active->set( m_filter_default );   // employ the default filter
+
+    if( m_read_version == 1020 )
+        upgrade_entries();
 
     return LIFEO::SUCCESS;
 }
@@ -907,7 +937,7 @@ Diary::parse_db_body_text_1010( std::istream& stream )
                 case 'o':   // ordinal chapter (topic)
                     ptr2chapter = m_topics->create_chapter(
                             get_db_line_name( line ),
-                            fix_pre_1020_date( get_db_line_date( line ) ) );
+                            fix_pre_1020_date( get_db_line_date( line ) ).m_date );
                     ptr2chapter->set_expanded( line[ 1 ] == 'e' );
                     break;
                 case 'd':   // to-do group
@@ -915,7 +945,7 @@ Diary::parse_db_body_text_1010( std::istream& stream )
                     {
                         ptr2chapter = m_groups->create_chapter(
                                 get_db_line_name( line ),
-                                fix_pre_1020_date( get_db_line_date( line ) ) );
+                                fix_pre_1020_date( get_db_line_date( line ) ).m_date );
                     }
                     else // options
                     {
@@ -941,7 +971,7 @@ Diary::parse_db_body_text_1010( std::istream& stream )
                     }
                     ptr2chapter = ptr2chapter_ctg->create_chapter(
                             get_db_line_name( line ),
-                            fix_pre_1020_date( get_db_line_date( line ) ) );
+                            fix_pre_1020_date( get_db_line_date( line ) ).m_date );
                     ptr2chapter->set_expanded( line[ 1 ] == 'e' );
                     break;
                 case 'O':   // options
@@ -1014,7 +1044,7 @@ Diary::parse_db_body_text_1010( std::istream& stream )
                 if( line[ 1 ] == 'r' )
                     entry_new->m_date_created = LIFEO::convert_string( line.substr( 2 ) );
                 else    // it should be 'h'
-                    entry_new->m_date_changed = LIFEO::convert_string( line.substr( 2 ) );
+                    entry_new->m_date_edited = LIFEO::convert_string( line.substr( 2 ) );
                 break;
             case 'T':   // tag
                 if( entry_new == NULL )
@@ -1068,6 +1098,8 @@ Diary::parse_db_body_text_1010( std::istream& stream )
 
     m_filter_active->set( m_filter_default );   // employ the default filter
 
+    upgrade_entries();
+
     return LIFEO::SUCCESS;
 }
 
@@ -1113,7 +1145,7 @@ Diary::parse_db_body_text_110( std::istream& stream )
                 case 'o':   // ordinal chapter (topic)
                     ptr2chapter = m_topics->create_chapter(
                             get_db_line_name( line ),
-                            fix_pre_1020_date( get_db_line_date( line ) ) );
+                            fix_pre_1020_date( get_db_line_date( line ) ).m_date );
                     ptr2chapter->set_expanded( line[ 1 ] == 'e' );
                     break;
                 case 'c':   // chapter
@@ -1124,7 +1156,7 @@ Diary::parse_db_body_text_110( std::istream& stream )
                     }
                     ptr2chapter = ptr2chapter_ctg->create_chapter(
                             get_db_line_name( line ),
-                            fix_pre_1020_date( get_db_line_date( line ) ) );
+                            fix_pre_1020_date( get_db_line_date( line ) ).m_date );
                     ptr2chapter->set_expanded( line[ 1 ] == 'e' );
                     break;
                 case 'M':
@@ -1201,7 +1233,7 @@ Diary::parse_db_body_text_110( std::istream& stream )
                 if( line[ 1 ] == 'r' )
                     entry_new->m_date_created = LIFEO::convert_string( line.substr( 2 ) );
                 else    // it should be 'h'
-                    entry_new->m_date_changed = LIFEO::convert_string( line.substr( 2 ) );
+                    entry_new->m_date_edited = LIFEO::convert_string( line.substr( 2 ) );
                 break;
             case 'M':   // themes are converted into tags
             case 'T':   // tag
@@ -1254,7 +1286,73 @@ Diary::parse_db_body_text_110( std::istream& stream )
     if( ptr2default_theme )
         m_untagged.create_own_theme_duplicating( ptr2default_theme );
 
+    upgrade_entries();
+
     return LIFEO::SUCCESS;
+}
+
+void
+Diary::upgrade_entries()
+{
+    for( EntryIterConst iter = m_entries.begin(); iter != m_entries.end(); ++iter )
+    {
+        Entry* entry = ( *iter ).second;
+
+        entry->m_date_status = entry->m_date_created; // initialize the status date
+
+        Wchar c;
+        Wchar lf( 'n' );
+        Ustring check;
+        Ustring new_content;
+
+        for( unsigned int i = 0; i < entry->m_text.size(); i++ )
+        {
+            switch( c = entry->m_text[ i ] )
+            {
+                case '\n':
+                case '\r':
+                    new_content += '\n';
+                case 0:     // should never be the case
+                    lf = 't'; // tab
+                    break;
+                case '\t':
+                    new_content += c;
+                    lf = ( lf == 't' || lf == 'c' ) ? 'c' : 'n';
+                    break;
+                case L'☐':
+                    check = "[ ] ";
+                    new_content += c;
+                    lf = lf == 'c' ? 's' : 'n';
+                    break;
+                case L'☑':
+                    check = "[+] ";
+                    new_content += c;
+                    lf = lf == 'c' ? 's' : 'n';
+                    break;
+                case L'☒':
+                    check = "[x] ";
+                    new_content += c;
+                    lf = lf == 'c' ? 's' : 'n';
+                    break;
+                case ' ':
+                    if( lf == 's' )
+                    {
+                        new_content.erase( new_content.size() - 1, 1 );
+                        new_content += check;
+                    }
+                    else
+                        new_content += c;
+                    lf = 'n';
+                    break;
+                default:
+                    new_content += c;
+                    lf = 'n';
+                    break;
+            }
+        }
+
+        entry->m_text = new_content;
+    }
 }
 
 LIFEO::Result
@@ -1668,7 +1766,8 @@ Diary::create_db_body_text( std::stringstream& output )
         output << entry->m_date.m_date << '\n';
 
         output << "Dr" << entry->m_date_created << '\n';
-        output << "Dh" << entry->m_date_changed << '\n';
+        output << "Dh" << entry->m_date_edited << '\n';
+        output << "Ds" << entry->m_date_status << '\n';
 
         // TAGS
         for( Tagset::const_iterator iter_tag = entry->m_tags.begin();
@@ -2587,9 +2686,10 @@ Diary::import_entries( const Diary& diary,
         while( m_entries.find( entry_new->m_date.m_date ) != m_entries.end() )
             entry_new->m_date.m_date++;
 
-        // copy dates:
+        // copy other data:
         entry_new->m_date_created = entry_ext->m_date_created;
-        entry_new->m_date_changed = entry_ext->m_date_changed;
+        entry_new->m_date_edited = entry_ext->m_date_edited;
+        entry_new->m_date_status = entry_ext->m_date_status;
 
         // insert it into the diary:
         m_entries[ entry_new->m_date.m_date ] = entry_new;
@@ -2597,7 +2697,7 @@ Diary::import_entries( const Diary& diary,
 
         if( flag_import_tags )
         {
-            Tagset &tags = entry_ext->get_tags();
+            Tagset& tags = entry_ext->get_tags();
             Tag* tag;
 
             for( Tagset::const_iterator iter = tags.begin(); iter != tags.end(); ++iter )
@@ -2638,7 +2738,7 @@ Diary::import_chapters( const Diary& diary )
         for( CategoryChapters::iterator i_c = cc->begin(); i_c != cc->end(); ++i_c )
         {
             Chapter* chapter( i_c->second );
-            cc_new->create_chapter( chapter->get_name(), chapter->get_date() );
+            cc_new->create_chapter( chapter->get_name(), chapter->get_date().m_date );
         }
     }
 
