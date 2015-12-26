@@ -33,9 +33,10 @@ EntryParser::reset( Ustring::size_type start, Ustring::size_type end )
     m_pos_end = end;
     pos_current = pos_word = pos_alpha = pos_regular = start;
 
-    m_cc_last = CC_NOT_SET;
-    m_cc_req = CC_ANY;
-    word_last.clear();
+    m_cf_last = CF_NOT_SET;
+    m_cf_req = CF_ANY;
+    m_word_last.clear();
+    m_word_count = 0;
     alpha_last.clear();
     int_last = 0;
     date_last = 0;
@@ -101,12 +102,12 @@ EntryParser::parse( Wstring::size_type start, Wstring::size_type end )
                 process_char( CF_NEWLINE,
                               CF_NUM_CKBX|CF_ALPHA|CF_FORMATCHAR|
                               CF_SLASH|CF_DOTDATE|CF_MORE|CF_TAB|CF_IGNORE,
-                              0, NULL, CC_NEWLINE );
+                              0, NULL );
                 break;
             case ' ':
                 process_char( CF_SPACE,
-                              CF_ALPHA|CF_NUMBER|CF_SLASH|CF_DOTDATE|CF_CHECKBOX,
-                              CF_NOTHING, &EntryParser::trigger_subheading, CC_SPACE );
+                              CF_ALPHA|CF_NUMBER|CF_SLASH|CF_DOTDATE|CF_TODO,
+                              CF_NOTHING, &EntryParser::trigger_subheading );
                 break;
             case '*': // SIGN
                 process_char( CF_ASTERISK,
@@ -142,15 +143,15 @@ EntryParser::parse( Wstring::size_type start, Wstring::size_type end )
             case '5': case '6': case '7': case '8': case '9':
                 handle_number();   // calculates numeric value
                 process_char( CF_NUMBER,
-                              CF_SLASH|CF_ALPHA|CF_DOTDATE|CF_CHECKBOX,
-                              CF_NOTHING, &EntryParser::trigger_link_date, CC_NUMBER );
+                              CF_SLASH|CF_ALPHA|CF_DOTDATE|CF_TODO,
+                              CF_NOTHING, &EntryParser::trigger_link_date );
                 break;
             case '.': // SIGN
                 process_char( CF_DOTDATE,
                               CF_NUM_CKBX|CF_ALPHA|CF_SLASH,
                               CF_NOTHING, &EntryParser::trigger_ignore );
                 break;
-            case '-': // SIGN - CC_SIGNSPELL does not seem to be necessary
+            case '-': // SIGN - CF_SIGNSPELL does not seem to be necessary
                 process_char( CF_DOTDATE,
                               CF_NUM_CKBX|CF_ALPHA|CF_SLASH,
                               0, NULL );
@@ -178,14 +179,19 @@ EntryParser::parse( Wstring::size_type start, Wstring::size_type end )
             case '\t':
                 process_char( CF_TAB,
                               CF_NUM_SLSH|CF_ALPHA|CF_DOTDATE,
-                              CF_NOTHING, &EntryParser::trigger_list, CC_TAB );
+                              CF_NOTHING, &EntryParser::trigger_list );
                 break;
             // LIST CHARS
-            case L'☐':
-            case L'☑':
-            case L'☒': // SIGN
-                process_char( CF_CHECKBOX,
-                              CF_NUM_SLSH|CF_ALPHA|CF_DOTDATE,
+            case '~':
+            case '+':
+                process_char( CF_TODO|CF_PUNCTUATION_RAW,
+                              CF_ALPHA|CF_NUM_CKBX|CF_DOTDATE|CF_SLASH,
+                              0, NULL );
+                break;
+            case 'x':
+            case 'X':
+                process_char( CF_TODO|CF_ALPHA,
+                              CF_NUM_CKBX|CF_DOTDATE|CF_SLASH,
                               0, NULL );
                 break;
             // MAYBE LATER:
@@ -200,7 +206,7 @@ EntryParser::parse( Wstring::size_type start, Wstring::size_type end )
                 {
                     process_char( CF_ALPHA,
                                   CF_NUM_CKBX|CF_DOTDATE|CF_SLASH,
-                                  0, NULL, CC_ALPHASPELL );
+                                  0, NULL );
                 }
                 else // SIGN
                 {
@@ -214,22 +220,25 @@ EntryParser::parse( Wstring::size_type start, Wstring::size_type end )
     // end of the text -treated like new line
     if( m_pos_end > 0 ) // only when finish is not forced
     {
+        char_current = '\n';    // treat end of text as new line for all means and purposes
+
         process_char( CF_NEWLINE|CF_EOT,
-                      CF_NUM_CKBX|CF_ALPHA|CF_FORMATCHAR|CF_SLASH|CF_DOTDATE|CF_MORE|CF_TAB,
-                      0, NULL, CC_NEWLINE );
+                      CF_NUM_CKBX|CF_ALPHA|CF_FORMATCHAR|
+                      CF_SLASH|CF_DOTDATE|CF_MORE|CF_TAB|CF_IGNORE,
+                      0, NULL );
     }
 }
 
 inline void
-EntryParser::process_char( unsigned int satisfies, unsigned int breaks,
-                           unsigned int triggers_on, FPtr_void triggerer, CharClass cc )
+EntryParser::process_char( unsigned int char_flags, unsigned int breaks,
+                           unsigned int triggers_on, FPtr_void triggerer )
 {
     // NOTE: m_cc_current *must* be set before calling this function
 
     // UPDATE ALPHA LAST
     if( m_flag_handle_word )
     {
-        if( cc & CC_ALPHA ) // CC_SPELLCHECK may be used in the future
+        if( char_flags & CF_ALPHA ) // CF_SPELLCHECK may be used in the future
         {
             if( alpha_last.empty() )
                 pos_alpha = pos_current;
@@ -257,13 +266,13 @@ EntryParser::process_char( unsigned int satisfies, unsigned int breaks,
     bool            flag_trigger( false );
     bool            flag_apply( false );
 
-    if( satisfies & cf )
+    if( char_flags & cf )
     {
         if( applier != NULL )
         {
             if( m_chars_looked_for.front().junction )
                 flag_apply = true;
-            else if( m_cc_last & m_cc_req ) // not junction = final applier
+            else if( m_cf_last & m_cf_req ) // not junction = final applier
             {
                 flag_clear_chars = true;
                 flag_apply = true;
@@ -289,7 +298,7 @@ EntryParser::process_char( unsigned int satisfies, unsigned int breaks,
         flag_trigger = true;
     }
 
-    if( satisfies & CF_NEWLINE )
+    if( char_flags & CF_NEWLINE )
     {
         flag_clear_chars = true;
 
@@ -298,7 +307,7 @@ EntryParser::process_char( unsigned int satisfies, unsigned int breaks,
             ( this->*m_applier_nl )();
             m_applier_nl = NULL;
         }
-        else if( ( satisfies & CF_EOT ) && !flag_apply )
+        else if( ( char_flags & CF_EOT ) && !flag_apply )
         {
             m_pos_start = pos_current + 1;
             apply_regular();
@@ -317,28 +326,31 @@ EntryParser::process_char( unsigned int satisfies, unsigned int breaks,
         ( this->*applier )();
 
     // UPDATE WORD LAST
-    if( cc & CC_SEPARATOR )
-        word_last.clear();
+    if( char_flags & CF_SEPARATOR )
+        m_word_last.clear();
     else
     {
-        if( word_last.empty() )
+        if( m_word_last.empty() )
+        {
             pos_word = pos_current;
-        word_last += char_current;
+            m_word_count++;
+        }
+        m_word_last += char_current;
     }
 
     // UPDATE CHAR CLASS
-    m_cc_last = cc;
+    m_cf_last = char_flags;
 }
 
 // TRIGGERERS ======================================================================================
 void
 EntryParser::trigger_subheading()
 {
-    if( m_cc_last == CC_NEWLINE )
+    if( m_cf_last == CF_NEWLINE )
     {
         m_chars_looked_for.clear();
         m_chars_looked_for.push_back( AbsChar( CF_NONSPACE, &EntryParser::apply_subheading_0 ) );
-        m_cc_req = CC_ANY;
+        m_cf_req = CF_ANY;
         m_pos_start = pos_current;
     }
 }
@@ -350,56 +362,41 @@ EntryParser::apply_subheading_0()
     apply_subheading();
 }
 
-void
-EntryParser::trigger_bold()
+inline void
+EntryParser::trigger_markup( unsigned int lf, FPtr_void applier )
 {
-    if( m_cc_last & CC_NOT_SEPARATOR )
+    if( m_cf_last & CF_NOT_SEPARATOR )
         return;
 
     m_chars_looked_for.clear();
-    m_chars_looked_for.push_back( AbsChar( CF_NONSPACE - CF_ASTERISK, NULL ) );
-    m_chars_looked_for.push_back( AbsChar( CF_ASTERISK, &EntryParser::apply_bold ) );
-    m_cc_req = CC_NOT_SEPARATOR;
+    m_chars_looked_for.push_back( AbsChar( CF_NONSPACE - lf, NULL ) );
+    m_chars_looked_for.push_back( AbsChar( lf, applier ) );
+    m_cf_req = CF_NOT_SEPARATOR;
     m_pos_start = pos_current;
+}
+
+void
+EntryParser::trigger_bold()
+{
+    trigger_markup( CF_ASTERISK, &EntryParser::apply_bold );
 }
 
 void
 EntryParser::trigger_italic()
 {
-    if( m_cc_last & CC_NOT_SEPARATOR )
-        return;
-
-    m_chars_looked_for.clear();
-    m_chars_looked_for.push_back( AbsChar( CF_NONSPACE - CF_UNDERSCORE, NULL ) );
-    m_chars_looked_for.push_back( AbsChar( CF_UNDERSCORE, &EntryParser::apply_italic ) );
-    m_cc_req = CC_NOT_SEPARATOR;
-    m_pos_start = pos_current;
+    trigger_markup( CF_UNDERSCORE, &EntryParser::apply_italic );
 }
 
 void
 EntryParser::trigger_strikethrough()
 {
-    if( m_cc_last & CC_NOT_SEPARATOR )
-        return;
-
-    m_chars_looked_for.clear();
-    m_chars_looked_for.push_back( AbsChar( CF_NONSPACE - CF_EQUALS, NULL ) );
-    m_chars_looked_for.push_back( AbsChar( CF_EQUALS, &EntryParser::apply_strikethrough ) );
-    m_cc_req = CC_NOT_SEPARATOR;
-    m_pos_start = pos_current;
+    trigger_markup( CF_EQUALS, &EntryParser::apply_strikethrough );
 }
 
 void
 EntryParser::trigger_highlight()
 {
-    if( m_cc_last & CC_NOT_SEPARATOR )
-        return;
-
-    m_chars_looked_for.clear();
-    m_chars_looked_for.push_back( AbsChar( CF_NONSPACE - CF_HASH, NULL ) );
-    m_chars_looked_for.push_back( AbsChar( CF_HASH, &EntryParser::apply_highlight ) );
-    m_cc_req = CC_NOT_SEPARATOR;
-    m_pos_start = pos_current;
+    trigger_markup( CF_HASH, &EntryParser::apply_highlight );
 }
 
 void
@@ -409,27 +406,27 @@ EntryParser::trigger_comment()
     m_chars_looked_for.push_back( AbsChar( CF_SBB|CF_IMMEDIATE, NULL ) );
     m_chars_looked_for.push_back( AbsChar( CF_SBE, NULL ) );
     m_chars_looked_for.push_back( AbsChar( CF_SBE|CF_IMMEDIATE, &EntryParser::apply_comment ) );
-    m_cc_req = CC_ANY;
+    m_cf_req = CF_ANY;
     m_pos_start = pos_current;
 }
 
 void
 EntryParser::trigger_link()
 {
-    PRINT_DEBUG( "word_last: " + word_last );
-    m_flag_hidden_link = word_last[ 0 ] == '<';
+    PRINT_DEBUG( "word_last: " + m_word_last );
+    m_flag_hidden_link = m_word_last[ 0 ] == '<';
     if( m_flag_hidden_link )
-        word_last.erase( 0, 1 );
+        m_word_last.erase( 0, 1 );
 
-    m_cc_req = CC_ANY;
+    m_cf_req = CF_ANY;
 
-    if( word_last == W( "http" ) || word_last == W( "https" ) ||
-        word_last == W( "ftp" ) || word_last == W( "file" ) || word_last == W( "rel" ) )
+    if( m_word_last == W( "http" ) || m_word_last == W( "https" ) ||
+        m_word_last == W( "ftp" ) || m_word_last == W( "file" ) || m_word_last == W( "rel" ) )
     {
         m_chars_looked_for.clear();
         m_chars_looked_for.push_back( AbsChar( CF_SLASH, NULL ) );
         m_chars_looked_for.push_back( AbsChar( CF_SLASH, NULL ) );
-        if( word_last == W( "file" ) )
+        if( m_word_last == W( "file" ) )
         {
             m_chars_looked_for.push_back( AbsChar( CF_SLASH, NULL ) );
             m_chars_looked_for.push_back( AbsChar( CF_NONSPACE, NULL ) );
@@ -438,7 +435,7 @@ EntryParser::trigger_link()
             m_chars_looked_for.push_back( AbsChar( CF_ALPHA|CF_NUMBER, NULL ) ); // TODO: add dash
     }
     else
-    if( word_last == W( "mailto" ) )
+    if( m_word_last == W( "mailto" ) )
     {
         m_chars_looked_for.clear();
         m_chars_looked_for.push_back( AbsChar( CF_UNDERSCORE|CF_ALPHA|CF_NUMBER, NULL ) );
@@ -446,7 +443,7 @@ EntryParser::trigger_link()
         m_chars_looked_for.push_back( AbsChar( CF_ALPHA|CF_NUMBER, NULL ) ); // TODO: add dash
     }
     else
-    if( word_last == W( "deid" ) && m_flag_hidden_link )
+    if( m_word_last == W( "deid" ) && m_flag_hidden_link )
     {
         m_chars_looked_for.clear();
         m_chars_looked_for.push_back( AbsChar( CF_NUMBER, NULL ) );
@@ -480,24 +477,24 @@ EntryParser::trigger_link()
 void
 EntryParser::trigger_link_at()
 {
-    PRINT_DEBUG( "word_last [@]: " + word_last );
-    if( m_cc_last & CC_SEPARATOR )
+    PRINT_DEBUG( "word_last [@]: " + m_word_last );
+    if( m_cf_last & CF_SEPARATOR )
         return;
 
     m_flag_hidden_link = false;
-    word_last.insert( 0, W( "mailto:" ) );
+    m_word_last.insert( 0, W( "mailto:" ) );
     m_chars_looked_for.clear();
     m_chars_looked_for.push_back( AbsChar( CF_ALPHA|CF_NUMBER, NULL ) ); // TODO: add dash
     m_chars_looked_for.push_back( AbsChar( CF_TAB|CF_NEWLINE|CF_SPACE,
                                            &EntryParser::apply_link ) );
-    m_cc_req = CC_ANY;
+    m_cf_req = CF_ANY;
     m_pos_start = pos_word;
 }
 
 void
 EntryParser::trigger_link_date()
 {
-    m_cc_req = CC_ANY;
+    m_cf_req = CF_ANY;
     m_chars_looked_for.clear();
     m_chars_looked_for.push_back( AbsChar( CF_NUMBER, NULL ) );
     m_chars_looked_for.push_back( AbsChar( CF_NUMBER, NULL ) );
@@ -509,7 +506,7 @@ EntryParser::trigger_link_date()
     m_chars_looked_for.push_back( AbsChar( CF_NUMBER, NULL ) );
     m_chars_looked_for.push_back( AbsChar( CF_NUMBER, &EntryParser::junction_link_date, true ) );
 
-    m_flag_hidden_link = ( word_last == W( "<" ) );
+    m_flag_hidden_link = ( m_word_last == W( "<" ) );
     if( m_flag_hidden_link )
     {
         m_chars_looked_for.push_back( AbsChar( CF_TAB,
@@ -528,25 +525,25 @@ EntryParser::trigger_link_date()
 void
 EntryParser::trigger_list()
 {
-    if( m_cc_last != CC_NEWLINE )
+    if( m_cf_last != CF_NEWLINE )
         return;
 
     m_chars_looked_for.clear();
     m_chars_looked_for.push_back( AbsChar( CF_NONTAB, &EntryParser::junction_list, true ) );
-    m_cc_req = CC_ANY;
+    m_cf_req = CF_ANY;
     m_pos_start = pos_current;
 }
 
 void
 EntryParser::trigger_ignore()
 {
-    if( m_cc_last == CC_NEWLINE )
+    if( m_cf_last == CF_NEWLINE )
     {
         m_chars_looked_for.clear();
         m_chars_looked_for.push_back( AbsChar( CF_TAB|CF_IMMEDIATE,
                                                &EntryParser::junction_ignore,
                                                true ) ); // junction
-        m_cc_req = CC_ANY;
+        m_cf_req = CF_ANY;
         m_pos_start = pos_current;
     }
 }
@@ -575,7 +572,7 @@ void
 EntryParser::junction_link_hidden_tab()
 {
     m_chars_looked_for.pop_front();
-    pos_tab = pos_current + 1;
+    pos_tab = pos_current;
     id_last = int_last;     // if not id link assignment is in vain
 }
 
@@ -583,19 +580,48 @@ void
 EntryParser::junction_list()
 {
     apply_indent();
-    m_chars_looked_for.front().flags = CF_SPACE|CF_IMMEDIATE;
-    m_cc_req = CC_ANY;
+    m_cf_req = CF_ANY;
 
     switch( char_current )
     {
-        case L'☐':
-            m_chars_looked_for.front().applier = &EntryParser::apply_check_unf;
+        case '[':
+            // reuse
+            m_chars_looked_for.front().flags = CF_SPACE|CF_TODO|CF_IMMEDIATE;
+            m_chars_looked_for.front().applier = &EntryParser::junction_list2;
+
+            m_chars_looked_for.push_back( AbsChar( CF_SBE|CF_IMMEDIATE, NULL ) );
+            m_chars_looked_for.push_back( AbsChar( CF_SPACE|CF_IMMEDIATE, NULL ) );
             break;
-        case L'☑':
-            m_chars_looked_for.front().applier = &EntryParser::apply_check_fin;
+        default:
+            m_chars_looked_for.clear();
+            m_chars_looked_for.push_back( AbsChar( CF_NOTHING, NULL ) );
             break;
-        case L'☒':
-            m_chars_looked_for.front().applier = &EntryParser::apply_check_ccl_0;
+    }
+}
+
+void
+EntryParser::junction_list2()
+{
+    m_cf_req = CF_ANY;
+
+    switch( char_current )
+    {
+        case ' ':
+            m_chars_looked_for.pop_front();
+            m_chars_looked_for.back().applier = &EntryParser::apply_check_unf;
+            break;
+        case '~':
+            m_chars_looked_for.pop_front();
+            m_chars_looked_for.back().applier = &EntryParser::apply_check_prg;
+            break;
+        case '+':
+            m_chars_looked_for.pop_front();
+            m_chars_looked_for.back().applier = &EntryParser::apply_check_fin_0;
+            break;
+        case 'x':
+        case 'X':
+            m_chars_looked_for.pop_front();
+            m_chars_looked_for.back().applier = &EntryParser::apply_check_ccl_0;
             break;
         default:
             m_chars_looked_for.clear();
@@ -624,7 +650,7 @@ EntryParser::junction_date_dotmd()
 {
     if( int_last >= 1 && int_last <= 12 &&
     // two separators must be the same:
-        char_current == word_last[ word_last.size() - 3 ] )
+        char_current == m_word_last[ m_word_last.size() - 3 ] )
     {
         date_last.set_month( int_last );
         m_chars_looked_for.pop_front();
@@ -654,11 +680,18 @@ EntryParser::apply_check_ccl_0()
     apply_check_ccl();
 }
 
+void
+EntryParser::apply_check_fin_0()
+{
+    m_applier_nl = &EntryParser::apply_check_fin_end;
+    apply_check_fin();
+}
+
 // HELPERS =========================================================================================
 inline void
 EntryParser::handle_number()
 {
-    if( m_cc_last == CC_NUMBER )
+    if( m_cf_last == CF_NUMBER )
     {
         int_last *= 10;
         int_last += ( char_current - '0' );

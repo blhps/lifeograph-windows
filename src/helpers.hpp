@@ -504,7 +504,7 @@ COLORREF
 contrast2( COLORREF, COLORREF, COLORREF );
 
 COLORREF
-midtone( int, int, int, int, int, int, float );
+midtone( COLORREF, COLORREF, float );
 
 #endif
 

@@ -477,12 +477,12 @@ contrast2( COLORREF bg, COLORREF c1, COLORREF c2 )
 }
 
 COLORREF
-midtone( int r1, int g1, int b1, int r2, int g2, int b2, float ratio )
+midtone( COLORREF c1, COLORREF c2, float ratio )
 {
     return RGB(
-            ( int ) ( ( r1 * ratio ) + ( r2 * ( 1.0 - ratio ) ) ),
-            ( int ) ( ( g1 * ratio ) + ( g2 * ( 1.0 - ratio ) ) ),
-            ( int ) ( ( b1 * ratio ) + ( b2 * ( 1.0 - ratio ) ) ) );
+            ( int ) ( ( GetRValue( c1 ) * ratio ) + ( GetRValue( c2 ) * ( 1.0 - ratio ) ) ),
+            ( int ) ( ( GetGValue( c1 ) * ratio ) + ( GetGValue( c2 ) * ( 1.0 - ratio ) ) ),
+            ( int ) ( ( GetBValue( c1 ) * ratio ) + ( GetBValue( c2 ) * ( 1.0 - ratio ) ) ) );
 }
     
 #endif

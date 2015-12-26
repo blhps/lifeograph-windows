@@ -40,6 +40,7 @@ using namespace HELPERS;
 
 enum CharFlag
 {
+    CF_NOT_SET          = 0,
     CF_NOTHING          = 0x1,
     CF_NEWLINE          = 0x2,
     CF_PUNCTUATION_RAW  = 0x4,
@@ -56,49 +57,37 @@ enum CharFlag
     CF_SLASH            = 0x800,
     CF_ALPHA            = 0x1000,
     CF_NUMBER           = 0x2000,
+    CF_ALHANUM          = CF_ALPHA|CF_NUMBER,
     CF_AT               = 0x4000,       // email
-    CF_CHECKBOX         = 0x8000,
+    CF_SPELLCHECK       = 0x8000,
 
     CF_DOTYM            = 0x10000,
     CF_DOTMD            = 0x20000,
-    CF_DOTDATE          = 0x30000,      // DOTMD | DOTYM
+    CF_DOTDATE          = CF_DOTMD|CF_DOTYM,
 
     CF_LESS             = 0x80000,      // tagging
     CF_MORE             = 0x100000,
     CF_SBB              = 0x200000,     // square bracket begin: comments
     CF_SBE              = 0x400000,     // square bracket end: comments
 
-    //CF_APPLY            = 0x1000000,
-    //CF_JUNCTION         = 0x2000000,
+    CF_TODO             = 0x1000000,    // ~,+,x
+
     CF_IGNORE           = 0x40000000,
     CF_EOT              = 0x80000000,   // End of Text
+
+    CF_ANY              = 0xFFFFFFFF,
 
     CF_PUNCTUATION      = CF_PUNCTUATION_RAW|CF_SLASH|CF_DOTDATE|CF_LESS|CF_MORE|CF_SBB|CF_SBE,
     CF_FORMATCHAR       = CF_ASTERISK|CF_UNDERSCORE|CF_EQUALS|CF_HASH|CF_SBB|CF_SBE,
     CF_NUM_SLSH         = CF_NUMBER|CF_SLASH,
-    CF_NUM_CKBX         = CF_NUMBER|CF_CHECKBOX,
-    CF_NONSPACE         = CF_PUNCTUATION|CF_MARKUP|CF_ALPHA|CF_NUMBER|CF_AT|CF_CHECKBOX,
-    CF_NONTAB           = CF_NONSPACE|CF_SPACE
-};
+    CF_NUM_CKBX         = CF_NUMBER|CF_TODO,
+    CF_NONSPACE         = CF_PUNCTUATION|CF_MARKUP|CF_ALPHA|CF_NUMBER|CF_AT|CF_TODO,
+    CF_NONTAB           = CF_NONSPACE|CF_SPACE,
 
-enum CharClass
-{
-    CC_NOT_SET          = 0,
-    CC_NUMBER           = 0x10,
-    CC_ALPHA            = 0x20,
-    CC_ALPHANUM         = 0x30,
-    CC_SIGN             = 0x40,
-    CC_SPELLCHECK       = 0x80,
-    CC_ALPHASPELL       = 0xA0,
-    CC_SIGNSPELL        = 0xC0,
+    CF_SEPARATOR        = CF_SPACE|CF_TAB|CF_NEWLINE,
+    CF_NOT_SEPARATOR    = CF_ANY^CF_SEPARATOR,
 
-    CC_SPACE            = 0x100,
-    CC_TAB              = 0x200,
-    CC_NEWLINE          = 0x400,
-    CC_SEPARATOR        = 0x700,
-    CC_NOT_SEPARATOR    = 0xF8FF,
-
-    CC_ANY              = 0xFFFF
+    CF_ALPHASPELL       = CF_ALPHA|CF_SPELLCHECK
 };
 
 class EntryParser
@@ -116,7 +105,7 @@ class EntryParser
         };
 
                                     EntryParser()
-                                    : date_last( 0 ) {}
+                                    : m_word_count( 0 ), date_last( 0 ) {}
         virtual                     ~EntryParser() {}
 
         void                        parse( Wstring::size_type,
@@ -129,11 +118,11 @@ class EntryParser
 
         void                        process_char( unsigned int, unsigned int,
                                                   unsigned int,
-                                                  FPtr_void,
-                                                  CharClass = CC_SIGN );
+                                                  FPtr_void );
 
         // TRIGGERERS
         void                        trigger_subheading();
+        void                        trigger_markup( unsigned int, FPtr_void );
         void                        trigger_bold();
         void                        trigger_italic();
         void                        trigger_strikethrough();
@@ -147,6 +136,7 @@ class EntryParser
         void                        junction_link_date();
         void                        junction_link_hidden_tab();
         void                        junction_list();
+        void                        junction_list2();
         void                        junction_date_dotym();   // dot between year and month
         void                        junction_date_dotmd();   // dot between month and day
         void                        junction_ignore();
@@ -176,13 +166,15 @@ class EntryParser
         void                        apply_check_ccl_0();  // a temporary solution
         virtual void                apply_check_ccl() { }
         virtual void                apply_check_unf() { }
+        virtual void                apply_check_prg() { }
+        virtual void                apply_check_fin_0();  // a temporary solution
         virtual void                apply_check_fin() { }
 
         virtual void                apply_heading_end() { }
         virtual void                apply_subheading_end() { }
         virtual void                apply_check_ccl_end() { }
 //        virtual void                apply_check_unf_end() { }   // maybe later..
-//        virtual void                apply_check_fin_end() { }   // maybe later..
+        virtual void                apply_check_fin_end() { }
 //        virtual void                apply_ignore_end() { }
 
         virtual void                apply_indent() { }
@@ -200,11 +192,12 @@ class EntryParser
         Wstring::size_type          pos_tab;        // position of invisible link tab
         Wstring::size_type          pos_search;
 
-        CharClass                   m_cc_last;
-        CharClass                   m_cc_req;       // required previous char
+        unsigned int                m_cf_last;
+        unsigned int                m_cf_req;       // required previous char
         Wchar                       char_current;
-        Wstring                     word_last;
-        Wstring                     alpha_last; // last word consisting purely of letters
+        Wstring                     m_word_last;
+        unsigned int                m_word_count;
+        Wstring                     alpha_last;     // last word consisting purely of letters
         unsigned int                int_last;
         Date                        date_last;
         unsigned long               id_last;

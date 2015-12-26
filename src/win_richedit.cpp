@@ -113,6 +113,38 @@ RichEdit::RichEdit()
     m_format_link_broken.cbSize = sizeof( CHARFORMAT2 );
     m_format_link_broken.dwMask = CFM_UNDERLINE|CFM_COLOR;
     m_format_link_broken.dwEffects = CFE_UNDERLINE;
+
+    memset( &m_format_done, 0, sizeof( CHARFORMAT2 ) );
+    m_format_done.cbSize = sizeof( CHARFORMAT2 );
+    m_format_done.dwMask = CFM_BACKCOLOR;
+
+    memset( &m_format_checkbox_todo, 0, sizeof( CHARFORMAT2 ) );
+    m_format_checkbox_todo.cbSize = sizeof( CHARFORMAT2 );
+    m_format_checkbox_todo.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD;
+    m_format_checkbox_todo.dwEffects = CFM_BOLD;
+    const COLORREF color_todo( parse_color( Theme::s_color_todo ) );
+    m_format_checkbox_todo.crTextColor = color_todo;
+
+    memset( &m_format_checkbox_progressed, 0, sizeof( CHARFORMAT2 ) );
+    m_format_checkbox_progressed.cbSize = sizeof( CHARFORMAT2 );
+    m_format_checkbox_progressed.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD;
+    m_format_checkbox_progressed.dwEffects = CFM_BOLD;
+    const COLORREF color_progressed( parse_color( Theme::s_color_progressed ) );
+    m_format_checkbox_progressed.crTextColor = color_progressed;
+
+    memset( &m_format_checkbox_done, 0, sizeof( CHARFORMAT2 ) );
+    m_format_checkbox_done.cbSize = sizeof( CHARFORMAT2 );
+    m_format_checkbox_done.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD;
+    m_format_checkbox_done.dwEffects = CFM_BOLD;
+    const COLORREF color_done( parse_color( Theme::s_color_done ) );
+    m_format_checkbox_done.crTextColor = color_done;
+
+    memset( &m_format_checkbox_canceled, 0, sizeof( CHARFORMAT2 ) );
+    m_format_checkbox_canceled.cbSize = sizeof( CHARFORMAT2 );
+    m_format_checkbox_canceled.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD;
+    m_format_checkbox_canceled.dwEffects = CFM_BOLD;
+    const COLORREF color_canceled( parse_color( Theme::s_color_canceled ) );
+    m_format_checkbox_canceled.crTextColor = color_canceled;
 }
 
 void
@@ -188,6 +220,13 @@ Wchar
 RichEdit::get_char_at( int i )
 {
     return get_text()[ i ];
+}
+
+inline COLORREF
+RichEdit::midcontrast( const Theme* theme, const COLORREF color_target )
+{
+    COLORREF color_lt = midtone( parse_color( "#FFFFFF" ), color_target, 0.8 );
+    return midtone( color_lt, parse_color( theme->color_base ), 0.85 );
 }
 
 // WINDOWS SPECIFIC HELPERS
@@ -463,48 +502,49 @@ TextbufferDiary::apply_link_date()
     }
 }*/
 
-/*
 void
-TextbufferDiary::apply_check_unf()
+RichEdit::apply_check( CHARFORMAT2& format_box, CHARFORMAT2* tag, int c )
 {
-    Gtk::TextIter iter_start( get_iter_at_offset( pos_current - 1 ) );
-    Gtk::TextIter iter_end( get_iter_at_offset( pos_current ) );
-    if( ! Diary::d->is_read_only() )
+    Wstring text( get_text() );
+    LONG iter_start = pos_current - 3;
+    LONG iter_box = pos_current;
+    LONG iter_end = text.find_first_of( L'\r', iter_box );
+    if( iter_end == text.npos )
+        iter_end = get_length();
+
+    /*if( ! Diary::d->is_read_only() )
         m_list_links.push_back( new LinkCheck( create_mark( iter_start ),
-                                               create_mark( iter_end ),
-                                               0 ) );
-    apply_tag( m_format_checkbox, iter_start, iter_end );
+                                               create_mark( iter_box ),
+                                               c ) );*/
+
+    apply_format( format_box, iter_start, iter_box );
+    if( tag )
+        apply_format( *tag, ++iter_box, iter_end ); // ++ to skip separating space char
 }
 
 void
-TextbufferDiary::apply_check_fin()
+RichEdit::apply_check_unf()
 {
-    Gtk::TextIter iter_start( get_iter_at_offset( pos_current -1 ) );
-    Gtk::TextIter iter_box( get_iter_at_offset( pos_current ) );
-    Gtk::TextIter iter_end( iter_start );
-    iter_end.forward_to_line_end();
-    if( ! Diary::d->is_read_only() )
-        m_list_links.push_back( new LinkCheck( create_mark( iter_start ),
-                                               create_mark( iter_box ),
-                                               1 ) );
-    apply_tag( m_format_checkbox, iter_start, iter_box );
-    apply_tag( m_format_highlight, iter_box, iter_end );
+    apply_check( m_format_checkbox_todo, &m_format_bold, 0 );
+}
+
+void
+RichEdit::apply_check_prg()
+{
+    apply_check( m_format_checkbox_progressed, NULL, 1 );
+}
+
+void
+RichEdit::apply_check_fin()
+{
+    apply_check( m_format_checkbox_done, &m_format_done, 2 );
 }
 
 void
 RichEdit::apply_check_ccl()
 {
-    Gtk::TextIter iter_start( get_iter_at_offset( pos_current - 1 ) );
-    Gtk::TextIter iter_box( get_iter_at_offset( pos_current ) );
-    Gtk::TextIter iter_end( iter_start );
-    iter_end.forward_to_line_end();
-    if( ! Diary::d->is_read_only() )
-        m_list_links.push_back( new LinkCheck( create_mark( iter_start ),
-                                               create_mark( iter_box ),
-                                               2 ) );
-    apply_tag( m_format_checkbox, iter_start, iter_box );
-    apply_tag( m_format_strikethrough, iter_box, iter_end );
-}*/
+    apply_check( m_format_checkbox_canceled, &m_format_strikethrough, 3 );
+}
 
 void
 RichEdit::apply_match()
@@ -517,9 +557,9 @@ RichEdit::apply_markup( CHARFORMAT2& format )
 {
     apply_format( m_format_markup, m_pos_start, m_pos_start + 1 );
     //apply_format( m_format_hidden, m_pos_start, m_pos_start + 1 );
-    
+
     apply_format( format, m_pos_start + 1, pos_current );
-    
+
     apply_format( m_format_markup, pos_current, pos_current + 1 );
     //apply_format( m_format_hidden, pos_current, pos_current + 1 );
 }
@@ -532,7 +572,7 @@ RichEdit::handle_change()
         return;
 
     parse( 0, get_length() );
-    
+
     WinAppWindow::p->m_entry_view->handle_text_change();
 }
 
@@ -1425,10 +1465,7 @@ RichEdit::set_theme( const Theme* theme )
 {
     const COLORREF color_base( parse_color( theme->color_base ) );
     const COLORREF color_text( parse_color( theme->color_text ) );
-    const COLORREF color_mid( midtone(
-            GetRValue( color_base ), GetGValue( color_base ), GetBValue( color_base ),
-            GetRValue( color_text ), GetGValue( color_text ), GetBValue( color_text ),
-            0.5 ) );
+    const COLORREF color_mid( midtone( color_base, color_text, 0.5 ) );
 
     m_format_default.crTextColor = color_text;
     m_format_default.crBackColor = color_base; // not elegant but no way for transparent
@@ -1456,6 +1493,19 @@ RichEdit::set_theme( const Theme* theme )
             theme->color_base, Theme::s_color_link1, Theme::s_color_link2 );
     m_format_link_broken->property_foreground_rgba() = contrast2(
             theme->color_base, Theme::s_color_broken1, Theme::s_color_broken2 ); */
+            
+
+    m_format_done.crBackColor = contrast2( color_text,
+                                           parse_color( Theme::s_color_done1 ),
+                                           parse_color( Theme::s_color_done2 ) );
+    m_format_checkbox_todo.crBackColor =
+            midcontrast( theme, m_format_checkbox_todo.crTextColor );
+    m_format_checkbox_progressed.crBackColor =
+            midcontrast( theme, m_format_checkbox_progressed.crTextColor );
+    m_format_checkbox_done.crBackColor =
+            midcontrast( theme, m_format_checkbox_done.crTextColor );
+    m_format_checkbox_canceled.crBackColor =
+            midcontrast( theme, m_format_checkbox_canceled.crTextColor );
 }
 /*
 inline void

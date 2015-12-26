@@ -195,6 +195,8 @@ class RichEdit : public EntryParser
 
         void                        reparse();
         
+        COLORREF                    midcontrast( const Theme*, const COLORREF );
+        
         void                        handle_change();
 
         HWND                        m_hwnd;
@@ -216,10 +218,12 @@ class RichEdit : public EntryParser
         void                        apply_ignore();
 /*        void                        apply_link();
         void                        apply_link_date();
-        void                        apply_link_id();
+        void                        apply_link_id();*/
+        void                        apply_check( CHARFORMAT2&, CHARFORMAT2*, int );
         void                        apply_check_ccl();
         void                        apply_check_unf();
-        void                        apply_check_fin();*/
+        void                        apply_check_prg();
+        void                        apply_check_fin();
         void                        apply_match();
 //        void                        apply_indent();
 
@@ -263,6 +267,11 @@ class RichEdit : public EntryParser
         CHARFORMAT2                 m_format_checkbox;
         CHARFORMAT2                 m_format_image;
         CHARFORMAT2                 m_format_misspelled;
+        CHARFORMAT2                 m_format_done;
+        CHARFORMAT2                 m_format_checkbox_todo;
+        CHARFORMAT2                 m_format_checkbox_progressed;
+        CHARFORMAT2                 m_format_checkbox_done;
+        CHARFORMAT2                 m_format_checkbox_canceled;
 
         // OTHER VARIABLES
         bool                        m_flag_settextoperation;
