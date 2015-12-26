@@ -87,6 +87,25 @@ list_compare_func( LPARAM lp1, LPARAM lp2, LPARAM lParamSort )
 }
 
 LRESULT CALLBACK
+richedit_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam,
+               UINT_PTR uIdSubclass, DWORD_PTR dwRefData )
+{
+    switch( msg )
+    {
+        case WM_KEYDOWN:
+        {
+            if( wparam == VK_RETURN )
+            {
+                if( WinAppWindow::p->m_entry_view->m_richedit->handle_new_line() )
+                    return TRUE;
+            }
+        }
+    }
+
+    return DefSubclassProc( hwnd, msg, wparam, lparam );
+}
+
+LRESULT CALLBACK
 calendar_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam,
                UINT_PTR uIdSubclass, DWORD_PTR dwRefData )
 {
@@ -566,6 +585,7 @@ WinAppWindow::handle_create()
     SendMessage( m_entry_view->m_richedit->m_hwnd, WM_SETFONT,
                  ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
     SendMessage( m_entry_view->m_richedit->m_hwnd, EM_SETEVENTMASK, 0, ( LPARAM ) ENM_CHANGE );
+    SetWindowSubclass( m_entry_view->m_richedit->m_hwnd, richedit_proc, 0, 0 );
 
     // TREE VIEW
     m_list =

@@ -576,147 +576,126 @@ RichEdit::handle_change()
     WinAppWindow::p->m_entry_view->handle_text_change();
 }
 
-/*
-void
-RichEdit::process_space()
-{
-    LONG iter_end = get_iter_at_mark( get_insert() );
-    LONG iter_start( iter_end );
-    if( ! iter_start.backward_find_char( s_predicate_nl ) )
-        return;
-
-    iter_start++;   // skip the new line char
-    Glib::ustring line = get_text( iter_start, iter_end );
-    char char_lf = '\t';
-    unsigned int size = line.size();
-
-    for( unsigned int i = 0; i < size; i++ )
-    {
-        switch( line[ i ] )
-        {
-            case '\t':
-                if( char_lf == '\t' )
-                    char_lf = 'A';  // any list char like [ or *
-                else
-                if( char_lf != 'A' )    // multiple tabs are possible (indentation)
-                    return;
-                iter_start++;   // indentation level
-                break;
-            case '[':
-                if( char_lf != 'A' )
-                    return;
-                char_lf = ']';
-                break;
-            case ']':
-                if( char_lf != ']' || i != ( size - 1 ) )
-                    return;
-                {
-                    PRINT_DEBUG( "time to insert a checkbox" );
-                    int offset( iter_start.get_offset() );  // save the position before erase
-                    m_flag_ongoing_operation++;
-                    erase( iter_start, iter_end );
-                    m_flag_ongoing_operation--;
-                    iter_start = get_iter_at_offset( offset );  // refresh the iterator
-                    insert( iter_start, "☐" );
-                }
-                break;
-            case '*':
-                if( char_lf != 'A' || i != ( size - 1 ) )
-                    return;
-                {
-                    int offset( iter_start.get_offset() );  // save the position before erasing
-                    m_flag_ongoing_operation++;
-                    erase( iter_start, iter_end );
-                    m_flag_ongoing_operation--;
-                    iter_start = get_iter_at_offset( offset );  // refresh the iterator
-                    insert( iter_start, "•" );
-                }
-                break;
-            default:
-                return;
-        }
-    }
-}
-
 bool
-RichEdit::process_new_line()
+RichEdit::handle_new_line()
 {
-    LONG iter_end = get_iter_at_mark( get_insert() );
-    LONG iter_start( iter_end );
-    if( ! iter_start.backward_find_char( s_predicate_nl ) ||
-        iter_end.get_line_offset() < 3 )
+    Wstring fulltext( get_text() );
+    CHARRANGE cr;
+    SendMessage( m_hwnd, EM_EXGETSEL, 0, ( LPARAM ) &cr );
+    LONG iter_end = cr.cpMin;
+    if( iter_end <= 1 )
+        return false;
+
+    LONG iter_start( fulltext.find_last_of( L'\r', iter_end - 1 ) );
+    if( iter_start == Wstring::npos /*||
+        iter_end.get_line_offset() < 3    NOT EASY in WIN32*/ )
         return false;
 
     iter_start++;   // get rid of the new line char
-    const Glib::ustring::size_type offset_start( iter_start.get_offset() );   // save for future
+    const Wstring::size_type offset_start( iter_start );   // save for future
 
-    if( iter_start.get_char() == '\t' )
+    if( fulltext[ iter_start ] == L'\t' )
     {
-        Glib::ustring text( "\n\t" );
+        Wstring text( L"\r\t" );
         int value = 0;
         char char_lf = '*';
         iter_start++;   // first tab is already handled, so skip it
 
         for( ; iter_start != iter_end; ++iter_start )
         {
-            switch( iter_start.get_char() )
+            switch( fulltext[ iter_start ] )
             {
                 // BULLETED LIST
-                case L'•':
+                case 0x2022:
                     if( char_lf != '*' )
                         return false;
                     char_lf = ' ';
-                    text += "• ";
+                    text += L"\u2022 ";
                     break;
                 // CHECK LIST
-                case L'☐':
-                case L'☑':
-                case L'☒':
+                case L'[':
                     if( char_lf != '*' )
                         return false;
+                    char_lf = 'c';
+                    break;
+                case L'~':
+                case L'+':
+                case L'x':
+                case L'X':
+                    if( char_lf != 'c' )
+                        return false;
+                    char_lf = ']';
+                    break;
+                case L']':
+                    if( char_lf != ']' )
+                        return false;
                     char_lf = ' ';
-                    text += "☐ ";
+                    text += L"[ ] ";
                     break;
                 // NUMBERED LIST
-                case '0': case '1': case '2': case '3': case '4':
-                case '5': case '6': case '7': case '8': case '9':
+                case L'0': case L'1': case L'2': case L'3': case L'4':
+                case L'5': case L'6': case L'7': case L'8': case L'9':
                     if( char_lf != '*' && char_lf != '1' )
                         return false;
                     char_lf = '1';
                     value *= 10;
-                    value += iter_start.get_char() - '0';
+                    value += fulltext[ iter_start ] - L'0';
                     break;
-                case '-':
-                case '.':
-                case ')':
+                case L'-':
+                    if( char_lf == '*' )
+                    {
+                        char_lf = ' ';
+                        text += L"- ";
+                        break;
+                    }
+                    // no break
+                case L'.':
+                case L')':
                     if( char_lf != '1' )
                         return false;
                     char_lf = ' ';
-                    text += Glib::ustring::compose<int,char>(
-                            "%1%2 ", ++value, iter_start.get_char() );
+                    text += std::to_wstring( ++value );
+                    text += fulltext[ iter_start ];
+                    text += L" ";
                     break;
-                case '\t':
+                case L'\t':
                     if( char_lf != '*' )
                         return false;
-                    text += '\t';
+                    text += L'\t';
                     break;
-                case ' ':
-                    if( char_lf != ' ' )
+                case L' ':
+                    if( char_lf == 'c' )
+                    {
+                        char_lf = ']';
+                        break;
+                    }
+                    else if( char_lf != ' ' )
                         return false;
                     // remove the last bullet if no text follows it:
-                    if( iter_start.get_offset() == iter_end.get_offset() - 1 )
+                    if( iter_start == iter_end - 1 )
                     {
-                        iter_start = get_iter_at_offset( offset_start );
+                        iter_start = offset_start;
                         m_flag_ongoing_operation++;
-                        erase( iter_start, iter_end );
+                        CHARRANGE range = { iter_start, iter_end };
+                        SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &range );
+                        SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\r\n" );
                         m_flag_ongoing_operation--;
-                        iter_start = get_iter_at_offset( offset_start );
-                        insert( iter_start, "\n" );
                         return true;
                     }
                     else
                     {
-                        insert( iter_end, text );
+                        SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE,
+                                     ( LPARAM ) text.c_str() );
+                        /*iter_start += text.size();
+                        if( value > 0 )
+                        {
+                            iter_start++;
+                            while( increment_numbered_line( iter_start, value++ ) )
+                            {
+                                iter_start.forward_to_line_end();
+                                iter_start++;
+                            }
+                        }*/
                         return true;
                     }
                     break;
@@ -727,7 +706,7 @@ RichEdit::process_new_line()
     }
     return false;
 }
-
+/*
 void
 RichEdit::on_erase( const Gtk::TextIter& iter_start,
                     const Gtk::TextIter& iter_end )

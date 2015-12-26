@@ -11,8 +11,8 @@ LIBS     = -L"C:/Program Files/Dev-Cpp/MinGW64/lib32" -L"C:/Program Files/Dev-Cp
 INCS     = -I"C:/Program Files/Dev-Cpp/MinGW64/include" -I"C:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"mingw/include"
 CXXINCS  = -I"C:/Program Files/Dev-Cpp/MinGW64/include" -I"C:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"C:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include/c++" -I"mingw/include"
 BIN      = bin/lifeograph.exe
-CXXFLAGS = $(CXXINCS) -m32 -DLIFEO_WINDOZE -DHAVE_CONFIG_H -DUNICODE -I config -std=c++11 -m32 -static-libgcc
-CFLAGS   = $(INCS) -m32 -static-libgcc
+CXXFLAGS = $(CXXINCS) -O2 -m32 -Wall -DLIFEO_WINDOZE -DHAVE_CONFIG_H -DUNICODE -I config -std=c++11 -m32 -static-libgcc
+CFLAGS   = $(INCS) -O2 -m32 -Wall -static-libgcc
 RM       = rm.exe -f
 
 .PHONY: all all-before all-after clean clean-custom
