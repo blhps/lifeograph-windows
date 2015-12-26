@@ -678,7 +678,7 @@ RichEdit::handle_new_line()
                         m_flag_ongoing_operation++;
                         CHARRANGE range = { iter_start, iter_end };
                         SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &range );
-                        SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\r\n" );
+                        SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\r" );
                         m_flag_ongoing_operation--;
                         return true;
                     }

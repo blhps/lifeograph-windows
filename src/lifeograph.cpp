@@ -131,7 +131,7 @@ Lifeograph::run( HINSTANCE hInstance, LPSTR cmdline )
     LocalFree( argv );
     new WinAppWindow;
     hInst = hInstance;
-    WinAppWindow::p->run();
+    return WinAppWindow::p->run();
 }
 #endif
 

@@ -683,10 +683,12 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
                             SendMessage( m_list, TVM_SELECTITEM, TVGN_CARET, ( LPARAM ) ht.hItem );
                             DiaryElement* elem = Diary::d->get_element( tvi.lParam );
                             if( !elem )
+                            {
                                 if( tvi.lParam == Diary::d->get_id() )
                                     elem = Diary::d;
                                 else
                                     break;
+                            }
                             switch( elem->get_type() )
                             {
                                 case DiaryElement::ET_ENTRY:
@@ -716,6 +718,8 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
                                                           GET_X_LPARAM( dwpos ),
                                                           GET_Y_LPARAM( dwpos ),
                                                           IDM_TOPIC );
+                                    break;
+                                default:
                                     break;
                             }
                         }
