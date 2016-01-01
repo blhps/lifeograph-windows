@@ -94,10 +94,16 @@ richedit_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam,
     {
         case WM_KEYDOWN:
         {
-            if( wparam == VK_RETURN )
+            switch( wparam )
             {
-                if( WinAppWindow::p->m_entry_view->m_richedit->handle_new_line() )
-                    return TRUE;
+                case VK_RETURN:
+                    if( WinAppWindow::p->m_entry_view->m_richedit->handle_new_line() )
+                        return TRUE;
+                    break;
+                case VK_SPACE:
+                    if( WinAppWindow::p->m_entry_view->m_richedit->handle_space() )
+                        return TRUE;
+                    break;
             }
         }
     }

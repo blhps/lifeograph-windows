@@ -1,6 +1,6 @@
 /***********************************************************************************
 
-    Copyright (C) 2014-2015 Ahmet �zt�rk (aoz_2@yahoo.com)
+    Copyright (C) 2014-2015 Ahmet Öztürk (aoz_2@yahoo.com)
 
     This file is part of Lifeograph.
 
@@ -281,7 +281,7 @@ RichEdit::get_text()
 void
 RichEdit::apply_heading()
 {
-    LONG end( 0 );
+    Wstring::size_type end( 0 );
     Wstring text( get_text() );
     
     if( !text.empty() )
@@ -309,7 +309,7 @@ void
 RichEdit::apply_subheading()
 {
     Wstring text( get_text() );
-    LONG end = text.find_first_of( L'\r', m_pos_start );
+    Wstring::size_type end = text.find_first_of( L'\r', m_pos_start );
     
     if( end == text.npos )
         end = get_length();
@@ -508,7 +508,7 @@ RichEdit::apply_check( CHARFORMAT2& format_box, CHARFORMAT2* tag, int c )
     Wstring text( get_text() );
     LONG iter_start = pos_current - 3;
     LONG iter_box = pos_current;
-    LONG iter_end = text.find_first_of( L'\r', iter_box );
+    Wstring::size_type iter_end = text.find_first_of( L'\r', iter_box );
     if( iter_end == text.npos )
         iter_end = get_length();
 
@@ -577,16 +577,78 @@ RichEdit::handle_change()
 }
 
 bool
+RichEdit::handle_space()
+{
+    Wstring fulltext( get_text() );
+    CHARRANGE cr;
+    SendMessage( m_hwnd, EM_EXGETSEL, 0, ( LPARAM ) &cr );
+    
+    LONG iter_end = cr.cpMin;
+    Wstring::size_type iter_start( fulltext.find_last_of( L'\r', iter_end - 1 ) );
+    if( iter_start == Wstring::npos )
+        return false;
+
+    iter_start++;   // skip the new line char
+    char char_lf = '\t';
+    unsigned int size = fulltext.size();
+
+    for( unsigned int i = iter_start; i < size; i++ )
+    {
+        switch( fulltext[ i ] )
+        {
+            case '\t':
+                if( char_lf == '\t' )
+                    char_lf = 'A';  // any list char like [ or *
+                else if( char_lf != 'A' )    // multiple tabs are possible (indentation)
+                    return false;
+                iter_start++;   // indentation level
+                break;
+            case '[':
+                if( char_lf != 'A' )
+                    return false;
+                char_lf = ']';
+                break;
+            case ']':
+                if( char_lf != ']' )
+                    return false;
+                {
+                    m_flag_ongoing_operation++;
+                    CHARRANGE range = { ( LONG ) iter_start, ( LONG ) iter_end };
+                    SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &range );
+                    SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"[ ]" );
+                    m_flag_ongoing_operation--;
+                }
+                return true;
+            case '*':
+                if( char_lf != 'A' )
+                    return false;
+                {
+                    m_flag_ongoing_operation++;
+                    CHARRANGE range = { ( LONG ) iter_start, ( LONG ) iter_end };
+                    SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &range );
+                    SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\u2022" );
+                    m_flag_ongoing_operation--;
+                }
+                return true;
+            default:
+                return false;
+        }
+    }
+    
+    return false;
+}
+
+bool
 RichEdit::handle_new_line()
 {
     Wstring fulltext( get_text() );
     CHARRANGE cr;
     SendMessage( m_hwnd, EM_EXGETSEL, 0, ( LPARAM ) &cr );
-    LONG iter_end = cr.cpMin;
-    if( iter_end <= 1 )
+    if( cr.cpMin <= 1 )
         return false;
-
-    LONG iter_start( fulltext.find_last_of( L'\r', iter_end - 1 ) );
+    Wstring::size_type iter_end = cr.cpMin;
+    
+    Wstring::size_type iter_start( fulltext.find_last_of( L'\r', iter_end - 1 ) );
     if( iter_start == Wstring::npos /*||
         iter_end.get_line_offset() < 3    NOT EASY in WIN32*/ )
         return false;
@@ -676,7 +738,7 @@ RichEdit::handle_new_line()
                     {
                         iter_start = offset_start;
                         m_flag_ongoing_operation++;
-                        CHARRANGE range = { iter_start, iter_end };
+                        CHARRANGE range = { ( LONG ) iter_start, ( LONG ) iter_end };
                         SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &range );
                         SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\r" );
                         m_flag_ongoing_operation--;
@@ -1141,7 +1203,7 @@ TextbufferDiary::add_bullet()
 
     if ( iter == iter_end ) // empty line
     {
-        insert( iter, "\t• " );
+        insert( iter, "\tâ¢ " );
         return;
     }
 
@@ -1152,7 +1214,7 @@ TextbufferDiary::add_bullet()
     {
         switch( iter.get_char() )
         {
-            case L'•':  // remove bullet
+            case L'â¢':  // remove bullet
                 if( char_lf == 'b' )
                     char_lf = 's';  // space
                 else
@@ -1170,9 +1232,9 @@ TextbufferDiary::add_bullet()
             case '\n':
                 char_lf = 't';  // tab
                 break;
-            case L'☐':
-            case L'☑':
-            case L'☒':
+            case L'â':
+            case L'â':
+            case L'â':
                 if( char_lf == 'b' )
                     char_lf = 'S';  // capital s: space 2
                 else
@@ -1188,7 +1250,7 @@ TextbufferDiary::add_bullet()
             case 0: // end
             default:
                 if( char_lf == 'G' || char_lf == 't' || char_lf == 'b' )
-                    iter = insert( iter, "\t• " );
+                    iter = insert( iter, "\tâ¢ " );
                 char_lf = 'n';
                 break;
         }
@@ -1207,7 +1269,7 @@ TextbufferDiary::add_checkbox()
 
     if ( iter == iter_end ) // empty line
     {
-        insert( iter, "\t☐ " );
+        insert( iter, "\tâ " );
         return;
     }
 
@@ -1218,9 +1280,9 @@ TextbufferDiary::add_checkbox()
     {
         switch( iter.get_char() )
         {
-            case L'☐':
-            case L'☑':
-            case L'☒':  // remove checkbox
+            case L'â':
+            case L'â':
+            case L'â':  // remove checkbox
                 if( char_lf == 'c' )
                     char_lf = 's';  // space
                 else
@@ -1238,7 +1300,7 @@ TextbufferDiary::add_checkbox()
             case '\n':
                 char_lf = 't';  // tab
                 break;
-            case L'•':
+            case L'â¢':
                 if( char_lf == 'c' )
                     char_lf = 'S';  // capital s: space 2
                 else
@@ -1254,7 +1316,7 @@ TextbufferDiary::add_checkbox()
             case 0: // end
             default:
                 if( char_lf == 'G' || char_lf == 't' || char_lf == 'c' )
-                    iter = insert( iter, "\t☐ " );
+                    iter = insert( iter, "\tâ " );
                 char_lf = 'n';
                 break;
         }

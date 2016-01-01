@@ -198,7 +198,7 @@ class RichEdit : public EntryParser
         COLORREF                    midcontrast( const Theme*, const COLORREF );
         
         void                        handle_change();
-        //void                        handle_space();
+        bool                        handle_space();
         bool                        handle_new_line();
 
         HWND                        m_hwnd;
