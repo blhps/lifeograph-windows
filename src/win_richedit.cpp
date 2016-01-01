@@ -118,33 +118,38 @@ RichEdit::RichEdit()
     m_format_done.cbSize = sizeof( CHARFORMAT2 );
     m_format_done.dwMask = CFM_BACKCOLOR;
 
+    const WCHAR fontface[] = L"Lucida Console";
     memset( &m_format_checkbox_todo, 0, sizeof( CHARFORMAT2 ) );
     m_format_checkbox_todo.cbSize = sizeof( CHARFORMAT2 );
-    m_format_checkbox_todo.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD;
+    m_format_checkbox_todo.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD | CFM_FACE;
     m_format_checkbox_todo.dwEffects = CFM_BOLD;
     const COLORREF color_todo( parse_color( Theme::s_color_todo ) );
     m_format_checkbox_todo.crTextColor = color_todo;
+    lstrcpy( m_format_checkbox_todo.szFaceName, fontface );
 
     memset( &m_format_checkbox_progressed, 0, sizeof( CHARFORMAT2 ) );
     m_format_checkbox_progressed.cbSize = sizeof( CHARFORMAT2 );
-    m_format_checkbox_progressed.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD;
+    m_format_checkbox_progressed.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD | CFM_FACE;
     m_format_checkbox_progressed.dwEffects = CFM_BOLD;
     const COLORREF color_progressed( parse_color( Theme::s_color_progressed ) );
     m_format_checkbox_progressed.crTextColor = color_progressed;
+    lstrcpy( m_format_checkbox_progressed.szFaceName, fontface );
 
     memset( &m_format_checkbox_done, 0, sizeof( CHARFORMAT2 ) );
     m_format_checkbox_done.cbSize = sizeof( CHARFORMAT2 );
-    m_format_checkbox_done.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD;
+    m_format_checkbox_done.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD | CFM_FACE;
     m_format_checkbox_done.dwEffects = CFM_BOLD;
     const COLORREF color_done( parse_color( Theme::s_color_done ) );
     m_format_checkbox_done.crTextColor = color_done;
+    lstrcpy( m_format_checkbox_done.szFaceName, fontface );
 
     memset( &m_format_checkbox_canceled, 0, sizeof( CHARFORMAT2 ) );
     m_format_checkbox_canceled.cbSize = sizeof( CHARFORMAT2 );
-    m_format_checkbox_canceled.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD;
+    m_format_checkbox_canceled.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD | CFM_FACE;
     m_format_checkbox_canceled.dwEffects = CFM_BOLD;
     const COLORREF color_canceled( parse_color( Theme::s_color_canceled ) );
     m_format_checkbox_canceled.crTextColor = color_canceled;
+    lstrcpy( m_format_checkbox_canceled.szFaceName, fontface );
 }
 
 void
