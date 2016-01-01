@@ -597,7 +597,7 @@ RichEdit::handle_space()
     char char_lf = '\t';
     unsigned int size = fulltext.size();
 
-    for( unsigned int i = iter_start; i < size; i++ )
+    for( unsigned int i = iter_start; i < iter_end; i++ )
     {
         switch( fulltext[ i ] )
         {
@@ -614,7 +614,7 @@ RichEdit::handle_space()
                 char_lf = ']';
                 break;
             case ']':
-                if( char_lf != ']' )
+                if( char_lf != ']' || i != ( iter_end - 1 ) )
                     return false;
                 {
                     m_flag_ongoing_operation++;
@@ -625,7 +625,7 @@ RichEdit::handle_space()
                 }
                 return true;
             case '*':
-                if( char_lf != 'A' )
+                if( char_lf != 'A' || i != ( iter_end - 1 ) )
                     return false;
                 {
                     m_flag_ongoing_operation++;
