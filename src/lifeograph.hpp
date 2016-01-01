@@ -23,10 +23,6 @@
 #ifndef LIFEOGRAPH_BASE_HEADER
 #define LIFEOGRAPH_BASE_HEADER
 
-#ifndef LIFEO_WINDOZE
-#include <gtkmm.h>
-#endif
-
 #include "settings.hpp"
 #include "diary.hpp"
 
@@ -81,8 +77,6 @@ struct Icons
 };
 
 typedef std::set< std::string > LanguageList;
-
-class AppWindow; // forward declaration
 
 // Lifeograph Application
 class Lifeograph

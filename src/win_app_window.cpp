@@ -509,13 +509,7 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                     return TRUE;
                 }
                 case IDB_ABOUT:
-                    MessageBoxA( NULL,
-                                 "Lifeograph for Windows  0.2.0\n\n"
-                                 "Copyright (C) 2014-2015 Ahmet Öztürk\n"
-                                 "Lifeograph is licensed under GNU Public License v3\n\n"
-                                 "http://lifeograph.sourceforge.net",
-                                 "About...",
-                                 MB_OK );
+                    show_about();
                     return TRUE;
                 case IDB_TODAY:
                     show_today();
@@ -1333,6 +1327,17 @@ WinAppWindow::show_today()
     }
 
     entry_today->show();
+}
+
+void
+WinAppWindow::show_about()
+{
+    Ustring about_txt = "Lifeograph for Windows ";
+    about_txt += Lifeograph::PROGRAM_VERSION_STRING;
+    about_txt += "\n\nCopyright (C) 2014-2016 Ahmet Öztürk\n"
+                 "Lifeograph is licensed under GNU Public License v3\n\n"
+                 "http://lifeograph.sourceforge.net",
+    MessageBoxA( NULL, about_txt.c_str(), "About...", MB_OK );
 }
 
 void

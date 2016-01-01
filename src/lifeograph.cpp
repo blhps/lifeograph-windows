@@ -39,7 +39,7 @@
 using namespace LIFEO;
 
 // STATIC MEMBERS
-const char                          Lifeograph::PROGRAM_VERSION_STRING[] = "0.2.0"
+const char                          Lifeograph::PROGRAM_VERSION_STRING[] = "0.3.0"
 #if LIFEOGRAPH_DEBUG_BUILD
         "\n" BUILD_TIMESTAMP
 #endif
@@ -155,23 +155,6 @@ Lifeograph::quit()
 #endif
     return true;
 }
-
-#ifndef LIFEO_WINDOZE
-// APP MENU COMMAND REDIRECTION FUNCTIONS
-void appmenu_preferences( const Glib::VariantBase& vb )
-{
-    DialogPreferences::create();
-}
-void appmenu_about( const Glib::VariantBase& vb )
-{
-    AppWindow::p->show_about();
-}
-void appmenu_quit( const Glib::VariantBase& vb )
-{
-    if( Lifeograph::quit() )
-        AppWindow::p->hide();
-}
-#endif
 
 void
 Lifeograph::on_startup()
