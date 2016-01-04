@@ -1,6 +1,6 @@
 /***********************************************************************************
 
-    Copyright (C) 2014-2015 Ahmet Öztürk (aoz_2@yahoo.com)
+    Copyright (C) 2014-2016 Ahmet Ozturk (aoz_2@yahoo.com)
 
     This file is part of Lifeograph.
 
@@ -175,20 +175,18 @@ class RichEdit : public EntryParser
         void                        toggle_highlight();
         void                        toggle_strikethrough();
 
-        void                        calculate_para_bounds( LONG&, LONG& );
-        bool                        calculate_multiline_selection_bounds( LONG, LONG );
+        bool                        calculate_multi_para_bounds( Wstring::size_type&,
+                                                                 Wstring::size_type& );
         void                        handle_indent();
         void                        handle_unindent();
 
-        void                        add_bullet();
-        void                        add_checkbox();
+        void                        set_list_item_mark( char );
         void                        add_empty_line_above();
         void                        remove_empty_line_above();
         void                        move_line_up();
         void                        move_line_down();
         void                        insert_link( DiaryElement* );
         void                        insert_time_stamp();
-
         std::string                 set_language( std::string );
 
         void                        set_theme( const Theme* );
@@ -197,6 +195,7 @@ class RichEdit : public EntryParser
         
         COLORREF                    midcontrast( const Theme*, const COLORREF );
         
+        void                        handle_right_click();
         void                        handle_change();
         bool                        handle_space();
         bool                        handle_new_line();

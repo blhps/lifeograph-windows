@@ -1,6 +1,6 @@
 /***********************************************************************************
 
-    Copyright (C) 2014-2015 Ahmet Öztürk (aoz_2@yahoo.com)
+    Copyright (C) 2014-2015 Ahmet Ozturk (aoz_2@yahoo.com)
 
     This file is part of Lifeograph.
 
@@ -30,6 +30,7 @@
 #define IDM_CHAPTER                             104
 #define IDM_TOPIC                               105
 #define IDM_FILTER                              107
+#define IDM_TEXT_EDITOR                         108
 #define IDTB_MAIN                               111
 
 // DIALOGS
@@ -77,37 +78,44 @@
 #define IDMI_FILTER_TODO_CANCELED               40056
 #define IDMI_FILTER_FAVORITES                   40057
 #define IDMI_FILTER_TAGS                        40058
+#define IDMI_TEXT_NOT_LIST                      40060
+#define IDMI_TEXT_TODO_OPEN                     40061
+#define IDMI_TEXT_TODO_PROGRESSED               40062
+#define IDMI_TEXT_TODO_DONE                     40063
+#define IDMI_TEXT_TODO_CANCELED                 40064
+#define IDMI_TEXT_BULLET                        40066
+
 #define IDMI_QUIT_WO_SAVE                       40098
 #define IDMI_QUIT                               40099
 
 // BUTTONS
-#define IDB_ABOUT                               40100
-#define IDB_DIARY                               40101
-#define IDB_TODAY                               40104
-#define IDB_ELEM                                40107
-#define IDB_ELEM_TITLE                          40108
-#define IDB_FILTER                              40109
-#define IDB_TAG_THEME                           40119
-#define IDB_TAG_ACTION                          40120
-#define IDB_TAG_FILTER_CLEAR                    40121
-#define IDB_TAG_FILTER_SET                      40122
+#define IDB_ABOUT                               44100
+#define IDB_DIARY                               44101
+#define IDB_TODAY                               44104
+#define IDB_ELEM                                44107
+#define IDB_ELEM_TITLE                          44108
+#define IDB_FILTER                              44109
+#define IDB_TAG_THEME                           44119
+#define IDB_TAG_ACTION                          44120
+#define IDB_TAG_FILTER_CLEAR                    44121
+#define IDB_TAG_FILTER_SET                      44122
 
 // TEXT EDITS
-#define IDRT_MAIN                               40200
-#define IDE_PASSWORD                            40201
-#define IDE_PASSWORD2                           40202
-#define IDE_SEARCH                              40205
-#define IDE_ELEM_DATE                           40211
-#define IDE_TAG_NAME                            40222
-#define WAO_IDE_INPUT                           40400
+#define IDRT_MAIN                               44200
+#define IDE_PASSWORD                            44201
+#define IDE_PASSWORD2                           44202
+#define IDE_SEARCH                              44205
+#define IDE_ELEM_DATE                           44211
+#define IDE_TAG_NAME                            44222
+#define WAO_IDE_INPUT                           44400
 
 // LABELS
-#define IDL_PASSWORD_MESSAGE                    40801
-#define IDL_DIARY_NAME                          40802
+#define IDL_PASSWORD_MESSAGE                    44801
+#define IDL_DIARY_NAME                          44802
 
 // OTHERS
-#define IDCC_TAGS                               40901
-#define IDLV_MAIN                               40911
-#define IDTV_TAG_LIST                           40921
-#define IDCAL_MAIN                              40950
+#define IDCC_TAGS                               44901
+#define IDLV_MAIN                               44911
+#define IDTV_TAG_LIST                           44921
+#define IDCAL_MAIN                              44950
 

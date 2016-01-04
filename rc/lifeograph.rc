@@ -109,6 +109,19 @@ IDM_FILTER MENU
     }
 }
 
+IDM_TEXT_EDITOR MENU
+{
+    POPUP "Text"
+    {
+        MENUITEM "None", IDMI_TEXT_NOT_LIST
+        MENUITEM "[ ] To Do", IDMI_TEXT_TODO_OPEN
+        MENUITEM "[~] In Progress", IDMI_TEXT_TODO_PROGRESSED
+        MENUITEM "[+] Done", IDMI_TEXT_TODO_DONE
+        MENUITEM "[x] Canceled", IDMI_TEXT_TODO_CANCELED
+        MENUITEM "* Bullet", IDMI_TEXT_BULLET
+    }
+}
+
 // DIALOGS =========================================================================================
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDD_PASSWORD DIALOG 0, 0, 200, 85

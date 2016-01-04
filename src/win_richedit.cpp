@@ -1,6 +1,6 @@
 /***********************************************************************************
 
-    Copyright (C) 2014-2015 Ahmet Öztürk (aoz_2@yahoo.com)
+    Copyright (C) 2014-2016 Ahmet Ozturk (aoz_2@yahoo.com)
 
     This file is part of Lifeograph.
 
@@ -1199,139 +1199,164 @@ TextbufferDiary::handle_unindent()
     }
 }
 
-void
-TextbufferDiary::add_bullet()
+
+*/
+
+bool
+RichEdit::calculate_multi_para_bounds( Wstring::size_type& iter_begin,
+                                       Wstring::size_type& iter_end )
 {
-    Gtk::TextIter iter, iter_end;
-    if( ! calculate_multiline_selection_bounds( iter, iter_end ) )
+    Wstring fulltext( get_text() );
+    CHARRANGE cr;
+    SendMessage( m_hwnd, EM_EXGETSEL, 0, ( LPARAM ) &cr );
+    
+    if( cr.cpMin > 0 )
+        cr.cpMin--;
+
+    iter_begin = fulltext.find_last_of( L'\r', cr.cpMin );
+    iter_end = fulltext.find_first_of( L'\r', cr.cpMax );
+
+    if( iter_end == Wstring::npos )
+        iter_end = fulltext.size();
+
+    if( iter_begin == Wstring::npos )
+        iter_begin = 0;
+    else if( iter_begin < iter_end )
+        iter_begin++;
+
+    return true; // to handle no-selection-at-the-first-paragraph case
+}
+
+void
+RichEdit::set_list_item_mark( char target_item_type )
+{
+    Wstring::size_type iter, iter_end;
+    if( ! calculate_multi_para_bounds( iter, iter_end ) )
         return;
 
     if ( iter == iter_end ) // empty line
     {
-        insert( iter, "\tâ¢ " );
+        switch( target_item_type )
+        {
+            case '*':
+                SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\t\u2022 " );
+                break;
+            case ' ':
+                SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\t[ ] " );
+                break;
+            case '~':
+                SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\t[~] " );
+                break;
+            case '+':
+                SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\t[+] " );
+                break;
+            case 'x':
+                SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\t[x] " );
+                break;
+        }
         return;
     }
 
-    Glib::RefPtr< Gtk::TextMark > mark_end = create_mark( iter_end );
-    Gtk::TextIter iter_erase_begin( iter );
+    Wstring text( get_text() );
+    Wstring::size_type iter_erase_begin( iter );
+    int offset( 0 ); // difference between rich edit and text indices
+    char item_type( 0 );    // none
     char char_lf( 't' );    // tab
-    while( iter != get_iter_at_mark( mark_end ) )
+    while( iter < iter_end )
     {
-        switch( iter.get_char() )
+        switch( text[ iter ] )
         {
-            case L'â¢':  // remove bullet
-                if( char_lf == 'b' )
-                    char_lf = 's';  // space
-                else
-                    char_lf = 'n'; // new line
-                break;
-            case ' ':
-                if( char_lf == 's' || char_lf == 'S' )
-                {
-                    char_lf += ( 'g' - 's' ); // g or G depending on the previous value
-                    iter = erase( iter_erase_begin, ++iter );
-                    continue;
-                }
-                else
-                    break;
-            case '\n':
-                char_lf = 't';  // tab
-                break;
-            case L'â':
-            case L'â':
-            case L'â':
-                if( char_lf == 'b' )
-                    char_lf = 'S';  // capital s: space 2
-                else
-                    char_lf = 'n'; // new line
-                break;
             case '\t':
-                if( char_lf == 't'  || char_lf == 'b' )
+                if( char_lf == 't'  || char_lf == '[' )
                 {
-                    char_lf = 'b';  // bullet
+                    char_lf = '[';  // opening bracket
                     iter_erase_begin = iter;
                 }
+                else
+                    char_lf = 'n';
+                break;
+            case L'\u2022':
+            case '-':
+                char_lf = ( char_lf == '[' ? 's' : 'n' );
+                item_type = ( char_lf == 's' ? '*' : 0 );
+                break;
+            case '[':
+                char_lf = ( char_lf == '[' ? 'c' : 'n' );
+                break;
+            case ' ':
+                if( char_lf == 's' ) // separator space
+                {
+                    if( item_type != target_item_type )
+                    {
+                        m_flag_ongoing_operation++;
+                        CHARRANGE range = { ( LONG ) iter_erase_begin - offset,
+                                            ( LONG ) ( ++iter ) - offset };
+                        SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &range );
+                        SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"" );
+                        m_flag_ongoing_operation--;
+                        char_lf = 'a';
+                        offset += ( iter - iter_erase_begin );
+                        continue;
+                    }
+                    else
+                    {
+                        char_lf = 'n';
+                        break;
+                    }
+                }
+                // no break: process like other check box chars:
+            case '~':
+            case '+':
+            case 'x':
+            case 'X':
+                char_lf = ( char_lf == 'c' ? ']' : 'n' );
+                item_type = text[ iter ];
+                break;
+            case ']':
+                char_lf = ( char_lf == ']' ? 's' : 'n' );
+                break;
+            case '\r':
+                item_type = 0;
+                char_lf = 't';  // tab
                 break;
             case 0: // end
             default:
-                if( char_lf == 'G' || char_lf == 't' || char_lf == 'b' )
-                    iter = insert( iter, "\tâ¢ " );
+                if( char_lf == 'a' || char_lf == 't' || char_lf == '[' )
+                {
+                    CHARRANGE range = { ( LONG ) iter - offset, ( LONG ) iter - offset };
+                    SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &range );
+                    switch( target_item_type )
+                    {
+                        case '*':
+                            SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\t\u2022 " );
+                            offset -= 3;
+                            break;
+                        case ' ':
+                            SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\t[ ] " );
+                            offset -= 5;
+                            break;
+                        case '~':
+                            SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\t[~] " );
+                            offset -= 5;
+                            break;
+                        case '+':
+                            SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\t[+] " );
+                            offset -= 5;
+                            break;
+                        case 'x':
+                            SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) L"\t[x] " );
+                            offset -= 5;
+                            break;
+                    }
+                }
                 char_lf = 'n';
                 break;
         }
         ++iter;
     }
-
-    delete_mark( mark_end );
 }
 
-void
-TextbufferDiary::add_checkbox()
-{
-    Gtk::TextIter iter, iter_end;
-    if( ! calculate_multiline_selection_bounds( iter, iter_end ) )
-        return;
-
-    if ( iter == iter_end ) // empty line
-    {
-        insert( iter, "\tâ " );
-        return;
-    }
-
-    Glib::RefPtr< Gtk::TextMark > mark_end = create_mark( iter_end );
-    Gtk::TextIter iter_erase_begin( iter );
-    char char_lf( 't' );    // tab
-    while( iter != get_iter_at_mark( mark_end ) )
-    {
-        switch( iter.get_char() )
-        {
-            case L'â':
-            case L'â':
-            case L'â':  // remove checkbox
-                if( char_lf == 'c' )
-                    char_lf = 's';  // space
-                else
-                    char_lf = 'n'; // new line
-                break;
-            case ' ':
-                if( char_lf == 's' || char_lf == 'S' )
-                {
-                    char_lf += ( 'g' - 's' ); // g or G depending on the previous value
-                    iter = erase( iter_erase_begin, ++iter );
-                    continue;
-                }
-                else
-                    break;
-            case '\n':
-                char_lf = 't';  // tab
-                break;
-            case L'â¢':
-                if( char_lf == 'c' )
-                    char_lf = 'S';  // capital s: space 2
-                else
-                    char_lf = 'n'; // new line
-                                    break;
-            case '\t':
-                if( char_lf == 't'  || char_lf == 'c' )
-                {
-                    char_lf = 'c';  // bullet
-                    iter_erase_begin = iter;
-                }
-                break;
-            case 0: // end
-            default:
-                if( char_lf == 'G' || char_lf == 't' || char_lf == 'c' )
-                    iter = insert( iter, "\tâ " );
-                char_lf = 'n';
-                break;
-        }
-        ++iter;
-    }
-
-    delete_mark( mark_end );
-}
-
-void
+/*void
 TextbufferDiary::add_empty_line_above()
 {
     if( ! m_ptr2textview->has_focus() )

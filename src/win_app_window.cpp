@@ -1,6 +1,6 @@
 /***********************************************************************************
 
-    Copyright (C) 2014-2015 Ahmet Öztürk (aoz_2@yahoo.com)
+    Copyright (C) 2014-2016 Ahmet Ozturk (aoz_2@yahoo.com)
 
     This file is part of Lifeograph.
 
@@ -105,6 +105,17 @@ richedit_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam,
                         return TRUE;
                     break;
             }
+            break;
+        }
+        case WM_RBUTTONDOWN:
+        {
+            //m_entry_view->m_richedit->handle_right_click();
+            DWORD dwpos = GetMessagePos();
+            WinAppWindow::p->display_context_menu( WinAppWindow::p->m_hwnd,
+                                                   GET_X_LPARAM( dwpos ),
+                                                   GET_Y_LPARAM( dwpos ),
+                                                   IDM_TEXT_EDITOR );
+            break;
         }
     }
 
@@ -420,6 +431,24 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     if( HIWORD( wParam ) == EN_CHANGE )
                         m_entry_view->m_richedit->handle_change();
                     break;
+                case IDMI_TEXT_NOT_LIST:
+                    m_entry_view->m_richedit->set_list_item_mark( 0 );
+                    break;
+                case IDMI_TEXT_TODO_OPEN:
+                    m_entry_view->m_richedit->set_list_item_mark( ' ' );
+                    break;
+                case IDMI_TEXT_TODO_PROGRESSED:
+                    m_entry_view->m_richedit->set_list_item_mark( '~' );
+                    break;
+                case IDMI_TEXT_TODO_DONE:
+                    m_entry_view->m_richedit->set_list_item_mark( '+' );
+                    break;
+                case IDMI_TEXT_TODO_CANCELED:
+                    m_entry_view->m_richedit->set_list_item_mark( 'x' );
+                    break;
+                case IDMI_TEXT_BULLET:
+                    m_entry_view->m_richedit->set_list_item_mark( '*' );
+                    break;
             }
             break;
         case WM_NOTIFY:
@@ -584,7 +613,8 @@ WinAppWindow::handle_create()
 
     SendMessage( m_entry_view->m_richedit->m_hwnd, WM_SETFONT,
                  ( WPARAM ) GetStockObject( DEFAULT_GUI_FONT ), MAKELPARAM( TRUE, 0 ) );
-    SendMessage( m_entry_view->m_richedit->m_hwnd, EM_SETEVENTMASK, 0, ( LPARAM ) ENM_CHANGE );
+    SendMessage( m_entry_view->m_richedit->m_hwnd, EM_SETEVENTMASK, 0,
+                 ( LPARAM ) ENM_CHANGE | ENM_MOUSEEVENTS );
     SetWindowSubclass( m_entry_view->m_richedit->m_hwnd, richedit_proc, 0, 0 );
 
     // TREE VIEW
@@ -769,6 +799,21 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
                         }
                     }
                 }
+            }
+            break;
+        }
+        case IDRT_MAIN:
+        {
+            MSGFILTER* lpMsgFilter = ( MSGFILTER* ) lparam;
+            DWORD dwpos = GetMessagePos();
+            if( ( lpMsgFilter->nmhdr.code == EN_MSGFILTER ) &&
+                ( lpMsgFilter->msg == WM_RBUTTONDOWN ) )
+            {
+                //m_entry_view->m_richedit->handle_right_click();
+                display_context_menu( m_hwnd,
+                                      GET_X_LPARAM( dwpos ),
+                                      GET_Y_LPARAM( dwpos ),
+                                      IDM_TEXT_EDITOR );
             }
             break;
         }
