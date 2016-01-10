@@ -385,6 +385,11 @@ class Date
         {
             return make_date( timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday );
         }
+        static date_t               make_date_from_ctime( const time_t t )
+        {
+            struct tm* timeinfo = localtime( &t );
+            return make_date( timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday );
+        }
 
         unsigned int                calculate_days_between( const Date& ) const;
         unsigned int                calculate_months_between( Date::date_t ) const;
@@ -420,11 +425,13 @@ void                print_info( const Ustring& );
 #define PRINT_DEBUG2( a1, a2 )  std::cout << "DEBUG: " << a1 << a2 << std::endl
 #define PRINT_DEBUG3( a1, a2, a3 )  std::cout << "DEBUG: " << a1 << a2 << a3 << std::endl
 #define PRINT_DEBUG4( a1, a2, a3, a4 )  std::cout << "DEBUG: " << a1 << a2 << a3 << a4 << std::endl
+#define PRINT_DEBUG5( a1, a2, a3, a4, a5 )  std::cout << "DEBUG: " << a1 << a2 << a3 << a4 << a5 << std::endl
 #else
 #define PRINT_DEBUG( msg )  ;
 #define PRINT_DEBUG2( a1, a2 )  ;
 #define PRINT_DEBUG3( a1, a2, a3 )  ;
 #define PRINT_DEBUG4( a1, a2, a3, a4 )  ;
+#define PRINT_DEBUG5( a1, a2, a3, a4, a5 )  ;
 #endif
 
 // COLOR OPERATIONS ================================================================================
