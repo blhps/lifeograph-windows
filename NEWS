@@ -1,6 +1,14 @@
 LIFEOGRAPH FOR WINDOWS RELEASE HISTORY
 ======================================
 
+0.3.0 - 2016-01-17
+
+    * Added support for diary format 1030
+    * Added support for todo lists in entries
+    * Added support for numeric and bullet lists in entries
+
+
+
 0.2.0 - 2015-02-16
 
     * Converted the entry list into a tree view
@@ -8,8 +16,8 @@ LIFEOGRAPH FOR WINDOWS RELEASE HISTORY
     * Implemented searching text within entries
     * Added filtering by status, being favorite, and tag
     * Implemented editing entry date/number
-    * Added marking entries as favorite
-    * Added setting entry completion status
+    * Implemented marking entries as favorite
+    * Implemented setting entry completion status
     * Added a tag list to the tag dialog
 
 
