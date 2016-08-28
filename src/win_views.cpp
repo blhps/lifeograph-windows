@@ -25,6 +25,7 @@
 #endif
 
 
+#include <winsock2.h>   // just to silence the compiler
 #include <windows.h>
 #include <algorithm>
 

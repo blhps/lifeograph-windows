@@ -33,13 +33,14 @@
 #include <sstream>
 #include <set>
 
-#include <gcrypt.h>
-
 #ifndef LIFEO_WINDOZE
 #include <gtkmm.h>
 #else
+#include<winsock2.h>    // to silence the compiler
 #include <shlwapi.h>
 #endif
+
+#include <gcrypt.h>
 
 #ifndef LIFEO_WINDOZE
 typedef Glib::ustring Ustring;

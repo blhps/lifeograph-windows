@@ -24,6 +24,7 @@
 #include <config.h>
 #endif
 
+#include <winsock2.h> // just to silence the compiler
 #include <windows.h>
 #include <windowsx.h> // GET_X_LPARAM
 #include <richedit.h>
@@ -714,7 +715,7 @@ WinAppWindow::handle_notify( int id, LPARAM lparam )
                             DiaryElement* elem = Diary::d->get_element( tvi.lParam );
                             if( !elem )
                             {
-                                if( tvi.lParam == Diary::d->get_id() )
+                                if( DEID( tvi.lParam ) == Diary::d->get_id() )
                                     elem = Diary::d;
                                 else
                                     break;
@@ -1279,15 +1280,19 @@ WinAppWindow::fill_monthdaystate( int year, int month, MONTHDAYSTATE mds[], int 
             if( entry->get_filtered_out() || entry->get_date().is_ordinal() )
                 continue;
 
-            if( entry->get_date().get_year() == year )
+            if( int( entry->get_date().get_year() ) == year )
             {
-                if( entry->get_date().get_month() == month )
+                if( int( entry->get_date().get_month() ) == month )
+                {
                     BOLDDAY( mds[ i ], entry->get_date().get_day() );
-                else if( entry->get_date().get_month() < month )
+                }
+                else if( int( entry->get_date().get_month() ) < month )
+                {
                     break;
+                }
             }
             else
-            if( entry->get_date().get_year() < year )
+            if( int( entry->get_date().get_year() ) < year )
                 break;
         }
 
@@ -1400,7 +1405,7 @@ WinAppWindow::add_chapter( CategoryChapters* cc, const Date* d )
     if( item )
         TreeView_EditLabel( m_list, item );
 }
-                
+
 void
 WinAppWindow::start_tag_dialog( const Wstring& name )
 {
@@ -1417,7 +1422,7 @@ WinAppWindow::authorize()
     int i = 0;
     Result res;
     
-    while( res = DialogPassword::launch( m_hwnd, Diary::d, DialogPassword::PD_AUTHORIZE, i ) )
+    while( ( res = DialogPassword::launch( m_hwnd, Diary::d, DialogPassword::PD_AUTHORIZE, i ) ) )
     {
         switch( res )
         {
@@ -1428,8 +1433,12 @@ WinAppWindow::authorize()
                 break;
             case ABORTED:
                 return false;
+            default:
+                return false;
         }
     }
+    
+    return false;
 }
 
 bool

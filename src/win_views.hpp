@@ -97,8 +97,8 @@ class EntryView : public ElementView< Entry >
 
         // WIDGETS
 
-        bool                    m_flag_entrychanged;
         Entry*                  m_entry_sync;
+        bool                    m_flag_entrychanged;
 };
 
 class DiaryView : public ElementView< Diary >

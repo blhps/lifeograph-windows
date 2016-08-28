@@ -20,6 +20,7 @@
 ***********************************************************************************/
 
 
+#include <winsock2.h>   // just to silence the compiler
 #include <windows.h>
 #include <commctrl.h>
 
@@ -232,7 +233,7 @@ waoWC_buttonChkProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                 {
                     long wStyle;
                     HWND t_hndWnd = hwnd;
-                    while( t_hndWnd = GetWindow( t_hndWnd, GW_HWNDPREV ) )
+                    while( ( t_hndWnd = GetWindow( t_hndWnd, GW_HWNDPREV ) ) )
                     {
                         wchar_t buffer[ 16 ];
                         GetClassName( t_hndWnd, buffer, 15 );
@@ -247,7 +248,7 @@ waoWC_buttonChkProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                             break;
                     }
                     t_hndWnd = hwnd;
-                    while( t_hndWnd = GetWindow( t_hndWnd, GW_HWNDNEXT ) )
+                    while( ( t_hndWnd = GetWindow( t_hndWnd, GW_HWNDNEXT ) ) )
                     {
                         wchar_t buffer[ 16 ];
                         GetClassName( t_hndWnd, buffer, 15 );
@@ -276,6 +277,8 @@ waoWC_buttonChkProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
         default:
         return( waoWC_button0Proc( hwnd, msg, wParam, lParam ) );
     }
+    
+    return 0;   // just to silence the compiler
 }
 
 LRESULT CALLBACK
@@ -346,7 +349,7 @@ WAO_toolbar_proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 
 // INPUT DIALOG ====================================================================================
 WAO_InputDlg::WAO_InputDlg( const Wstring& title, const Wstring& text )
-:   m_title( title ), m_text( text )
+:   m_text( text ), m_title( title )
 {
 }
 

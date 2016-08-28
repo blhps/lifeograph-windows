@@ -24,6 +24,7 @@
 #define LIFEOGRAPH_WIN_WIDGETTAGS_HEADER
 
 
+#include <winsock2.h>   // just to silence the compiler
 #include <windows.h>
 #include <list>
 

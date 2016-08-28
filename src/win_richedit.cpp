@@ -588,14 +588,14 @@ RichEdit::handle_space()
     CHARRANGE cr;
     SendMessage( m_hwnd, EM_EXGETSEL, 0, ( LPARAM ) &cr );
     
-    LONG iter_end = cr.cpMin;
+    Wstring::size_type iter_end = cr.cpMin;
     Wstring::size_type iter_start( fulltext.find_last_of( L'\r', iter_end - 1 ) );
     if( iter_start == Wstring::npos )
         return false;
 
     iter_start++;   // skip the new line char
     char char_lf = '\t';
-    unsigned int size = fulltext.size();
+    //unsigned int size = fulltext.size();
 
     for( unsigned int i = iter_start; i < iter_end; i++ )
     {

@@ -644,7 +644,7 @@ convert_utf8_to_16( const Ustring& str8 )
 char*
 convert_utf16_to_8( const wchar_t* str16 )
 {
-    char* str8;
+    char* str8{ nullptr };
     int size = WideCharToMultiByte( CP_UTF8, 0, str16, -1, str8, 0, NULL, NULL );
     str8 = new char[ size ];
     WideCharToMultiByte( CP_UTF8, 0, str16, -1, str8, size, NULL, NULL );
@@ -695,7 +695,7 @@ command_line_to_argvA( PCHAR CmdLine, int* _argc )
     i = 0;
     j = 0;
 
-    while( a = CmdLine[i] ) {
+    while( ( a = CmdLine[i] ) ) {
         if(in_QM) {
             if(a == '\"') {
                 in_QM = FALSE;
