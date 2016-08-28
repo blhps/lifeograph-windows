@@ -37,17 +37,6 @@ using namespace LIFEO;
 const std::string Settings::s_date_format_orders[ 3 ]  = { "YMD", "DMY", "MDY" };
 const std::string Settings::s_date_format_separators   = "./-";
 
-Settings::Settings()
-:   autologout( true ), idletime( IDLETIME_DEFAULT ), show_formatting_toolbar( true ),
-    date_format_order( 0 ), date_format_separator( 0 ),
-    diary_extension( EXTENSION_DEFAULT ), flag_maiden_voyage( false ),
-    width( WIDTH_DEFAULT ), height( HEIGHT_DEFAULT ),
-    state_maximized( false ), position_x( POSITION_NOTSET ), position_y( POSITION_NOTSET ),
-    position_pane( PANEPOS_DEFAULT ), position_pane_tags( PANEPOS_TAGS_DEFAULT ),
-    small_lists( true )
-{
-}
-
 bool
 Settings::read()
 {
@@ -136,6 +125,9 @@ Settings::read()
             case 'S':
                 state_maximized = ( line[ 2 ] == 'm' || line[ 2 ] == 'M' );
                 break;
+            case 'T':
+                icon_theme = line.substr( 2 );
+                break;
             case 'W':
                 width = convert_string( line.substr( 2 ) );
                 break;
@@ -150,7 +142,7 @@ Settings::read()
             case '#':   // comment
                 break;
             default:
-                print_info( "unrecognized option:\n" + line );
+                print_info( "unrecognized option:\n", line );
                 break;
         }
     }
@@ -189,9 +181,8 @@ Settings::write()
     file << "\np " << position_pane_tags;
 
     // RECENT FILES
-    for( ListPaths::iterator iter = recentfiles.begin();
-         iter != recentfiles.end(); ++iter )
-        file << "\nR " << *iter;
+    for( const std::string& path : recentfiles )
+        file << "\nR " << path;
 
     file << "\nL " << ( autologout ? 'y' : 'n' );
     file << "\nI " << idletime;
@@ -202,6 +193,9 @@ Settings::write()
 
     if( diary_extension != EXTENSION_DEFAULT )
         file << "\nE " << diary_extension;
+
+    if( ! icon_theme.empty() )
+        file << "\nT " << icon_theme;
 
     if( small_lists == false )
         file << "\nO big lists";
@@ -219,6 +213,7 @@ Settings::reset()
     show_formatting_toolbar = true;
     date_format_order = 0;
     date_format_separator = 0;
+    icon_theme.clear();
     diary_extension = EXTENSION_DEFAULT;
 }
 

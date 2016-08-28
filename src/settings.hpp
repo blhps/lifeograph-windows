@@ -48,8 +48,7 @@ static const char   EXTENSION_DEFAULT[]     = ".diary";
 class Settings
 {
     public:
-                                    Settings();
-
+                                    Settings() {}
         // FUNCTIONS
         bool                        read();
         bool                        write();
@@ -61,29 +60,30 @@ class Settings
         // VARIABLES FOR OPTIONS
         ListPaths                   recentfiles;
 
-        bool                        autologout;
-        int                         idletime;
+        bool                        autologout{ true };
+        int                         idletime{ IDLETIME_DEFAULT };
 
-        bool                        show_formatting_toolbar;
+        bool                        show_formatting_toolbar{ true };
 
-        int                         date_format_order;
-        int                         date_format_separator;
+        int                         date_format_order{ 0 };
+        int                         date_format_separator{ 0 };
 
-        std::string                 diary_extension;
+        std::string                 diary_extension{ EXTENSION_DEFAULT };
 
-        bool                        flag_maiden_voyage; // whether or not the first run
-        int                         width;
-        int                         height;
-        bool                        state_maximized;
-        int                         position_x;
-        int                         position_y;
-        int                         position_pane;
-        int                         position_pane_tags;
+        bool                        flag_maiden_voyage{ false }; // whether or not the first run
+        int                         width{ WIDTH_DEFAULT };
+        int                         height{ HEIGHT_DEFAULT };
+        bool                        state_maximized{ false };
+        int                         position_x{ POSITION_NOTSET };
+        int                         position_y{ POSITION_NOTSET };
+        int                         position_pane{ PANEPOS_DEFAULT };
+        int                         position_pane_tags{ PANEPOS_TAGS_DEFAULT };
 
-        bool                        small_lists;
+        std::string                 icon_theme;
+        bool                        small_lists{ true };
 
     protected:
-        static const std::string    s_date_format_orders[3];
+        static const std::string    s_date_format_orders[ 3 ];
         static const std::string    s_date_format_separators;
 
         std::string                 m_path;

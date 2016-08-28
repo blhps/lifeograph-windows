@@ -104,8 +104,7 @@ class EntryParser
             bool            junction;
         };
 
-                                    EntryParser()
-                                    : m_word_count( 0 ), date_last( 0 ) {}
+                                    //EntryParser() {}
         virtual                     ~EntryParser() {}
 
         void                        parse( Wstring::size_type,
@@ -196,10 +195,10 @@ class EntryParser
         unsigned int                m_cf_req;       // required previous char
         Wchar                       char_current;
         Wstring                     m_word_last;
-        unsigned int                m_word_count;
+        unsigned int                m_word_count{ 0 };
         Wstring                     alpha_last;     // last word consisting purely of letters
-        unsigned int                int_last;
-        Date                        date_last;
+        unsigned int                int_last{ 0 };
+        Date                        date_last{ 0 };
         unsigned long               id_last;
         bool                        m_flag_hidden_link;
         bool                        m_flag_handle_word;

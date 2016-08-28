@@ -47,7 +47,8 @@ EntryParser::reset( Ustring::size_type start, Ustring::size_type end )
     {
         m_chars_looked_for.push_back( AbsChar( CF_IGNORE, NULL ) ); // to prevent formatting within title
         m_applier_nl = &EntryParser::apply_heading_end;
-        apply_heading();
+        if( end > 0 )
+            apply_heading();
     }
     else
     {
