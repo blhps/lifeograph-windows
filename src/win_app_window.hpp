@@ -81,7 +81,7 @@ class WinAppWindow
         
         void                        add_chapter( CategoryChapters*, const Date* );
 
-        void                        start_tag_dialog( const Wstring& );
+        void                        start_tag_dialog( const Ustring& );
 
         bool                        authorize();
 

@@ -50,13 +50,13 @@ DialogTags::DialogTags()
 }
 
 Result
-DialogTags::launch( HWND hw_par, Diary* diary, Entry* entry, const Wstring& name )
+DialogTags::launch( HWND hw_par, Diary* diary, Entry* entry, const Ustring& name )
 {
     ptr = new DialogTags;
 
     ptr->m_ptr2diary = diary;
     ptr->m_ptr2entry = entry;
-    ptr->m_name = name;
+    ptr->m_nav.name = name;
 
     Result res = ( Result ) DialogBox( NULL,
                                        MAKEINTRESOURCE( IDD_TAGS ),
@@ -129,7 +129,7 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             DeleteObject( hbitmap );
             TreeView_SetImageList( m_list, himagelist, TVSIL_NORMAL );
 
-            SetWindowText( m_edit, m_name.c_str() );
+            SetWindowText( m_edit, convert_utf8_to_16( m_nav.name ) );
 
             update_list();
 
@@ -152,8 +152,7 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                     // only tags in entry can be set as the theme
                     if( m_tag_operation_cur == TO_REMOVE ) 
                     {
-                        Ustring filter = convert_utf16_to_8( m_name.c_str() );
-                        Tag* tag = Diary::d->get_tags()->get_tag( filter );
+                        Tag* tag{ Diary::d->get_tags()->get_tag( m_nav.name ) };
 
                         if( tag->get_has_own_theme() )
                             m_ptr2entry->set_theme_tag( tag );
@@ -169,21 +168,28 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                     switch( m_tag_operation_cur )
                     {
                         case TO_NONE:
+                        case TO_INVALID:
                             result = ABORTED;
                             break;
                         case TO_REMOVE:
                             m_ptr2entry->remove_tag( m_tag_cur );
                             break;
-                        case TO_CREATE_AND_ADD:
-                            m_tag_cur =
-                                    Diary::d->create_tag(
-                                            convert_utf16_to_8( m_name.c_str() ),
-                                            nullptr,
-                                            ChartPoints::MONTHLY|ChartPoints::CUMULATIVE );
-                            m_ptr2entry->add_tag( m_tag_cur );
+                        case TO_CREATE_BOOLEAN:
+                        case TO_CREATE_CUMULATIVE:
+                            if( m_tag_operation_cur == TO_CREATE_CUMULATIVE )
+                                m_tag_cur = Diary::d->create_tag( m_nav.name, nullptr,
+                                        ChartPoints::MONTHLY|ChartPoints::CUMULATIVE );
+                            else
+                                m_tag_cur = Diary::d->create_tag( m_nav.name, nullptr );
+
+                            m_ptr2entry->add_tag( m_tag_cur, m_nav.value );
+                            break;
+                        case TO_CHANGE_VALUE:
+                            m_ptr2entry->remove_tag( m_tag_cur );
+                            m_ptr2entry->add_tag( m_tag_cur, m_nav.value );
                             break;
                         case TO_ADD:
-                            m_ptr2entry->add_tag( m_tag_cur );
+                            m_ptr2entry->add_tag( m_tag_cur, m_nav.value );
                             break;
                     }
 
@@ -235,9 +241,9 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 void
 DialogTags::handle_entry_changed()
 {
-    wchar_t filter[ 128 ];
-    GetWindowText( m_edit, filter, 128 );
-    m_name = filter;
+    wchar_t filter[ 256 ];
+    GetWindowText( m_edit, filter, 256 );
+    m_nav = NameAndValue::parse( convert_utf16_to_8( filter ) );
 
     EnableWindow( m_button_theme, false );
 
@@ -252,23 +258,40 @@ DialogTags::handle_entry_changed()
     else
     {
         EnableWindow( m_button_action, true );
-        m_tag_cur = Diary::d->get_tags()->get_tag( convert_utf16_to_8( filter ) );
+        m_tag_cur = Diary::d->get_tags()->get_tag( m_nav.name );
         if( m_tag_cur == NULL )
         {
             SetWindowText( m_button_action, L"Create Tag" );
-            m_tag_operation_cur = TO_CREATE_AND_ADD;
+            if( m_nav.value == 1 )
+                m_tag_operation_cur = TO_CREATE_BOOLEAN;
+            else
+                m_tag_operation_cur = TO_CREATE_CUMULATIVE;
 
             EnableWindow( m_button_filter_set, false );
         }
         else
         {
-            if( m_ptr2entry && m_ptr2entry->get_tags().check_for_member( m_tag_cur ) )
+            if( m_tag_cur->is_boolean() && m_nav.value != 1 )
             {
-                SetWindowText( m_button_action, L"Remove Tag" );
-                m_tag_operation_cur = TO_REMOVE;
+                SetWindowText( m_button_action, L"Invalid Expression" );
+                m_tag_operation_cur = TO_INVALID;
+            }
+            else if( m_ptr2entry && m_ptr2entry->get_tags().check_for_member( m_tag_cur ) )
+            {
 
                 if( m_tag_cur->get_has_own_theme() && m_ptr2entry->get_theme_tag() != m_tag_cur )
                     EnableWindow( m_button_theme, true );
+
+                if( m_tag_cur->get_value( m_ptr2entry ) != m_nav.value )
+                {
+                    SetWindowText( m_button_action, L"Change Value" );
+                    m_tag_operation_cur = TO_CHANGE_VALUE;
+                }
+                else
+                {
+                    SetWindowText( m_button_action, L"Remove Tag" );
+                    m_tag_operation_cur = TO_REMOVE;
+                }
             }
             else
             {
@@ -319,7 +342,6 @@ void
 DialogTags::update_list()
 {
     SendMessage( m_list, TVM_DELETEITEM, 0, ( LPARAM ) NULL );
-    Ustring filter = convert_utf16_to_8( m_name.c_str() );
 
     // ROOT TAGS
     for( auto& kv_tag : *Diary::d->get_tags() )
@@ -327,7 +349,7 @@ DialogTags::update_list()
         Tag* tag( kv_tag.second );
         if( tag->get_category() == NULL )
         {
-            if( !m_name.empty() && tag->get_name().find( filter ) == Ustring::npos )
+            if( !m_nav.name.empty() && tag->get_name().find( m_nav.name ) == Ustring::npos )
                 continue;
 
             add_list_elem( tag, ( HTREEITEM ) TVI_ROOT );
@@ -343,7 +365,7 @@ DialogTags::update_list()
 
         for( Tag* tag : *category )
         {
-            if( !m_name.empty() && tag->get_name().find( filter ) == Ustring::npos )
+            if( !m_nav.name.empty() && tag->get_name().find( m_nav.name ) == Ustring::npos )
                 continue;
 
             if( !ctg_added )
@@ -360,7 +382,7 @@ DialogTags::update_list()
     }
 
     // UNTAGGED PSEUDO TAG
-    if( m_name.empty() )
+    if( m_nav.name.empty() )
         add_list_elem( Diary::d->get_untagged(), ( HTREEITEM ) TVI_ROOT );
 }
 

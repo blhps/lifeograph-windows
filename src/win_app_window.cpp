@@ -1407,7 +1407,7 @@ WinAppWindow::add_chapter( CategoryChapters* cc, const Date* d )
 }
 
 void
-WinAppWindow::start_tag_dialog( const Wstring& name )
+WinAppWindow::start_tag_dialog( const Ustring& name )
 {
     if( DialogTags::launch( m_hwnd, Diary::d, m_entry_view->get_element(), name ) == SUCCESS )
     {

@@ -159,7 +159,8 @@ WidgetTagList::handle_draw()
     }
 
     for( Tag* tag : ptr2tagset )
-        add_item( hDC, convert_utf8_to_16( tag->get_name() ), tag );
+        add_item( hDC, convert_utf8_to_16(
+                tag->get_name_and_value( m_ptr2entry, false, true ) ), tag );
 
     if( m_flag_editable )
         add_item( hDC, L"Add Tag", &m_add_tag_item );
@@ -292,14 +293,15 @@ WidgetTagList::handle_click( int x, int y )
 {
     if( m_ptr2entry != NULL )
     {
-        const Tag* hovered_tag( NULL );
+        //const Tag* hovered_tag( NULL );
 
         for( TagItem& ti : m_items )
         {
             if( ti.xl < x && ti.xr > x &&
                 ti.yl < y && ti.yr > y )
             {
-                WinAppWindow::p->start_tag_dialog( convert_utf8_to_16( ti.tag->get_name() ) );
+                WinAppWindow::p->start_tag_dialog(
+                        ti.tag->get_name_and_value( m_ptr2entry, true, true ) );
                 break;
             }
         }

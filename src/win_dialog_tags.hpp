@@ -35,11 +35,13 @@ namespace LIFEO
 class DialogTags
 {
     public:
-        enum TagOperation { TO_NONE, TO_ADD, TO_REMOVE, TO_CREATE_AND_ADD };
+        enum TagOperation { TO_NONE, TO_INVALID,
+                            TO_ADD, TO_REMOVE, TO_CHANGE_VALUE,
+                            TO_CREATE_BOOLEAN, TO_CREATE_CUMULATIVE };
 
                                     DialogTags();
 
-        static Result               launch( HWND, Diary*, Entry*, const Wstring& ); // Assigning
+        static Result               launch( HWND, Diary*, Entry*, const Ustring& ); // Assigning
         static Result               launch( HWND, Diary* ); // Filtering
 
         bool                        proc( HWND, UINT, WPARAM, LPARAM );
@@ -53,9 +55,9 @@ class DialogTags
 
         Diary*                      m_ptr2diary;
         Entry*                      m_ptr2entry;
-        Wstring                     m_name;
         TagOperation                m_tag_operation_cur;
         Tag*                        m_tag_cur;
+        NameAndValue                m_nav;
 
         HWND                        m_hwnd;
         HWND                        m_edit;
