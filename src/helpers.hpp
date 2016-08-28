@@ -61,7 +61,6 @@ typedef std::string Color;
 namespace HELPERS
 {
 
-#ifdef LIFEO_WINDOZE
 class STR
 {
     private:
@@ -85,7 +84,6 @@ class STR
             return str.str();
         }
 };
-#endif
 
 class Error
 {
@@ -228,20 +226,6 @@ class Date
         { return ( ( m_date & YEAR_FILTER ) >> 19 ); }
         static unsigned int         get_year( const date_t d )
         { return ( ( d & YEAR_FILTER ) >> 19 ); }
-        
-        static int get_YMD( long d, char c )
-        {
-            switch( c )
-            {
-                case 'Y':
-                    return get_year( d );
-                case 'M':
-                    return get_month( d );
-                case 'D':
-                default: // no error checking for now
-                    return get_day( d );
-            }
-        }
 
         std::string                 get_year_str() const;
         Ustring                     get_month_str() const;
@@ -334,6 +318,9 @@ class Date
 
         Ustring                     format_string() const
         { return format_string( m_date, s_date_format_order, s_date_format_separator ); }
+        Ustring                     format_string( const std::string& format,
+                                                   const char separator = s_date_format_separator )
+        { return format_string( m_date, format, separator ); }
         static Ustring              format_string( const date_t date )
         { return format_string( date, s_date_format_order, s_date_format_separator ); }
         static Ustring              format_string( const date_t, const std::string&, const char );
@@ -394,9 +381,10 @@ class Date
         unsigned int                calculate_days_between( const Date& ) const;
         unsigned int                calculate_months_between( Date::date_t ) const;
         static unsigned int         calculate_months_between( Date::date_t, Date::date_t );
+        static int                  calculate_months_between_neg( Date::date_t, Date::date_t );
 
     //protected:
-        date_t                      m_date;
+        date_t                      m_date{ 0 };
 };
 
 /*
@@ -416,22 +404,55 @@ compare_dates( const Date::date_t& date_l, const Date::date_t& date_r )
 
 typedef bool( *FuncCompareDates )( const Date::date_t&, const Date::date_t& ) ;
 
-// CONSOLE MESSAGES ================================================================================
-void                print_error( const Ustring& );
-void                print_info( const Ustring& );
+// VALUES ==========================================================================================
+typedef double Value;
 
-#if LIFEOGRAPH_DEBUG_BUILD
-#define PRINT_DEBUG( msg )  std::cout << "DEBUG: " << msg << std::endl
-#define PRINT_DEBUG2( a1, a2 )  std::cout << "DEBUG: " << a1 << a2 << std::endl
-#define PRINT_DEBUG3( a1, a2, a3 )  std::cout << "DEBUG: " << a1 << a2 << a3 << std::endl
-#define PRINT_DEBUG4( a1, a2, a3, a4 )  std::cout << "DEBUG: " << a1 << a2 << a3 << a4 << std::endl
-#define PRINT_DEBUG5( a1, a2, a3, a4, a5 )  std::cout << "DEBUG: " << a1 << a2 << a3 << a4 << a5 << std::endl
+// CONSOLE MESSAGES ================================================================================
+class Console
+{
+    private:
+        static void print( std::ostream& os )
+        {
+            os << std::endl;
+        }
+
+        template< typename Arg1, typename... Args >
+        static void print( std::ostream& os, Arg1 arg1, Args... args )
+        {
+            os << arg1;
+            print( os, args... );
+        }
+
+    template< typename... Args >
+    friend void print_error( Args... );
+
+    template< typename... Args >
+    friend void print_info( Args... );
+
+    template< typename... Args >
+    friend void PRINT_DEBUG( Args... );
+};
+
+template< typename... Args >
+void print_info( Args... args )
+{
+    Console::print( std::cout, "INFO: ", args... );
+}
+
+template< typename... Args >
+void print_error( Args... args )
+{
+    Console::print( std::cerr, "ERROR: ", args... );
+}
+
+#ifdef LIFEOGRAPH_DEBUG_BUILD
+    template< typename... Args >
+    void PRINT_DEBUG( Args... args )
+    {
+        Console::print( std::cout, "* DBG *  ", args... );
+    }
 #else
-#define PRINT_DEBUG( msg )  ;
-#define PRINT_DEBUG2( a1, a2 )  ;
-#define PRINT_DEBUG3( a1, a2, a3 )  ;
-#define PRINT_DEBUG4( a1, a2, a3, a4 )  ;
-#define PRINT_DEBUG5( a1, a2, a3, a4, a5 )  ;
+#define PRINT_DEBUG( ... ) ;
 #endif
 
 // COLOR OPERATIONS ================================================================================

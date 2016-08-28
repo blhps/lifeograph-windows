@@ -52,7 +52,6 @@ std::string Date::s_date_format_order = "YMD";
 char        Date::s_date_format_separator = '.';
 
 Date::Date( const std::string& str_date )
-:   m_date( 0 )
 {
     if( parse_string( &m_date, str_date ) != OK )
         m_date = NOT_SET;
@@ -226,9 +225,26 @@ Date::format_string( const date_t d, const std::string& format, const char separ
     }
     else
     {
-        result << std::setfill( '0' ) << std::setw( 2 ) << get_YMD( d, format[ 0 ] ) << separator
-               << std::setfill( '0' ) << std::setw( 2 ) << get_YMD( d, format[ 1 ] ) << separator
-               << std::setfill( '0' ) << std::setw( 2 ) << get_YMD( d, format[ 2 ] );
+        auto get_YMD = [ &d ]( char c ) -> unsigned int
+            {
+                switch( c )
+                {
+                    case 'Y':
+                        return get_year( d );
+                    case 'M':
+                        return get_month( d );
+                    case 'D':
+                    default: // no error checking for now
+                        return get_day( d );
+                }
+            };
+
+        for( unsigned int i = 0; i < format.size(); i++ )
+        {
+            result << std::setfill( '0' ) << std::setw( 2 ) << get_YMD( format[ i ] );
+            if( i != format.size() - 1 )
+                result << separator;
+        }
     }
     return result.str();
 }
@@ -397,23 +413,19 @@ Date::calculate_months_between( Date::date_t date2 ) const
 unsigned int
 Date::calculate_months_between( Date::date_t date1, Date::date_t date2 )
 {
-    int dist( 12 * ( get_year( date2 ) - get_year( date1 ) - 1 ) );
-    dist += ( 12 - get_month( date1 ) + get_month( date2 ) );
+    int dist{ 12 * int( get_year( date2 ) - get_year( date1 ) ) };
+    dist += ( get_month( date2 ) - get_month( date1 ) );
 
     return( dist < 0 ? -dist : dist );
 }
 
-// CONSOLE MESSAGES ================================================================================
-void
-print_error( const Ustring& description )
+int
+Date::calculate_months_between_neg( Date::date_t date1, Date::date_t date2 )
 {
-    std::cerr << "ERROR: " << description << std::endl;
-}
+    int dist{ 12 * int( get_year( date2 ) - get_year( date1 ) ) };
+    dist += ( get_month( date2 ) - get_month( date1 ) );
 
-void
-print_info( const Ustring& description )
-{
-    std::cout << "INFO: " << description << std::endl;
+    return dist;
 }
 
 // COLOR OPERATIONS ================================================================================
@@ -1002,15 +1014,13 @@ EntryClear::on_changed()
     }
     else
     {
-        try
+        try // may not work!
         {
-            set_icon_from_pixbuf(
-                    Gtk::IconTheme::get_default()->load_icon( "edit-clear-symbolic", 16 ),
-                    Gtk::ENTRY_ICON_SECONDARY );
+            set_icon_from_icon_name( "edit-clear-symbolic", Gtk::ENTRY_ICON_SECONDARY );
         }
         catch( ... )
         {
-            set_icon_from_stock( Gtk::Stock::CLEAR, Gtk::ENTRY_ICON_SECONDARY );
+            set_icon_from_icon_name( "edit-clear", Gtk::ENTRY_ICON_SECONDARY );
         }
         set_icon_activatable( true, Gtk::ENTRY_ICON_SECONDARY );
     }

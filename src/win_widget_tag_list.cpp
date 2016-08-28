@@ -150,7 +150,7 @@ WidgetTagList::handle_draw()
     m_pos_y += m_y_offset;
     m_items.clear();
 
-    const Tagset& ptr2tagset = m_ptr2entry->get_tags();
+    const TagSet& ptr2tagset = m_ptr2entry->get_tags();
 
     if( ptr2tagset.empty() && !m_flag_editable )
     {

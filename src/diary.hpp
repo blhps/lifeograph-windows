@@ -33,16 +33,16 @@ namespace LIFEO
 {
 
 const char                      DB_FILE_HEADER[] = "LIFEOGRAPHDB";
-const int                       DB_FILE_VERSION_INT( 1030 );
+const int                       DB_FILE_VERSION_INT{ 1040 };
 const int                       DB_FILE_VERSION_INT_MIN( 110 );
 const std::string::size_type    PASSPHRASE_MIN_SIZE( 4 );
 const char                      LOCK_SUFFIX[] = ".~LOCK~";
 
 
-class Diary : public DiaryElement
+class Diary : public DiaryElement, public DiaryElementChart
 {
     public:
-        static ElementShower< Diary >* shower;
+        static ElementView< Diary >* shower;
 
         enum SetPathType { SPT_NORMAL, SPT_READ_ONLY, SPT_NEW };
 
@@ -67,19 +67,19 @@ class Diary : public DiaryElement
 
         virtual void            clear();
 
-        int	                    get_size() const
+        int	                    get_size() const override
         { return m_entries.size(); }
-        Type                    get_type() const
+        Type                    get_type() const override
         { return ET_DIARY; }
 
 #ifndef LIFEO_WINDOZE
-        const Icon&             get_icon() const;
-        const Icon&             get_icon32() const;
+        const Icon&             get_icon() const override;
+        const Icon&             get_icon32() const override;
 #else
         int                     get_icon() const;
 #endif
 
-        Ustring                 get_list_str() const
+        Ustring                 get_list_str() const override
 #ifndef LIFEO_WINDOZE
         { return Glib::ustring::compose( "<b>%1</b>", Glib::Markup::escape_text( m_name ) ); }
 #else
@@ -142,6 +142,9 @@ class Diary : public DiaryElement
             return true;
         }
 
+        int                     get_time_span() const;
+        void                    fill_up_chart_points( ChartPoints* ) const;
+
         // FILTERING
         void                    set_search_text( const Ustring& );
         Ustring	                get_search_text() const
@@ -179,6 +182,7 @@ class Diary : public DiaryElement
         Entry*                  get_entry_today();
         Entry*                  get_entry_next_in_day( const Date& );
         Entry*                  get_entry_first();
+        Entry*                  get_entry_latest() const; // get last temporal entry
         void                    set_entry_date( Entry*, const Date& );
         Entry*                  create_entry( Date::date_t, const Ustring& = "",
                                               bool = false );
@@ -195,7 +199,8 @@ class Diary : public DiaryElement
         CategoryTags*           create_tag_ctg();
         CategoryTags*           create_tag_ctg( const Ustring& );
         void                    dismiss_tag_ctg( CategoryTags*, bool = false );
-        Tag*                    create_tag( const Ustring&, CategoryTags* = NULL );
+        Tag*                    create_tag( const Ustring&, CategoryTags*,
+                                            int = ChartPoints::MONTHLY|ChartPoints::BOOLEAN );
         void                    dismiss_tag( Tag*, bool = false );
         Untagged*               get_untagged()
         { return &m_untagged; }
@@ -229,7 +234,8 @@ class Diary : public DiaryElement
         bool                    is_encrypted() const
         { return( ! m_passphrase.empty() ); }
 
-        void                    show();
+        ChartPoints*            create_chart_data() const;
+        void                    show() override;
 
         bool                    import_tag( Tag* );
         bool                    import_entries( const Diary&, bool, const Ustring& );
@@ -240,10 +246,10 @@ class Diary : public DiaryElement
     protected:
         // IDS (must be first)
         PoolDEIDs               m_ids;
-        DEID                    m_current_id;
-        DEID                    m_force_id;
-        DEID                    m_startup_elem_id;
-        DEID                    m_last_elem_id;
+        DEID                    m_current_id = DEID_FIRST;
+        DEID                    m_force_id = DEID_UNSET;
+        DEID                    m_startup_elem_id = HOME_CURRENT_ELEM;
+        DEID                    m_last_elem_id = DEID_DIARY;
         // PROPERTIES
         std::string             m_path;
         std::string             m_passphrase;
@@ -254,15 +260,16 @@ class Diary : public DiaryElement
         PoolTags                m_tags;
         PoolCategoriesTags      m_tag_categories;
         PoolCategoriesChapters	m_chapter_categories;
-        CategoryChapters*       m_ptr2chapter_ctg_cur;
+        CategoryChapters*       m_ptr2chapter_ctg_cur{ nullptr };
         CategoryChapters*       m_topics; // ordinal chapters
         CategoryChapters*       m_groups; // chapters with invisible order
-        Chapter                 m_orphans; // entries that remain out of defined chapters
+        // entries that remain out of defined chapters:
+        Chapter                 m_orphans{ nullptr, "", Date::DATE_MAX };
         // OPTIONS & FLAGS
-        SortingCriteria	        m_option_sorting_criteria;
-        int                     m_read_version;
-        bool                    m_flag_only_save_filtered;
-        bool                    m_flag_read_only;
+        SortingCriteria	        m_option_sorting_criteria{ SC_DATE};
+        int                     m_read_version{ 0 };
+        bool                    m_flag_only_save_filtered{ false };
+        bool                    m_flag_read_only{ false };
         // FILTERING
         Ustring                 m_search_text;
         Filter*                 m_filter_active;
@@ -270,7 +277,7 @@ class Diary : public DiaryElement
         // TODO FilterVector            m_filters;  // user defined filters
 
         LIFEO::Result           parse_db_body_text( std::istream& );
-        LIFEO::Result           parse_db_body_text_1030( std::istream& );
+        LIFEO::Result           parse_db_body_text_1040( std::istream& );
         LIFEO::Result           parse_db_body_text_1010( std::istream& );
         LIFEO::Result           parse_db_body_text_110( std::istream& );
 
@@ -291,7 +298,7 @@ class Diary : public DiaryElement
         bool                    remove_lock();
 
     private:
-        std::ifstream*          m_ifstream;
+        std::ifstream*          m_ifstream{ nullptr };
 
     friend class EntryView;
     friend class DiaryView;

@@ -66,11 +66,8 @@ const Ustring                       DiaryElement::s_type_names[] =
     _( "Free Chapter" ), _( "Entry" ), "Multiple Entries", "", ""
 };
 
-DiaryElement::DiaryElement()
-:   NamedElement( "" ), m_list_data( NULL ), m_ptr2diary( NULL ), m_id( DEID_UNSET ),
-    m_status( ES::_VOID_ )
-{
-}
+DiaryElement::DiaryElement() : NamedElement( "" ) {}
+
 DiaryElement::DiaryElement( Diary* const ptr2diary,
                             const Ustring& name,
                             ElemStatus status )
@@ -83,6 +80,7 @@ DiaryElement::DiaryElement( Diary* const ptr2diary,
         m_list_data = new ListData;
 #endif
 }
+
 DiaryElement::DiaryElement( Diary* const ptr2diary, DEID id, ElemStatus status )
 :   NamedElement( "" ), m_ptr2diary( ptr2diary ), m_id( id ), m_status( status )
 {
@@ -105,14 +103,246 @@ DiaryElement::set_todo_status( ElemStatus s )
     m_status |= s;
 }
 
+// CHART POINTS ====================================================================================
+unsigned int
+ChartPoints::calculate_distance( const Date& d1, const Date& d2 ) const
+{
+    switch( type & PERIOD_MASK )
+    {
+        case MONTHLY:
+            return d1.calculate_months_between( d2.m_date );
+        case YEARLY:
+            return labs( int( d1.get_year() ) - int( d2.get_year() ) );
+    }
+
+    return 0; // just to silence the compiler warning
+}
+int
+ChartPoints::calculate_distance_neg( const Date& d1, const Date& d2 ) const
+{
+    switch( type & PERIOD_MASK )
+    {
+        case MONTHLY:
+            return Date::calculate_months_between_neg( d1.m_date, d2.m_date );
+        case YEARLY:
+            return( d2.get_year() - d1.get_year() );
+    }
+
+    return 0; // just to silence the compiler warning
+}
+
+void
+ChartPoints::add( int limit, bool flag_sustain, const Value a, const Value b )
+{
+    for( int i = 1; i < limit; i++ )
+    {
+        if( flag_sustain ) // interpolation
+            push_back( a + ( i * ( ( b - a ) / limit ) ) );
+        else
+            push_back( 0 );
+    }
+
+    push_back( b );
+}
+
+void
+ChartPoints::add_plain( Date& d_last, const Date&& d )
+{
+    if( d.is_ordinal() )
+        return;
+
+    if( start_date == 0 )
+        start_date = d.m_date;
+
+    if( values.empty() ) // first value is being entered i.e. v_before is not set
+        push_back( 1 );
+    else if( calculate_distance( d, d_last ) > 0 )
+        add( calculate_distance( d, d_last ), false, 0, 1 );
+    else
+    {
+        values.back() += 1;
+        Value v = values.back();
+        if( v < value_min )
+            value_min = v;
+        if( v > value_max )
+            value_max = v;
+    }
+
+    d_last = d;
+}
+
+// NAME AND VALUE ==================================================================================
+NameAndValue
+NameAndValue::parse( const Ustring& text )
+{
+    NameAndValue nav;
+    char lf{ '=' }; // =, \, #, $(unit)
+    int divider{ 0 };
+    int trim_length{ 0 };
+    int trim_length_unit{ 0 };
+    bool negative{ false };
+    Wchar c;
+
+    for( Ustring::size_type i = 0; i < text.size(); i++ )
+    {
+        c = text.at( i );
+        switch( c )
+        {
+            case '\\':
+                if( lf == '#' || lf == '$' )
+                {
+                    nav.unit += c;
+                    trim_length_unit = 0;
+                    lf = '$';
+                }
+                else if( lf == '\\' )
+                {
+                    nav.name += c;
+                    trim_length = 0;
+                    lf = '=';
+                }
+                else // i.e. ( lf == '=' )
+                    lf = '\\';
+                break;
+            case '=':
+                if( nav.name.empty() || lf == '\\' )
+                {
+                    nav.name += c;
+                    trim_length = 0;
+                    lf = '=';
+                }
+                else if( lf == '#' || lf == '$' )
+                {
+                    nav.unit += c;
+                    trim_length_unit = 0;
+                    lf = '$';
+                }
+                else // i.e. ( lf == '=' )
+                    lf = '#';
+                break;
+            case ' ':
+            case '\t':
+                // if( lf == '#' ) just ignore
+                if( lf == '=' || lf == '\\' )
+                {
+                    if( !nav.name.empty() ) // else ignore
+                    {
+                        nav.name += c;
+                        trim_length++;
+                    }
+                }
+                else if( lf == '$' )
+                {
+                    nav.unit += c;
+                    trim_length_unit++;
+                }
+                break;
+            case ',':
+            case '.':
+                if( divider || lf == '$' ) // note that if divider, lf must be #
+                {
+                    nav.unit += c;
+                    trim_length_unit = 0;
+                    lf = '$';
+                }
+                else if( lf == '#' )
+                    divider = 1;
+                else
+                {
+                    nav.name += c;
+                    trim_length = 0;
+                    lf = '=';
+                }
+                break;
+            case '-':
+                if( negative || lf == '$' ) // note that if negative, lf must be #
+                {
+                    nav.unit += c;
+                    trim_length_unit = 0;
+                    lf = '$';
+                }
+                else if( lf == '#' )
+                    negative = true;
+                else
+                {
+                    nav.name += c;
+                    trim_length = 0;
+                    lf = '=';
+                }
+                break;
+            case '0': case '1': case '2': case '3': case '4':
+            case '5': case '6': case '7': case '8': case '9':
+                if( lf == '#' )
+                {
+                    nav.status = NameAndValue::HAS_VALUE;
+                    nav.value *= 10;
+                    nav.value += ( c - '0' );
+                    if( divider )
+                        divider *= 10;
+                }
+                else if( lf == '$' )
+                {
+                    nav.unit += c;
+                    trim_length_unit = 0;
+                }
+                else
+                {
+                    nav.name += c;
+                    trim_length = 0;
+                    lf = '='; // reset ( lf == \ ) case
+                }
+                break;
+            default:
+                if( lf == '#' || lf == '$' )
+                {
+                    nav.unit += c;
+                    trim_length_unit = 0;
+                    lf = '$';
+                }
+                else
+                {
+                    nav.name += c;
+                    trim_length = 0;
+                    lf = '=';
+                }
+                break;
+        }
+    }
+
+    if( lf == '$' )
+        nav.status |= ( NameAndValue::HAS_NAME | NameAndValue::HAS_UNIT );
+    else if( ! nav.name.empty() )
+        nav.status |= NameAndValue::HAS_NAME;
+
+    if( trim_length )
+        nav.name.erase( nav.name.size() - trim_length, trim_length );
+    if( trim_length_unit )
+        nav.unit.erase( nav.unit.size() - trim_length_unit, trim_length_unit );
+
+    if( lf == '=' && ! nav.name.empty() ) // implicit boolean tag
+        nav.value = 1;
+    else
+    {
+        if( divider > 1 )
+            nav.value /= divider;
+        if( negative )
+            nav.value *= -1;
+    }
+
+    PRINT_DEBUG( "tag parsed | name: ", nav.name, "; value: ", nav.value, "; unit: ", nav.unit );
+
+    return nav;
+}
+
 // TAG =============================================================================================
 // STATIC MEMBERS
-ElementShower< Tag >* Tag::shower( NULL );
+ElementView< Tag >* Tag::shower( nullptr );
 
-Tag::Tag( Diary* const d, const Ustring& name, CategoryTags* category )
-:   DiaryElementReferrer( d, name, ES::_VOID_ ), m_ptr2category( category ), m_theme( NULL )
+Tag::Tag( Diary* const d, const Ustring& name, CategoryTags* category, int chart_type )
+:   DiaryElementMapper( d, name, ES::_VOID_ ), DiaryElementChart( chart_type ),
+    m_ptr2category( category )
 {
-    if( category != NULL )
+    if( category != nullptr )
         category->insert( this );
 }
 
@@ -139,6 +369,39 @@ Tag::get_icon() const
 }
 #endif
 
+Ustring
+Tag::escape_name( const Ustring& name )
+{
+    Ustring result;
+    Wchar c;
+
+    for( Ustring::size_type i = 0; i < name.size(); i++ )
+    {
+        c = name.at( i );
+        if( c == '=' || c == '\\' )
+            result += '\\';
+        result += c;
+    }
+
+    return result;
+}
+
+Ustring
+Tag::get_name_and_value( const Entry* entry, bool flag_escape, bool flag_unit ) const
+{
+    Ustring result{ flag_escape ? escape_name( m_name ) : m_name };
+
+    if( !is_boolean() )
+    {
+        result += STR::compose( " = ", get_value( const_cast< Entry* >( entry ) ) );
+
+        if( flag_unit && !m_unit.empty() )
+            result += " " + m_unit;
+    }
+
+    return result;
+}
+
 void
 Tag::show()
 {
@@ -146,12 +409,6 @@ Tag::show()
         shower->show( *this );
     else
         PRINT_DEBUG( "Tag has no graphical data!" );
-}
-
-void
-Tag::set_name( const Ustring& name )
-{
-    m_name = name;
 }
 
 void
@@ -176,11 +433,8 @@ Tag::get_own_theme()
     {
         m_theme = new Theme;
 
-        for( Set::iterator iter = begin(); iter != end(); ++iter )
-        {
-            Entry* entry = *iter;
-            entry->update_theme();
-        }
+        for( auto& kv_entry : *this )
+            kv_entry.first->update_theme();
     }
 
     return m_theme;
@@ -194,11 +448,8 @@ Tag::create_own_theme_duplicating( const Theme* theme )
 
     m_theme = new Theme( theme );
 
-    for( Set::iterator iter = begin(); iter != end(); ++iter )
-    {
-        Entry* entry = *iter;
-        entry->update_theme();
-    }
+    for( auto& kv_entry : *this )
+        kv_entry.first->update_theme();
 
     return m_theme;
 }
@@ -211,12 +462,83 @@ Tag::reset_theme()
         delete m_theme;
         m_theme = NULL;
 
-        for( Set::const_iterator iter = begin(); iter != end(); ++iter )
+        for( auto& kv_entry : *this )
+            kv_entry.first->update_theme();
+    }
+}
+
+Value
+Tag::get_value( Entry* entry ) const
+{
+    auto iter = find( entry );
+    if( iter != end() )
+        return iter->second;
+    else
+        return -404;
+}
+
+ChartPoints*
+Tag::create_chart_data()
+{
+    if( empty() )
+        return nullptr;
+
+    ChartPoints* cp{ new ChartPoints( m_chart_type ) };
+    cp->unit = m_unit;
+
+    // order from old to new: d/v_before > d/v_last > d/v
+    Date d_before{ Date::NOT_SET }, d_last{ Date::NOT_SET },  d{ Date::NOT_SET };
+    Value v_before{ 0 }, v_last{ 0 }, v{ 0 };
+    int no_of_entries{ 0 };
+
+    auto add_value = [ & ]()
         {
-            Entry* entry = *iter;
-            entry->update_theme();
+            bool flag_sustain{ ( m_chart_type & ChartPoints::VALUE_TYPE_MASK ) ==
+                    ChartPoints::AVERAGE };
+            if( flag_sustain && no_of_entries > 1 )
+                v_last /= no_of_entries;
+
+            if( cp->values.empty() ) // first value is being entered i.e. v_before is not set
+                cp->add( 0, 0, 0, v_last );
+            else
+                cp->add( cp->calculate_distance( d_last,  d_before ),
+                         flag_sustain, v_before, v_last );
+
+            v_before = v_last;
+            v_last = v;
+            d_before = d_last;
+            d_last = d;
+            no_of_entries = 1;
+        };
+
+    for( auto iter = rbegin(); iter != rend(); ++iter )
+    {
+        d = iter->first->get_date();
+
+        if( d.is_ordinal() )
+            break;
+
+        if( cp->start_date == 0 )
+            cp->start_date = d.m_date;
+        if( ! d_last.is_set() )
+            d_last = d;
+
+        v = is_boolean() ? 1.0 : iter->second;
+
+        if( cp->calculate_distance( d, d_last ) > 0 )
+            add_value();
+        else
+        {
+            v_last += v;
+            no_of_entries++;
         }
     }
+
+    add_value();
+
+    Diary::d->fill_up_chart_points( cp );
+
+    return cp;
 }
 
 Untagged::Untagged()
@@ -262,17 +584,6 @@ PoolTags::~PoolTags()
 }
 
 Tag*
-PoolTags::get_tag( unsigned int tagorder )
-{
-    if( tagorder >= size() )
-        return NULL;
-
-    const_iterator iter = begin();
-    advance( iter, tagorder );
-    return iter->second;
-}
-
-Tag*
 PoolTags::get_tag( const Ustring& name )
 {
     iterator iter = find( name );
@@ -301,7 +612,7 @@ PoolTags::clear()
 
 // CATEGORYTAGS ====================================================================================
 // STATIC MEMBERS
-ElementShower< CategoryTags >* CategoryTags::shower( NULL );
+ElementView< CategoryTags >* CategoryTags::shower( nullptr );
 
 CategoryTags::CategoryTags( Diary* const d, const Ustring& name )
 :   DiaryElementReferrer( d, name, ES::EXPANDED, compare_listitems_by_name )
@@ -345,18 +656,14 @@ PoolCategoriesTags::PoolCategoriesTags()
 PoolCategoriesTags::~PoolCategoriesTags()
 {
     for( iterator iter = begin(); iter != end(); ++iter )
-    {
         delete iter->second;
-    }
 }
 
 void
 PoolCategoriesTags::clear()
 {
     for( iterator iter = begin(); iter != end(); ++iter )
-    {
         delete iter->second;
-    }
 
     std::map< Ustring, CategoryTags*, FuncCompareStrings >::clear();
 }
@@ -370,51 +677,31 @@ PoolCategoriesTags::rename_category( CategoryTags* category, const Ustring& new_
 }
 
 // TAGSET
-Tagset::~Tagset()
-{
-}
-
 bool
-Tagset::add( Tag* tag )
+TagSet::add( Tag* tag )
 {
     if( insert( tag ).second ) // if did not exist previously
         return true;
     else
     {
-        PRINT_DEBUG( " tagset already has the tag " + tag->get_name() );
+        PRINT_DEBUG( "set already has the tag: " + tag->get_name() );
         return false;
     }
 
 }
 
 bool
-Tagset::checkfor_member( const Tag* tag ) const
+TagSet::check_for_member( const Tag* tag ) const
 {
     return( count( const_cast< Tag* >( tag ) ) > 0 );
 }
 
-const Tag*
-Tagset::get_tag( unsigned int tagorder ) const
-{
-    unsigned int i = 0;
-
-    for( Tagset::const_iterator iter = this->begin(); iter != this->end(); ++iter )
-    {
-        if( i == tagorder )
-        {
-            return( *iter );
-        }
-        i++;
-    }
-    return NULL;
-}
-
 // CHAPTER =========================================================================================
 // STATIC MEMBERS
-ElementShower< Chapter >* Chapter::shower( NULL );
+ElementView< Chapter >* Chapter::shower( nullptr );
 
 Chapter::Chapter( Diary* const d, const Ustring& name, Date::date_t date )
-:   DiaryElementReferrer( d, name, ES::CHAPTER_DEFAULT ), m_date_begin( date ), m_time_span( 0 )
+:   DiaryElementReferrer( d, name, ES::CHAPTER_DEFAULT ), m_date_begin( date )
 {
     update_type();
 }
@@ -481,16 +768,19 @@ Chapter::get_icon() const
 Ustring
 Chapter::get_list_str() const
 {
-    if( m_date_begin.is_hidden() )
 #ifndef LIFEO_WINDOZE
-        return Glib::ustring::compose( "<b>%1</b>", Glib::Markup::escape_text( m_name ) );
-//    else
-        return Glib::ustring::compose( "<b>%1 -  %2</b>", m_date_begin.format_string(),
-                    Glib::Markup::escape_text( m_name ) );
+    static const Ustring tpl[] = { "<b>%2</b>", "<b>%1 -  %2</b>",
+                                   "<b><s>%2</s></b>", "<b><s>%1 -  %2</s></b>" };
+    int i{ m_date_begin.is_hidden() ? 0 : 1 };
+    if( m_status & ES::CANCELED ) i += 2;
+
+
+    return Glib::ustring::compose( tpl[ i ], m_date_begin.format_string(),
+                                   Glib::Markup::escape_text( m_name ) );
 #else // FIXME
+    if( m_date_begin.is_hidden() )
         return m_name;
-//    else
-        return STR::compose( m_date_begin.format_string(), " -  ", m_name );
+    return STR::compose( m_date_begin.format_string(), " -  ", m_name );
 #endif
 }
 
@@ -502,12 +792,6 @@ Chapter::show()
     else
         PRINT_DEBUG( "Chapter has no graphical data!" );
 
-}
-
-void
-Chapter::set_name( const Ustring& name )
-{
-    m_name = name;
 }
 
 Ustring
@@ -552,11 +836,27 @@ Chapter::recalculate_span( const Chapter* next )
         m_time_span = m_date_begin.calculate_days_between( next->m_date_begin );
 }
 
+ChartPoints*
+Chapter::create_chart_data() const
+{
+    if( empty() )
+        return nullptr;
+
+    ChartPoints* cp{ new ChartPoints( m_chart_type ) };
+    Date d_last{ Date::NOT_SET };
+
+    for( auto iter = rbegin(); iter != rend(); ++iter )
+        cp->add_plain( d_last, ( *iter )->get_date() );
+
+    Diary::d->fill_up_chart_points( cp );
+
+    return cp;
+}
+
 // CHAPTER CATEGORY ================================================================================
 CategoryChapters::CategoryChapters( Diary* const d, const Ustring& name )
 :   DiaryElement( d, name ),
-    std::map< Date::date_t, Chapter*, FuncCompareDates >( compare_dates ),
-    m_date_min( 0 )
+    std::map< Date::date_t, Chapter*, FuncCompareDates >( compare_dates )
 {
 }
 CategoryChapters::CategoryChapters( Diary* const d, Date::date_t date_min )
@@ -770,26 +1070,12 @@ ThemeSystem::get()
 }
 
 // FILTERS =========================================================================================
-ElementShower< Filter >* Filter::shower( NULL );
+ElementView< Filter >* Filter::shower( nullptr );
 
 Filter::Filter( Diary* const d, const Ustring& name )
-:   DiaryElement( d, name, ES::FILTER_RESET ), m_tag( NULL ),
-    m_date_begin( 0 ), m_date_end( Date::DATE_MAX )
+:   DiaryElement( d, name, ES::FILTER_RESET )
 {
 }
-
-#ifndef LIFEO_WINDOZE
-const Icon&
-Filter::get_icon() const
-{
-    return Lifeograph::icons->filter_16;
-}
-const Icon&
-Filter::get_icon32() const
-{
-    return Lifeograph::icons->filter_32;
-}
-#endif
 
 void
 Filter::show()

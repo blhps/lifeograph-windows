@@ -33,7 +33,7 @@
 namespace LIFEO
 {
 
-class EntryView : public ElementShower< Entry >
+class EntryView : public ElementView< Entry >
 {
     public:
                                 EntryView();
@@ -101,7 +101,7 @@ class EntryView : public ElementShower< Entry >
         Entry*                  m_entry_sync;
 };
 
-class DiaryView : public ElementShower< Diary >
+class DiaryView : public ElementView< Diary >
 {
     public:
                                 DiaryView();

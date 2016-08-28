@@ -176,7 +176,10 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                             break;
                         case TO_CREATE_AND_ADD:
                             m_tag_cur =
-                                    Diary::d->create_tag( convert_utf16_to_8( m_name.c_str() ) );
+                                    Diary::d->create_tag(
+                                            convert_utf16_to_8( m_name.c_str() ),
+                                            nullptr,
+                                            ChartPoints::MONTHLY|ChartPoints::CUMULATIVE );
                             m_ptr2entry->add_tag( m_tag_cur );
                             break;
                         case TO_ADD:
@@ -259,7 +262,7 @@ DialogTags::handle_entry_changed()
         }
         else
         {
-            if( m_ptr2entry && m_ptr2entry->get_tags().checkfor_member( m_tag_cur ) )
+            if( m_ptr2entry && m_ptr2entry->get_tags().check_for_member( m_tag_cur ) )
             {
                 SetWindowText( m_button_action, L"Remove Tag" );
                 m_tag_operation_cur = TO_REMOVE;

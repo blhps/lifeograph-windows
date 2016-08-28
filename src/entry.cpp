@@ -30,14 +30,13 @@ using namespace LIFEO;
 
 
 // STATIC MEMBERS
-ElementShower< Entry >* Entry::shower( NULL );
+ElementView< Entry >* Entry::shower( nullptr );
 
-Entry::Entry( Diary* const d, const Date::date_t date, const Ustring& text,
-              bool favored )
+Entry::Entry( Diary* const d, const Date::date_t date, const Ustring& text, bool favored )
 :   DiaryElement( d, "", favored ? ES::ENTRY_DEFAULT_FAV : ES::ENTRY_DEFAULT ), m_date( date ),
     m_date_created( time( NULL ) ),
     m_date_edited( m_date_created ), m_date_status( m_date_created ),
-    m_text( text ), m_ptr2theme_tag( NULL ), m_option_lang( LANG_INHERIT_DIARY )
+    m_text( text )
 {
     calculate_title( text );
 }
@@ -48,7 +47,7 @@ Entry::Entry( Diary* const d, const Date::date_t date, bool favored )
     m_date( date ),
     m_date_created( time( NULL ) ),
     m_date_edited( m_date_created ), m_date_status( m_date_created ),
-    m_text( "" ), m_ptr2theme_tag( NULL ), m_option_lang( LANG_INHERIT_DIARY )
+    m_text( "" )
 {
 }
 
@@ -143,6 +142,21 @@ Entry::calculate_title( const Ustring& text )
         m_name = text.substr( 0, l_pos );
 }
 
+
+void
+Entry::append_text( const Ustring& text )
+{
+    if( text.empty() )
+        return;
+
+    if( text[ 0 ] != '\n' )
+        m_text += '\n';
+
+    m_text += text;
+    calculate_title( m_text );
+    set_date_edited( time( nullptr ) );
+}
+
 Ustring
 Entry::get_date_created_str() const
 {
@@ -168,26 +182,8 @@ Entry::get_lang_final() const
             m_ptr2diary->get_lang() : m_option_lang;
 }
 
-void
-Entry::set_tags( const Tagset& tagset )
-{
-    m_tags = tagset;
-}
-
-const Tagset&
-Entry::get_tags() const
-{
-    return m_tags;
-}
-
-Tagset&
-Entry::get_tags()
-{
-    return m_tags;
-}
-
 bool
-Entry::add_tag( Tag* tag )
+Entry::add_tag( Tag* tag, Value value )
 {
     if( tag->get_type() == ET_UNTAGGED )
     {
@@ -195,7 +191,7 @@ Entry::add_tag( Tag* tag )
     }
     else if( m_tags.add( tag ) )
     {
-        tag->insert( this );
+        tag->add_entry( this, value );
         m_ptr2diary->get_untagged()->erase( this );
 
         if( m_ptr2theme_tag == NULL && tag->get_has_own_theme() )
@@ -210,31 +206,31 @@ Entry::add_tag( Tag* tag )
 bool
 Entry::remove_tag( Tag* tag )
 {
-    if( tag == NULL )
+    if( tag == nullptr )
         return false;
 
-    if( m_tags.find( tag ) == m_tags.end() )
+    if( ! m_tags.check_for_member( tag ) )
         return false;
 
     m_tags.erase( tag );
     tag->erase( this );
 
     if( m_tags.empty() )
-        m_ptr2diary->get_untagged()->insert( this );
+        m_ptr2diary->get_untagged()->add_entry( this );
 
     // if this tag was the theme tag, re-adjust the theme tag
     if( m_ptr2theme_tag == tag )
     {
-        for( Tagset::iterator iter = m_tags.begin(); iter != m_tags.end(); ++iter )
+        for( Tag* tag2 : m_tags )
         {
-            if( ( *iter )->get_has_own_theme() )
+            if( tag2->get_has_own_theme() )
             {
-                m_ptr2theme_tag = *iter;
+                m_ptr2theme_tag = tag2;
                 return true;
             }
         }
 
-        m_ptr2theme_tag = NULL;
+        m_ptr2theme_tag = nullptr;
     }
 
     return true;
@@ -246,11 +242,12 @@ Entry::clear_tags()
     if( m_tags.empty() )
         return false;
 
-    for( Tagset::iterator iter = m_tags.begin(); iter != m_tags.end(); ++iter )
-        ( *iter )->erase( this );
+    for( Tag* tag : m_tags )
+        tag->erase( this );
 
     m_tags.clear();
-    m_ptr2theme_tag = NULL;
+    m_ptr2theme_tag = nullptr;
+    m_ptr2diary->get_untagged()->add_entry( this );
 
     return true;
 }
@@ -266,7 +263,7 @@ void
 Entry::set_theme_tag( const Tag* tag )
 {
     // theme tag must be in the tag set
-    if( m_tags.find( const_cast< Tag* >( tag ) ) != m_tags.end() )
+    if( m_tags.check_for_member( tag ) )
         m_ptr2theme_tag = tag;
 }
 
@@ -276,17 +273,17 @@ Entry::update_theme()
     if( m_ptr2theme_tag ) // if there already was a theme tag set
     {
         if( m_ptr2theme_tag->get_has_own_theme() == false ) // if it is no longer a theme tag
-            m_ptr2theme_tag = NULL;
+            m_ptr2theme_tag = nullptr;
     }
 
-    if( m_ptr2theme_tag == NULL )
+    if( m_ptr2theme_tag == nullptr )
     {
         // check if a tag has its own theme now and set it
-        for( Tagset::iterator iter = m_tags.begin(); iter != m_tags.end(); ++iter )
+        for( Tag* tag : m_tags )
         {
-            if( ( *iter )->get_has_own_theme() )
+            if( tag->get_has_own_theme() )
             {
-                m_ptr2theme_tag = *iter;
+                m_ptr2theme_tag = tag;
                 break;
             }
         }
@@ -336,7 +333,7 @@ Entry::get_filtered_out()
         {
             if( filter->get_tag()->get_type() == DiaryElement::ET_TAG )
             {
-                if( ! m_tags.checkfor_member( filter->get_tag() ) )
+                if( ! m_tags.check_for_member( filter->get_tag() ) )
                 {
                     flag_filteredout = true;
                     break;

@@ -32,6 +32,7 @@
 #include <set>
 #include <map>
 #include <vector>
+#include <limits>
 
 namespace LIFEO
 {
@@ -224,16 +225,16 @@ class DiaryElement : public NamedElement
         { return false; }
 
 #ifndef LIFEO_WINDOZE
-        ListData*               m_list_data;
+        ListData*               m_list_data = nullptr;
 #else
         HTREEITEM               m_list_data;
 #endif
 
     protected:
-        Diary* const            m_ptr2diary;
+        Diary* const            m_ptr2diary = nullptr;
 
-        const DEID              m_id;
-        ElemStatus              m_status;
+        const DEID              m_id = DEID_UNSET;
+        ElemStatus              m_status = ES::_VOID_;
 };
 
 #ifndef LIFEO_WINDOZE
@@ -288,23 +289,23 @@ create_unique_name_for_map( const std::map< Ustring, T*, FuncCompareStrings > &m
     return name;
 }
 
-// ElementShower class is for communication between Diary and...
+// ElementView class is for communication between Diary and...
 // ...GUI classes. we may resort to signals if needed:
-class ElementShowerProto
+class ElementViewProto
 {
     public:
 #ifndef LIFEO_WINDOZE
-        ElementShowerProto() : m_grid_popover( NULL ) {}
+                                ElementViewProto() {}
 #endif
-        virtual             ~ElementShowerProto() {}
+        virtual                 ~ElementViewProto() {}
 
         virtual DiaryElement*   get_element() = 0;
 
 #ifndef LIFEO_WINDOZE
         Gtk::Widget*            get_widget()
-        { return m_vbox; }
-        virtual Gtk::Widget*    get_popover()
-        { return m_grid_popover; }
+        { return m_box; }
+        virtual Gtk::Popover*   get_popover()
+        { return m_Po_elem; }
         virtual Gtk::Widget*    get_extra_tools()
         { return NULL; }
 #endif
@@ -325,25 +326,25 @@ class ElementShowerProto
 
     protected:
 #ifndef LIFEO_WINDOZE
-        Gtk::Box*               m_vbox;
-        Gtk::Grid*              m_grid_popover;
+        Gtk::Box*               m_box{ nullptr };
+        Gtk::Popover*           m_Po_elem{ nullptr };
 #endif
 };
 
 template< class T >
-class ElementShower : public ElementShowerProto
+class ElementView : public ElementViewProto
 {
     public:
-        ElementShower() : m_ptr2elem( NULL ) {}
-        virtual                 ~ElementShower() {}
+                                ElementView() {}
+        virtual                 ~ElementView() {}
         virtual void            show( T& ) = 0;
         virtual void            prepare_for_hiding( T& ) {}
 
-        T*                      get_element()
+        T*                      get_element() override
         { return m_ptr2elem; }
 
     protected:
-        T*                      m_ptr2elem;
+        T*                      m_ptr2elem{ nullptr };
 };
 
 template< typename T >
@@ -362,8 +363,28 @@ class DiaryElementReferrer : public DiaryElement, public std::set< T*, FuncCompa
         :   DiaryElement( d, name, es ),
             std::set< T*, FuncCompareDiaryElem >( f ) {}
 
-        virtual int             get_size() const
+        virtual int             get_size() const override
         { return std::set< T*, FuncCompareDiaryElem >::size(); }
+};
+
+template< typename T, typename V >
+class DiaryElementMapper : public DiaryElement, public std::map< T*, V, FuncCompareDiaryElem >
+{
+// NOTE: this class and its derivatives are not responsible for handling of...
+// ...its children's allocation and deletion
+    public:
+        typedef std::map< T*, V, FuncCompareDiaryElem > Map;
+
+        DiaryElementMapper( Diary* const d )
+        :   DiaryElement( d, "" ),
+            std::map< T*, V, FuncCompareDiaryElem >( compare_listitems ) {}
+        DiaryElementMapper( Diary* const d, const Ustring& name, ElemStatus es,
+                               FuncCompareDiaryElem f = compare_listitems )
+        :   DiaryElement( d, name, es ),
+            std::map< T*, V, FuncCompareDiaryElem >( f ) {}
+
+        virtual int             get_size() const override
+        { return std::map< T*, V, FuncCompareDiaryElem >::size(); }
 };
 
 // THEME ===========================================================================================
@@ -427,6 +448,68 @@ class ThemeSystem : public Theme
                                                  const std::string& );
 };
 
+// CHARTPOINTS =====================================================================================
+class ChartPoints
+{
+    public:
+        ChartPoints( int t = MONTHLY|CUMULATIVE ) : type( t ) { }
+
+        typedef std::pair< float, Color > PairChapter;
+        static constexpr int        MONTHLY             = 0x1;
+        static constexpr int        YEARLY              = 0x2;
+        //static constexpr int        CHAPTERLY           = 0x3;
+        static constexpr int        PERIOD_MASK         = 0xf;
+
+        static constexpr int        BOOLEAN             = 0x10;
+        static constexpr int        CUMULATIVE          = 0x20;
+        static constexpr int        AVERAGE             = 0x30;
+        static constexpr int        VALUE_TYPE_MASK     = 0xf0;
+
+        unsigned int                calculate_distance( const Date&, const Date& ) const;
+        int                         calculate_distance_neg( const Date&, const Date& ) const;
+        void                        push_back( const Value v )
+        {
+            values.push_back( v );
+            if( v < value_min )
+                value_min = v;
+            if( v > value_max )
+                value_max = v;
+        }
+        void                        add( int, bool, const Value, const Value );
+        void                        add_plain( Date&, const Date&& );
+        unsigned int                get_span() const
+        { return values.size(); }
+
+        Value                       value_min{ std::numeric_limits< double >::max() };
+        Value                       value_max{ -std::numeric_limits< double >::max() };
+        std::vector< Value >        values;
+        int                         type;
+        Date::date_t                start_date{ 0 };
+        std::vector< PairChapter >  chapters;
+        Ustring                     unit;
+};
+
+class DiaryElementChart
+{
+    public:
+        DiaryElementChart( int type = ChartPoints::MONTHLY|ChartPoints::BOOLEAN )
+        : m_chart_type( type ) { }
+
+        int                     get_chart_type() const
+        { return m_chart_type; }
+        void                    set_chart_type( int type )
+        {
+            if( ( type & ChartPoints::PERIOD_MASK ) == 0 )
+                type |= ( m_chart_type & ChartPoints::PERIOD_MASK );
+            if( ( type & ChartPoints::VALUE_TYPE_MASK ) == 0 )
+                type |= ( m_chart_type & ChartPoints::VALUE_TYPE_MASK );
+            m_chart_type = type;
+        }
+
+    protected:
+        int                     m_chart_type;
+};
+
 // TAG =============================================================================================
 class Tag;	// forward declaration
 
@@ -434,22 +517,22 @@ class Tag;	// forward declaration
 class CategoryTags : public DiaryElementReferrer< Tag >
 {
     public:
-        static ElementShower< CategoryTags >* shower;
+        static ElementView< CategoryTags >* shower;
 
                                 CategoryTags( Diary* const, const Ustring& );
 
-        void                    show();
+        void                    show() override;
 
         Type                    get_type() const
         { return ET_TAG_CTG; }
 
 #ifndef LIFEO_WINDOZE
-        const Icon&             get_icon() const;
-        const Icon&             get_icon32() const;
+        const Icon&             get_icon() const override;
+        const Icon&             get_icon32() const override;
 #else
         int                     get_icon() const;
 #endif
-        Ustring                 get_list_str() const
+        Ustring                 get_list_str() const override
 #ifndef LIFEO_WINDOZE
         { return Glib::ustring::compose( "<b>%1</b>", Glib::Markup::escape_text( m_name ) ); }
 #else
@@ -479,23 +562,47 @@ class PoolCategoriesTags : public std::map< Ustring, CategoryTags*, FuncCompareS
         void                    clear();
 };
 
+struct NameAndValue
+{
+    static constexpr int HAS_NAME = 0x1;
+    static constexpr int HAS_VALUE = 0x2;
+    static constexpr int HAS_UNIT = 0x4;
+
+    NameAndValue() {}
+    NameAndValue( const Ustring& n, const Value& v ) : name( n ), value( v ) {}
+
+    Ustring name{ "" };
+    Value value{ 0.0 };
+    Ustring unit{ "" };
+    int status{ 0 };
+
+    static NameAndValue parse( const Ustring& );
+};
+
 // TAG
-class Tag : public DiaryElementReferrer< Entry >
+class Tag : public DiaryElementMapper< Entry, Value >, public DiaryElementChart
 {
     public:
-        static ElementShower< Tag >* shower;
+        static ElementView< Tag >* shower;
 
-                                Tag( Diary* const d )
-                                :   DiaryElementReferrer( d ),
-                                    m_ptr2category( NULL ), m_theme( NULL ) {}
-        explicit                Tag( Diary* const, const Ustring&, CategoryTags* );
+        explicit                Tag( Diary* const d )
+                                :   DiaryElementMapper( d ),
+                                    m_ptr2category( nullptr ), m_theme( nullptr ) {}
+                                Tag( Diary* const, const Ustring&, CategoryTags*,
+                                     int = ChartPoints::MONTHLY|ChartPoints::BOOLEAN );
         virtual                 ~Tag();
 
-        void                    show();
+        void                    show() override;
+
+        static Ustring          escape_name( const Ustring& );
+        Ustring                 get_name_and_value( const Entry*, bool, bool ) const;
 
         CategoryTags*           get_category()
         { return m_ptr2category; }
         void                    set_category( CategoryTags* );
+
+        bool                    add_entry( Entry* entry, Value value = 1 )
+        { return( insert( value_type( entry, value ) ).second ); }
 
         Theme*                  get_theme() const;
         bool                    get_has_own_theme() const
@@ -504,32 +611,41 @@ class Tag : public DiaryElementReferrer< Entry >
         Theme*                  create_own_theme_duplicating( const Theme* );
         void                    reset_theme();
 
-        void                    set_name( const Ustring& );
-
         //Date                  get_date() const; // if earliest entry's date is needed
-        virtual Type            get_type() const
+        virtual Type            get_type() const override
         { return ET_TAG; }
 
 #ifndef LIFEO_WINDOZE
-        virtual const Icon&     get_icon() const;
-        virtual const Icon&     get_icon32() const;
+        virtual const Icon&     get_icon() const override;
+        virtual const Icon&     get_icon32() const override;
 #else
         virtual int             get_icon() const;
 #endif
 
-        virtual Ustring         get_list_str() const
+        virtual Ustring         get_list_str() const override
 #ifndef LIFEO_WINDOZE
         { return Glib::Markup::escape_text( m_name ); }
 #else
         { return m_name; }
 #endif
 
+        Value                   get_value( Entry* ) const;
+
+        ChartPoints*            create_chart_data();
+
+        bool                    is_boolean() const
+        { return( ( m_chart_type & ChartPoints::VALUE_TYPE_MASK ) == ChartPoints::BOOLEAN ); }
+        Ustring                 get_unit() const
+        { return m_unit; }
+        void                    set_unit( Ustring unit )
+        { m_unit = unit; }
+
     protected:
         CategoryTags*           m_ptr2category;
-        Theme*                  m_theme;
+        Theme*                  m_theme{ nullptr };
+        Ustring                 m_unit;
 
     friend class PoolTags;
-    friend class Tagset;
 };
 
 class Untagged : public Tag
@@ -537,16 +653,16 @@ class Untagged : public Tag
     public:
                                 Untagged();
 
-        Type                    get_type() const
+        Type                    get_type() const override
         { return ET_UNTAGGED; }
 #ifndef LIFEO_WINDOZE
-        const Icon&             get_icon() const;
-        const Icon&             get_icon32() const;
+        const Icon&             get_icon() const override;
+        const Icon&             get_icon32() const override;
 #else
         int                     get_icon() const;
 #endif
 
-        Ustring                 get_list_str() const;
+        Ustring                 get_list_str() const override;
 
         void                    reset()
         {
@@ -565,50 +681,45 @@ class PoolTags : public std::map< Ustring, Tag*, FuncCompareStrings >
 
         bool                    handle_tag_changed( );
         bool                    rename( Tag*, const Ustring& );
-        Tag*                    get_tag( unsigned int );
         Tag*                    get_tag( const Ustring& );
         void                    clear();
 };
 
 // TAGS OF AN ENTRY
 // not responsible for memory handling
-class Tagset : public std::set< Tag*, FuncCompareDiaryElem >
+class TagSet : public std::set< Tag*, FuncCompareDiaryElem >
 {
     public:
-                                Tagset()
+                                TagSet()
         :   std::set< Tag*, FuncCompareDiaryElem >( compare_listitems_by_name ) {}
 
-                                ~Tagset();
+                                //~TagSet() {}
         bool                    add( Tag* );
-        bool                    checkfor_member( const Tag* ) const;
-        const Tag*              get_tag( unsigned int ) const;
-        //bool                  remove_tag( const Glib::ustring& );
+        bool                    check_for_member( const Tag* ) const;
 
     protected:
 
 };
 
 // CHAPTER =========================================================================================
-class Chapter : public DiaryElementReferrer< Entry >
+class Chapter : public DiaryElementReferrer< Entry >, public DiaryElementChart
 {
     public:
-        static ElementShower< Chapter >* shower;
+        static ElementView< Chapter >* shower;
 
                                 Chapter( Diary* const, const Ustring&, Date::date_t );
         // this class should have a virtual dtor for some reason because
         // if it does not, its derived classes cannot be deleted
         virtual                 ~Chapter() {}
 
-        void                    show();
-
-        void                    set_name( const Ustring& );
+        void                    show() override;
 
         Ustring                 get_date_str() const;
 
         void                    set_date( Date::date_t date )
         { m_date_begin.m_date = date; update_type(); }
 
-        Type                    get_type() const
+        Type                    get_type() const override
         { return m_type; }
 
 #ifndef LIFEO_WINDOZE
@@ -638,12 +749,22 @@ class Chapter : public DiaryElementReferrer< Entry >
         void                    set_time_span( int s )
         { m_time_span = s; }
 
+        ChartPoints*            create_chart_data() const;
+
         void                    update_type();
+
+        Color                   get_color() const
+        { return m_color; }
+        void                    set_color( Color&& color )
+        {
+            m_color = color;
+        }
 
     protected:
         Date                    m_date_begin;
-        int                     m_time_span;
+        int                     m_time_span{ 0 };
         Type                    m_type;
+        Color                   m_color{ "White" };
 
     friend class CategoryChapters;
     friend class ChapterView;
@@ -658,12 +779,12 @@ class CategoryChapters :
         explicit                CategoryChapters( Diary* const, Date::date_t );
         virtual                 ~CategoryChapters();
 
-        Type                    get_type() const
+        Type                    get_type() const override
         { return ET_CHAPTER_CTG; }
-        virtual int             get_size() const
+        virtual int             get_size() const override
         { return size(); }
 
-        void                    show() {} // not used
+        void                    show() override {} // not used
 
         Chapter*                get_chapter( const Date::date_t ) const;
 
@@ -676,7 +797,7 @@ class CategoryChapters :
         Date::date_t            get_free_order_ordinal() const;
 
     protected:
-        const Date::date_t      m_date_min;
+        const Date::date_t      m_date_min = 0;
 
         bool                    add( Chapter* );
 };
@@ -685,18 +806,18 @@ class PoolCategoriesChapters :
         public std::map< Ustring, CategoryChapters*, FuncCompareStrings >
 {
     public:
-                                    PoolCategoriesChapters()
+                                PoolCategoriesChapters()
         :   std::map< Ustring, CategoryChapters*, FuncCompareStrings >(
                 compare_names ) {}
-                                    ~PoolCategoriesChapters();
-        void                        clear();
+                                ~PoolCategoriesChapters();
+        void                    clear();
 };
 
 // FILTERS =========================================================================================
 class Filter : public DiaryElement
 {
     public:
-        static ElementShower< Filter >* shower;
+        static ElementView< Filter >* shower;
 
                                     Filter( Diary* const, const Ustring& );
 
@@ -719,18 +840,14 @@ class Filter : public DiaryElement
             return true;
         }
 
-        void                        show();
+        void                        show() override;
 
-        DiaryElement::Type          get_type() const
+        DiaryElement::Type          get_type() const override
         { return ET_FILTER; }
-        int                         get_size() const
+        int                         get_size() const override
         { return 0; }   // redundant
-#ifndef LIFEO_WINDOZE
-        const Icon&                 get_icon() const;
-        const Icon&                 get_icon32() const;
-#endif
 
-        Ustring                     get_list_str() const
+        Ustring                     get_list_str() const override
 #ifndef LIFEO_WINDOZE
         { return Glib::Markup::escape_text( m_name ); }
 #else
@@ -774,9 +891,9 @@ class Filter : public DiaryElement
         bool                        is_entry_filtered( Entry* ) const;
 
     protected:
-        const Tag*                  m_tag;
-        Date::date_t                m_date_begin;
-        Date::date_t                m_date_end;
+        const Tag*                  m_tag = nullptr;
+        Date::date_t                m_date_begin = 0;
+        Date::date_t                m_date_end = Date::DATE_MAX;
         EntrySet                    m_entries;
 };
 

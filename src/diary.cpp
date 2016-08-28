@@ -32,6 +32,7 @@
 #include <gcrypt.h>
 #include <cerrno>
 #include <cassert>
+#include <cfloat>
 
 #include "diary.hpp"
 #include "helpers.hpp"
@@ -52,7 +53,7 @@ bool                    Diary::s_flag_ignore_locks( true );
 #else
 bool                    Diary::s_flag_ignore_locks( false );
 #endif
-ElementShower< Diary >* Diary::shower( NULL );
+ElementView< Diary >* Diary::shower( nullptr );
 
 // PARSING HELPERS
 Date
@@ -84,14 +85,7 @@ get_db_line_name( const Ustring& line )
 
 // DIARY ===========================================================================================
 Diary::Diary()
-:   DiaryElement( NULL, DEID_DIARY ),
-    m_current_id( DEID_FIRST ), m_force_id( DEID_UNSET ),
-    m_startup_elem_id( HOME_CURRENT_ELEM ), m_last_elem_id( DEID_DIARY ),
-    m_path( "" ), m_passphrase( "" ), m_language( "" ),
-    m_ptr2chapter_ctg_cur( NULL ), m_orphans( NULL, "", Date::DATE_MAX ),
-    m_option_sorting_criteria( SC_DATE ), m_read_version( 0 ),
-    m_flag_read_only( false ), m_search_text( "" ),
-    m_ifstream( NULL )
+:   DiaryElement( nullptr, DEID_DIARY )
 {
     m_filter_active = new Filter( NULL, _( "Active Filter" ) );
     m_filter_default = new Filter( NULL, "Default Filter" );
@@ -198,7 +192,7 @@ Diary::set_path( const std::string& path0, SetPathType type )
     {
         GError* err = NULL;
         path = g_file_read_link( path0.c_str(), &err );
-        print_info( "Symbolic link resolved to path = " + path );
+        print_info( "Symbolic link resolved to path: ", path );
     }
 #endif
 
@@ -332,7 +326,7 @@ Diary::read_header()
 
     if( ! m_ifstream->is_open() )
     {
-        print_error( "failed to open diary file: " + m_path );
+        print_error( "failed to open diary file: ", m_path );
         clear();
         return LIFEO::COULD_NOT_START;
     }
@@ -374,7 +368,7 @@ Diary::read_header()
             case 0: // end of header
                 return LIFEO::SUCCESS;
             default:
-                print_error( "unrecognized header line: " + line );
+                print_error( "unrecognized header line: ", line );
                 break;
         }
     }
@@ -398,7 +392,7 @@ Diary::read_plain()
 {
     if( ! m_ifstream->is_open() )
     {
-        print_error( "Internal error while reading the diary file: " + m_path );
+        print_error( "Internal error while reading the diary file: ", m_path );
         clear();
         return LIFEO::COULD_NOT_START;
     }
@@ -411,7 +405,7 @@ Diary::read_encrypted()
 {
     if( ! m_ifstream->is_open() )
     {
-        print_error( "Failed to open diary file" + m_path );
+        print_error( "Failed to open diary file: ", m_path );
         clear();
         return LIFEO::COULD_NOT_START;
     }
@@ -608,9 +602,10 @@ Diary::parse_db_body_text( std::istream& stream )
 {
     switch( m_read_version )
     {
+        case 1040:
         case 1030:
         case 1020:
-            return parse_db_body_text_1030( stream );
+            return parse_db_body_text_1040( stream );
         case 1011:
         case 1010:
             return parse_db_body_text_1010( stream );
@@ -620,7 +615,7 @@ Diary::parse_db_body_text( std::istream& stream )
 }
 
 LIFEO::Result
-Diary::parse_db_body_text_1030( std::istream& stream )
+Diary::parse_db_body_text_1040( std::istream& stream )
 {
     std::string         line( "" );
     Entry*              entry_new = NULL;
@@ -648,13 +643,32 @@ Diary::parse_db_body_text_1030( std::istream& stream )
                     ptr2tag_ctg->set_expanded( line[ 1 ] == 'e' );
                     break;
                 case 't':   // tag
-                    ptr2tag = create_tag( line.substr( 2 ), ptr2tag_ctg );
+                    switch( line[ 1 ] )
+                    {
+                        case ' ':
+                            ptr2tag = create_tag( line.substr( 2 ), ptr2tag_ctg );
+                            break;
+                        case 'c':
+                            if( ptr2tag )
+                                ptr2tag->set_chart_type(
+                                        LIFEO::convert_string( line.substr( 2 ) ) );
+                            break;
+                        case 'u':
+                            if( ptr2tag )
+                                ptr2tag->set_unit( line.substr( 2 ) );
+                            break;
+                    }
                     break;
                 case 'u':
                     ptr2tag = &m_untagged;
+                    if( line[ 1 ] == 'c' )
+                    {
+                        ptr2tag->set_chart_type( LIFEO::convert_string( line.substr( 2 ) ) );
+                        break;
+                    }
                     // no break
                 case 'm':
-                    if( ptr2tag == NULL )
+                    if( ptr2tag == nullptr )
                     {
                         print_error( "No tag declared for theme" );
                         break;
@@ -684,7 +698,7 @@ Diary::parse_db_body_text_1030( std::istream& stream )
                             if( iter_tag != m_tags.end() )
                                 m_filter_default->set_tag( iter_tag->second );
                             else
-                                print_error( "Reference to undefined tag: " + line.substr( 2 ) );
+                                print_error( "Reference to undefined tag: ", line.substr( 2 ) );
                             break;
                         }
                         case 'b':   // begin date
@@ -705,8 +719,16 @@ Diary::parse_db_body_text_1030( std::istream& stream )
                             if( line[ 2 ] == 'c' )
                                 m_ptr2chapter_ctg_cur = ptr2chapter_ctg;
                             break;
+                        case 'c':   // chapter color
+                            if( ptr2chapter_ctg == nullptr )
+                            {
+                                print_error( "No chapter defined" );
+                                break;
+                            }
+                            ptr2chapter->set_color( Color( line.substr( 2 ) ) );
+                            break;
                         case 'T':   // temporal chapter
-                            if( ptr2chapter_ctg == NULL )
+                            if( ptr2chapter_ctg == nullptr )
                             {
                                 print_error( "No chapter category defined" );
                                 break;
@@ -726,11 +748,15 @@ Diary::parse_db_body_text_1030( std::istream& stream )
                         case 'p':   // chapter preferences
                             ptr2chapter->set_expanded( line[ 2 ] == 'e' );
                             parse_todo_status( ptr2chapter, line[ 3 ] );
+                            if( line.size() > 4 && line[ 4 ] == 'Y' )
+                                ptr2chapter->set_chart_type( ChartPoints::YEARLY );
                             break;
                     }
                     break;
                 case 'O':   // options
                     m_option_sorting_criteria = line[ 2 ];
+                    if( line.size() > 3 && line[ 3 ] == 'Y' )
+                        set_chart_type( ChartPoints::YEARLY );
                     break;
                 case 'l':   // language
                     m_language = line.substr( 2 );
@@ -742,7 +768,7 @@ Diary::parse_db_body_text_1030( std::istream& stream )
                     m_last_elem_id = LIFEO::convert_string( line.substr( 2 ) );
                     break;
                 default:
-                    print_error( "unrecognized line:\n" + line );
+                    print_error( "unrecognized line:\n", line );
                     clear();
                     return LIFEO::CORRUPT_FILE;
             }
@@ -754,6 +780,11 @@ Diary::parse_db_body_text_1030( std::istream& stream )
     {
         if( line.size() < 2 )
             continue;
+        else if( line[ 0 ] != 'I' && line[ 0 ] != 'E' && line[ 0 ] != 'e' && entry_new == nullptr )
+        {
+            print_error( "No entry declared for the attribute" );
+            continue;
+        }
 
         switch( line[ 0 ] )
         {
@@ -770,7 +801,7 @@ Diary::parse_db_body_text_1030( std::istream& stream )
 
                 m_entries[ entry_new->m_date.m_date ] = entry_new;
                 add_entry_to_related_chapter( entry_new );
-                m_untagged.insert( entry_new );
+                m_untagged.add_entry( entry_new );
 
                 if( line[ 0 ] == 'e' )
                     entry_new->set_trashed( true );
@@ -782,11 +813,6 @@ Diary::parse_db_body_text_1030( std::istream& stream )
                 flag_first_paragraph = true;
                 break;
             case 'D':   // creation & change dates (optional)
-                if( entry_new == NULL )
-                {
-                    print_error( "No entry declared" );
-                    break;
-                }
                 switch( line[ 1 ] )
                 {
                     case 'r':
@@ -801,33 +827,26 @@ Diary::parse_db_body_text_1030( std::istream& stream )
                 }
                 break;
             case 'T':   // tag
-                if( entry_new == NULL )
-                    print_error( "No entry declared" );
-                else
+            {
+                NameAndValue nav{ NameAndValue::parse( line.substr( 2 ) ) };
+                PoolTags::iterator iter_tag{ m_tags.find( nav.name ) };
+                if( iter_tag != m_tags.end() )
                 {
-                    PoolTags::iterator iter_tag( m_tags.find( line.substr( 2 ) ) );
-                    if( iter_tag != m_tags.end() )
-                    {
-                        entry_new->add_tag( iter_tag->second );
-                        if( line[1] == 'T' )
-                            entry_new->set_theme_tag( iter_tag->second );
-                    }
-                    else
-                        print_error( "Reference to undefined tag: " + line.substr( 2 ) );
+                    entry_new->add_tag( iter_tag->second, nav.value );
+                    if( line[ 1 ] == 'T' )
+                        entry_new->set_theme_tag( iter_tag->second );
                 }
+                else
+                    print_error( "Reference to undefined tag: ", nav.name );
+                break;
+            }
+            case 'L':   // location
+                entry_new->m_location = line.substr( 2 );
                 break;
             case 'l':   // language
-                if( entry_new == NULL )
-                    print_error( "No entry declared" );
-                else
-                    entry_new->set_lang( line.substr( 2 ) );
+                entry_new->set_lang( line.substr( 2 ) );
                 break;
             case 'P':    // paragraph
-                if( entry_new == NULL )
-                {
-                    print_error( "No entry declared" );
-                    break;
-                }
                 if( flag_first_paragraph )
                 {
                     if( line.size() > 2 )
@@ -842,7 +861,7 @@ Diary::parse_db_body_text_1030( std::istream& stream )
                 }
                 break;
             default:
-                print_error( "unrecognized line:\n" + line );
+                print_error( "Unrecognized line:\n", line );
                 clear();
                 return LIFEO::CORRUPT_FILE;
         }
@@ -921,7 +940,7 @@ Diary::parse_db_body_text_1010( std::istream& stream )
                             if( iter_tag != m_tags.end() )
                                 m_filter_default->set_tag( iter_tag->second );
                             else
-                                print_error( "Reference to undefined tag: " + line.substr( 2 ) );
+                                print_error( "Reference to undefined tag: ", line.substr( 2 ) );
                             break;
                         }
                         case 'b':   // begin date
@@ -987,7 +1006,7 @@ Diary::parse_db_body_text_1010( std::istream& stream )
                     m_last_elem_id = LIFEO::convert_string( line.substr( 2 ) );
                     break;
                 default:
-                    print_error( "unrecognized line:\n" + line );
+                    print_error( "unrecognized line:\n", line );
                     clear();
                     return LIFEO::CORRUPT_FILE;
             }
@@ -1018,7 +1037,7 @@ Diary::parse_db_body_text_1010( std::istream& stream )
 
                 m_entries[ entry_new->m_date.m_date ] = entry_new;
                 add_entry_to_related_chapter( entry_new );
-                m_untagged.insert( entry_new );
+                m_untagged.add_entry( entry_new );
 
                 if( line[ 0 ] == 'e' )
                     entry_new->set_trashed( true );
@@ -1059,7 +1078,7 @@ Diary::parse_db_body_text_1010( std::istream& stream )
                             entry_new->set_theme_tag( iter_tag->second );
                     }
                     else
-                        print_error( "Reference to undefined tag: " + line.substr( 2 ) );
+                        print_error( "Reference to undefined tag: ", line.substr( 2 ) );
                 }
                 break;
             case 'l':   // language
@@ -1088,7 +1107,7 @@ Diary::parse_db_body_text_1010( std::istream& stream )
                 }
                 break;
             default:
-                print_error( "unrecognized line:\n" + line );
+                print_error( "unrecognized line:\n", line );
                 clear();
                 return LIFEO::CORRUPT_FILE;
         }
@@ -1161,7 +1180,7 @@ Diary::parse_db_body_text_110( std::istream& stream )
                     break;
                 case 'M':
                     // themes with same name as tags are merged into existing tags
-                    ptr2theme = create_tag( line.substr( 2 ) )->get_own_theme();
+                    ptr2theme = create_tag( line.substr( 2 ), nullptr )->get_own_theme();
 
                     if( line[ 1 ] == 'd' )
                         ptr2default_theme = ptr2theme;
@@ -1189,7 +1208,7 @@ Diary::parse_db_body_text_110( std::istream& stream )
                     m_last_elem_id = LIFEO::convert_string( line.substr( 2 ) );
                     break;
                 default:
-                    print_error( "unrecognized line:\n" + line );
+                    print_error( "unrecognized line:\n", line );
                     clear();
                     return LIFEO::CORRUPT_FILE;
             }
@@ -1216,7 +1235,7 @@ Diary::parse_db_body_text_110( std::istream& stream )
 
                 m_entries[ entry_new->m_date.m_date ] = entry_new;
                 add_entry_to_related_chapter( entry_new );
-                m_untagged.insert( entry_new );
+                m_untagged.add_entry( entry_new );
 
                 if( line[ 0 ] == 'e' )
                     entry_new->set_trashed( true );
@@ -1245,7 +1264,7 @@ Diary::parse_db_body_text_110( std::istream& stream )
                     if( iter_tag != m_tags.end() )
                         entry_new->add_tag( iter_tag->second );
                     else
-                        print_error( "Reference to undefined tag: " + line.substr( 2 ) );
+                        print_error( "Reference to undefined tag: ", line.substr( 2 ) );
                 }
                 break;
             case 'l':   // language
@@ -1274,7 +1293,7 @@ Diary::parse_db_body_text_110( std::istream& stream )
                 }
                 break;
             default:
-                print_error( "unrecognized line (110):\n" + line );
+                print_error( "unrecognized line (110):\n", line );
                 clear();
                 return LIFEO::CORRUPT_FILE;
         }
@@ -1312,6 +1331,7 @@ Diary::upgrade_entries()
                 case '\n':
                 case '\r':
                     new_content += '\n';
+                    // no break
                 case 0:     // should never be the case
                     lf = 't'; // tab
                     break;
@@ -1416,12 +1436,12 @@ Diary::write_copy( const std::string& path, const std::string& passphrase, bool 
 }
 
 LIFEO::Result
-Diary::write_txt( const std::string& path, bool flag_filtered )
+Diary::write_txt( const std::string& path, bool flag_filtered_only )
 {
     std::ofstream file( path.c_str(), std::ios::out | std::ios::trunc );
     if( ! file.is_open() )
     {
-        print_error( "i/o error: " + path );
+        print_error( "i/o error: ", path );
         return LIFEO::FILE_NOT_WRITABLE;
     }
 
@@ -1461,9 +1481,8 @@ Diary::write_txt( const std::string& path, bool flag_filtered )
             {
                 Entry* entry = *iter_entry;
 
-                // PURGE EMPTY ENTRIES
-                if( ( entry->m_text.empty() && entry->m_tags.empty() ) ||
-                    ( entry->get_filtered_out() && flag_filtered ) )
+                // PURGE EMPTY OR FILTERED OUT ENTRIES
+                if( entry->is_empty() || ( entry->get_filtered_out() && flag_filtered_only ) )
                     continue;
 
                 if( entry->is_favored() )
@@ -1478,13 +1497,29 @@ Diary::write_txt( const std::string& path, bool flag_filtered )
                 else
                     file << '\n' << separator;
 
+                // TO-DO STATUS
+                switch( entry->get_status() & ES::FILTER_TODO)
+                {
+                    case ES::TODO:
+                        file << "[ ] ";
+                        break;
+                    case ES::PROGRESSED:
+                        file << "[~] ";
+                        break;
+                    case ES::DONE:
+                        file << "[+] ";
+                        break;
+                    case ES::CANCELED:
+                        file << "[X] ";
+                        break;
+                }
+
                 // CONTENT
                 file << entry->get_text();
 
                 // TAGS
                 bool first_tag = true;
-                for( Tagset::const_iterator itr_tag = entry->get_tags().begin();
-                     itr_tag != entry->get_tags().end(); ++itr_tag )
+                for( Tag* tag : entry->m_tags )
                 {
                     if( first_tag )
                     {
@@ -1494,7 +1529,7 @@ Diary::write_txt( const std::string& path, bool flag_filtered )
                     else
                         file << ", ";
 
-                    file << ( *itr_tag )->get_name();
+                    file << tag->get_name_and_value( entry, false, true );
                 }
 
                 file << "\n\n";
@@ -1516,7 +1551,7 @@ Diary::write_plain( const std::string& path, bool flag_header_only )
     std::ofstream file( path.c_str(), std::ios::binary | std::ios::out | std::ios::trunc );
     if( ! file.is_open() )
     {
-        print_error( "i/o error: " + path );
+        print_error( "i/o error: ", path );
         return LIFEO::COULD_NOT_START;
     }
 
@@ -1542,7 +1577,7 @@ Diary::write_encrypted( const std::string& path )
     std::ofstream file( path.c_str(), std::ios::out | std::ios::app | std::ios::binary );
     if( ! file.is_open() )
     {
-        print_error( "i/o error: " + path );
+        print_error( "i/o error: ", path );
         return LIFEO::COULD_NOT_START;
     }
     std::stringstream output;
@@ -1595,7 +1630,17 @@ inline void
 Diary::create_db_tag_text( char type, const Tag* tag, std::stringstream& output )
 {
     if( type == 'm' )
-        output << "ID" << tag->get_id() << "\nt " << tag->get_name_std() << '\n';
+    {
+        output << "ID" << tag->get_id() << "\nt " << tag->get_name_std();
+        output << "\ntc";
+    }
+    else
+        output << "uc";
+
+    output << tag->get_chart_type() << '\n';
+
+    if( ! tag->is_boolean() && ! tag->get_unit().empty() )
+        output << "tu" << tag->get_unit() << '\n';
 
     if( tag->get_has_own_theme() )
     {
@@ -1647,17 +1692,26 @@ create_db_chapterctg_text( char type, const CategoryChapters* ctg, std::stringst
 {
     Chapter* chapter;
 
-    for( CategoryChapters::const_iterator iter_chapter = ctg->begin();
-         iter_chapter != ctg->end();
-         ++iter_chapter )
+    for( auto& kv_chapter : *ctg )
     {
-        chapter = iter_chapter->second;
+        chapter = kv_chapter.second;
         output << "ID" << chapter->get_id()
-               << "\nC" << type << iter_chapter->first // type + date
+               << "\nC" << type << kv_chapter.first // type + date
                << '\t' << chapter->get_name_std()   // name
                << "\nCp" << ( chapter->get_expanded() ? 'e' : '_' );
         create_db_todo_status_text( chapter, output );
+        if( chapter->get_chart_type() & ChartPoints::YEARLY )
+            output << 'Y';
         output << '\n';
+
+        if( chapter->get_color() != Color( "White" ) )
+            output << "Cc" <<
+#ifndef LIFEO_WINDOZE
+            convert_gdkrgba_to_string( chapter->get_color() )
+#else
+            chapter->get_color()
+#endif
+            << '\n';
     }
 }
 
@@ -1665,7 +1719,11 @@ bool
 Diary::create_db_body_text( std::stringstream& output )
 {
     // OPTIONS
-    output << "O " << m_option_sorting_criteria << '\n';
+    output << "O " << m_option_sorting_criteria;
+    if( m_chart_type & ChartPoints::YEARLY )
+        output << 'Y';
+    output << '\n';
+
     if( !m_language.empty() )
         output << "l " << m_language << '\n';
 
@@ -1674,29 +1732,23 @@ Diary::create_db_body_text( std::stringstream& output )
     output << "L " << m_last_elem_id << '\n';
 
     // ROOT TAGS
-    for( PoolTags::const_iterator iter = m_tags.begin();
-         iter != m_tags.end();
-         ++iter )
+    for( auto& kv_tag : m_tags )
     {
-        if( iter->second->get_category() == NULL )
-            create_db_tag_text( 'm', iter->second, output );
+        if( kv_tag.second->get_category() == NULL )
+            create_db_tag_text( 'm', kv_tag.second, output );
     }
     // CATEGORIZED TAGS
-    for( PoolCategoriesTags::const_iterator iter = m_tag_categories.begin();
-         iter != m_tag_categories.end();
-         ++iter )
+    for( auto& kv_tag_ctg : m_tag_categories )
     {
         // tag category:
-        CategoryTags* ctg( iter->second );
+        CategoryTags* ctg( kv_tag_ctg.second );
         output << "ID" << ctg->get_id()
                << "\nT" << ( ctg->get_expanded() ? 'e' : '_' )
                << ctg->get_name_std() << '\n';
         // tags in it:
-        for( CategoryTags::const_iterator iter_tag = ctg->begin();
-             iter_tag != ctg->end();
-             ++iter_tag )
+        for( Tag* tag : *ctg )
         {
-            create_db_tag_text( 'm', *iter_tag, output );
+            create_db_tag_text( 'm', tag, output );
         }
     }
     // UNTAGGED THEME
@@ -1709,12 +1761,10 @@ Diary::create_db_body_text( std::stringstream& output )
     create_db_chapterctg_text( 'G', m_groups, output );
 
     // CHAPTERS
-    for( PoolCategoriesChapters::iterator iter = m_chapter_categories.begin();
-         iter != m_chapter_categories.end();
-         ++iter )
+    for( auto& kv_cc : m_chapter_categories )
     {
         // chapter category:
-        CategoryChapters* ctg( iter->second );
+        CategoryChapters* ctg( kv_cc.second );
         output << "ID" << ctg->get_id()
                << "\nCC" << ( ctg == m_ptr2chapter_ctg_cur ? 'c' : '_' )
                << ctg->get_name_std() << '\n';
@@ -1745,17 +1795,14 @@ Diary::create_db_body_text( std::stringstream& output )
     output << '\n';
 
     // ENTRIES
-    for( EntryIterConst iter_entry = m_entries.begin();
-         iter_entry != m_entries.end();
-         ++iter_entry )
+    for( auto& kv_entry : m_entries )
     {
-        Entry* entry = ( *iter_entry ).second;
+        Entry* entry = kv_entry.second;
 
         // purge empty entries:
-        if( entry->m_text.size() < 1 && entry->m_tags.empty() ) continue;
+        if( entry->is_empty() ) continue;
         // optionally only save filtered entries:
-        else
-        if( entry->get_filtered_out() && m_flag_only_save_filtered ) continue;
+        else if( entry->get_filtered_out() && m_flag_only_save_filtered ) continue;
 
         // ENTRY DATE
         output << "ID" << entry->get_id() << '\n'
@@ -1770,14 +1817,15 @@ Diary::create_db_body_text( std::stringstream& output )
         output << "Ds" << entry->m_date_status << '\n';
 
         // TAGS
-        for( Tagset::const_iterator iter_tag = entry->m_tags.begin();
-             iter_tag != entry->m_tags.end();
-             ++iter_tag )
+        for( Tag* tag : entry->m_tags )
         {
-            Tag* tag( *iter_tag );
             output << "T" << ( tag == entry->get_theme_tag() ? 'T' : '_' )
-                   << tag->get_name_std() << '\n';
+                   << tag->get_name_and_value( entry, true, false ) << '\n';
         }
+
+        // LOCATION
+        if( ! entry->m_location.empty() )
+            output << "L " << entry->m_location;
 
         // LANGUAGE
         if( entry->get_lang() != LANG_INHERIT_DIARY )
@@ -1862,16 +1910,18 @@ Diary::get_most_current_elem() const
     long diff2;
     DiaryElement* elem( NULL );
     bool descending( false );
-    for( EntryIterConst iter = m_entries.begin(); iter != m_entries.end(); ++iter )
+    for( auto& kv_entry : m_entries )
     {
-        if( ! iter->second->get_filtered_out() && ! iter->second->get_date().is_ordinal() )
+        Entry* entry( kv_entry.second );
+
+        if( ! entry->get_filtered_out() && ! entry->get_date().is_ordinal() )
         {
-            diff2 = iter->second->get_date_t() - date;
+            diff2 = entry->get_date_t() - date;
             if( diff2 < 0 ) diff2 *= -1;
             if( static_cast< unsigned long >( diff2 ) < diff1 )
             {
                 diff1 = diff2;
-                elem = iter->second;
+                elem = entry;
                 descending = true;
             }
             else
@@ -2002,13 +2052,24 @@ Entry*
 Diary::get_entry_first()
 {
     // return first unfiltered entry
-    for( EntryIter iter = m_entries.begin(); iter != m_entries.end(); ++iter )
+    for( auto& kv_entry : m_entries )
     {
-        Entry* entry = iter->second;
+        Entry* entry = kv_entry.second;
         if( entry->get_filtered_out() == false )
             return( entry );
     }
-    return NULL;
+    return nullptr;
+}
+
+Entry*
+Diary::get_entry_latest() const
+{
+    for( auto& kv_entry : m_entries )
+    {
+        if( ! kv_entry.second->get_date().is_ordinal() )
+            return kv_entry.second;
+    }
+    return nullptr;
 }
 
 bool
@@ -2037,7 +2098,7 @@ Diary::create_entry( Date::date_t date, const Ustring& content, bool flag_favori
 
     add_entry_to_related_chapter( entry );
 
-    m_untagged.insert( entry );
+    m_untagged.add_entry( entry );
 
     return( entry );
 }
@@ -2052,9 +2113,8 @@ Diary::dismiss_entry( Entry* entry )
         m_startup_elem_id = DEID_DIARY;
 
     // remove from tags:
-    for( Tagset::iterator iter = entry->get_tags().begin();
-         iter != entry->get_tags().end(); ++iter )
-        ( *iter )->erase( entry );
+    for( Tag* tag : entry->m_tags )
+        tag->erase( entry );
 
     // remove from untagged:
     m_untagged.erase( entry );
@@ -2142,6 +2202,17 @@ Diary::make_free_entry_order( Date& date ) const
     return true;    // reserved for bounds checking
 }
 
+int
+Diary::get_time_span() const
+{
+    int timespan{ 0 };
+    Entry* entry_latest{ get_entry_latest() };
+    if( entry_latest )
+        timespan = m_entries.rbegin()->second->get_date().
+                calculate_days_between( entry_latest->get_date() );
+    return timespan;
+}
+
 // FILTERING =======================================================================================
 void
 Diary::set_search_text( const Ustring& text )
@@ -2158,11 +2229,9 @@ Diary::replace_text( const Ustring& newtext )
 
     Entry* entry;
 
-    for( EntryIter iter_entry = m_entries.begin();
-         iter_entry != m_entries.end();
-         iter_entry++ )
+    for( auto& kv_entry : m_entries )
     {
-        entry = iter_entry->second;
+        entry = kv_entry.second;
         if( entry->get_filtered_out() )
             continue;
 #ifndef LIFEO_WINDOZE
@@ -2188,7 +2257,7 @@ Diary::replace_text( const Ustring& newtext )
 
 // TAGS ============================================================================================
 Tag*
-Diary::create_tag( const Ustring& name, CategoryTags* category )
+Diary::create_tag( const Ustring& name, CategoryTags* category, int chart_type )
 {
     PoolTags::iterator iter = m_tags.find( name );
     if( iter != m_tags.end() )
@@ -2196,7 +2265,7 @@ Diary::create_tag( const Ustring& name, CategoryTags* category )
         PRINT_DEBUG( "Tag already exists: " + name );
         return( iter->second );
     }
-    Tag* tag( new Tag( this, name, category ) );
+    Tag* tag( new Tag( this, name, category, chart_type ) );
     m_tags.insert( PoolTags::value_type( name, tag ) );
     return tag;
 }
@@ -2208,16 +2277,16 @@ Diary::dismiss_tag( Tag* tag, bool flag_dismiss_associated )
     if( flag_dismiss_associated )
     {
         while( ! tag->empty() )
-            dismiss_entry( dynamic_cast< Entry* >( * tag->begin() ) );
+            dismiss_entry( ( * tag->begin() ).first );
     }
     else
     {
         // we have to work on a copy because the original list is modified in the loop
         std::vector< Entry* > entries;
-        for( Tag::const_iterator iter = tag->begin(); iter != tag->end(); ++iter )
-            entries.push_back( *iter );
-        for( std::vector< Entry* >::iterator iter = entries.begin(); iter != entries.end(); ++iter )
-            ( *iter )->remove_tag( tag );
+        for( auto& kv_entry : *tag )
+            entries.push_back( kv_entry.first );
+        for( Entry* entry : entries )
+            entry->remove_tag( tag );
     }
 
     // remove from category if any
@@ -2271,8 +2340,8 @@ Diary::dismiss_tag_ctg( CategoryTags* ctg, bool flag_dismiss_contained )
     }
     else
     {
-        for( CategoryTags::const_iterator iter = ctg->begin(); iter != ctg->end(); ++iter )
-            ( *iter )->set_category( NULL );
+        for( Tag* tag : *ctg )
+            tag->set_category( NULL );
     }
 
     // remove from the list and delete
@@ -2415,10 +2484,8 @@ Diary::dismiss_chapter( Chapter* chapter, bool flag_dismiss_contained )
         ptr2ctg->erase( ptr2ctg->begin(), iter_c.base() );
 
         // ADD BACK ALL BUT THE ACTUAL ONE
-        for( std::vector< Chapter* >::iterator iter = tmp_chapter_storage.begin();
-             iter != tmp_chapter_storage.end(); ++iter )
+        for( Chapter* chpt : tmp_chapter_storage )
         {
-            Chapter* chpt( *iter );
             ( *ptr2ctg )[ chpt->get_date_t() ] = chpt;
         }
     }
@@ -2443,8 +2510,8 @@ Diary::dismiss_chapter( Chapter* chapter, bool flag_dismiss_contained )
 
         if( flag_dismiss_contained )
         {
-            for( Chapter::iterator iter = chapter->begin(); iter != chapter->end(); ++iter )
-                dismiss_entry( *iter );
+            for( Entry* entry : *chapter )
+                dismiss_entry( entry );
         }
 
         m_ptr2chapter_ctg_cur->erase( chapter->get_date_t() );
@@ -2466,10 +2533,9 @@ Diary::update_entries_in_chapters()
 
      for( int i = 0; i < 3; i++ )
      {
-         for( CategoryChapters::const_iterator iter_chapter = chapters[ i ]->begin();
-              iter_chapter != chapters[ i ]->end(); ++iter_chapter )
+         for( auto& kv_chapter : *chapters[ i ] )
          {
-             chapter = iter_chapter->second;
+             chapter = kv_chapter.second;
              chapter->clear();
 
              if( entry == NULL )
@@ -2520,9 +2586,9 @@ Diary::add_entry_to_related_chapter( Entry* entry )
     else // in chapters
         ptr2ctg = m_ptr2chapter_ctg_cur;
 
-    for( CategoryChapters::iterator iter = ptr2ctg->begin(); iter != ptr2ctg->end(); ++iter )
+    for( auto& kv_chapter : *ptr2ctg )
     {
-        Chapter* chapter( iter->second );
+        Chapter* chapter( kv_chapter.second );
 
         if( entry->get_date() > chapter->get_date() )
         {
@@ -2547,9 +2613,9 @@ Diary::remove_entry_from_chapters( Entry* entry )
     else // in chapters
         ptr2ctg = m_ptr2chapter_ctg_cur;
 
-    for( CategoryChapters::iterator iter = ptr2ctg->begin(); iter != ptr2ctg->end(); ++iter )
+    for( auto& kv_chapter : *ptr2ctg )
     {
-        Chapter* chapter( iter->second );
+        Chapter* chapter( kv_chapter.second );
 
         if( chapter->find( entry ) != chapter->end() )
         {
@@ -2614,10 +2680,8 @@ Diary::set_topic_order( Chapter* chapter, Date::date_t date )
 
     chapter->set_date( date );
     ( *ptr2ctg )[ date ] = chapter;
-    for( EntryVectorIter i = ev.begin(); i != ev.end(); i++ )
+    for( Entry* entry : ev )
     {
-        Entry* entry( *i );
-
         entry->set_date( ++date );
         m_entries[ date ] = entry;
     }
@@ -2639,6 +2703,50 @@ Diary::set_topic_order( Chapter* chapter, Date::date_t date )
 
 // SHOW ============================================================================================
 void
+Diary::fill_up_chart_points( ChartPoints* cp ) const
+{
+    if( !cp )
+        return;
+
+    if( cp->get_span() < 1 )
+        return;
+
+    for( auto kv_chapter = m_ptr2chapter_ctg_cur->rbegin();
+         kv_chapter != m_ptr2chapter_ctg_cur->rend(); ++kv_chapter )
+    {
+        Date d_chapter{ kv_chapter->second->get_date() };
+        float pos{ float( cp->calculate_distance_neg( Date( cp->start_date ), d_chapter ) ) };
+        if( cp->type & ChartPoints::MONTHLY )
+            pos += ( float( d_chapter.get_day() - 1.0 ) / d_chapter.get_days_in_month() );
+        else
+            pos += ( float( d_chapter.get_month() - 1.0 ) / 12.0 );
+
+        cp->chapters.push_back(
+                ChartPoints::PairChapter( pos, kv_chapter->second->get_color() ) );
+    }
+
+    // dummy entry just to have the last chapter drawn:
+    cp->chapters.push_back( ChartPoints::PairChapter( FLT_MAX, Color( "#000000" ) ) );
+}
+
+ChartPoints*
+Diary::create_chart_data() const
+{
+    if( m_entries.empty() )
+        return nullptr;
+
+    ChartPoints* cp{ new ChartPoints( m_chart_type ) };
+    Date d_last{ Date::NOT_SET };
+
+    for( auto iter = m_entries.rbegin(); iter != m_entries.rend(); ++iter )
+        cp->add_plain( d_last, iter->second->get_date() );
+
+    fill_up_chart_points( cp );
+
+    return cp;
+}
+
+void
 Diary::show()
 {
     if( shower != NULL )
@@ -2649,7 +2757,7 @@ Diary::show()
 bool
 Diary::import_tag( Tag* tag )
 {
-    Tag* new_tag( create_tag( tag->get_name() ) );
+    Tag* new_tag( create_tag( tag->get_name(), nullptr ) );
     if( new_tag == NULL )
         return false;
 
@@ -2669,7 +2777,7 @@ Diary::import_entries( const Diary& diary,
     Tag* tag_all = NULL;
 
     if( ! tag_all_str.empty() )
-        tag_all = create_tag( tag_all_str );
+        tag_all = create_tag( tag_all_str, nullptr );
 
     for( EntryIterConstRev iter = diary.m_entries.rbegin();
          iter != diary.m_entries.rend();
@@ -2697,12 +2805,11 @@ Diary::import_entries( const Diary& diary,
 
         if( flag_import_tags )
         {
-            Tagset& tags = entry_ext->get_tags();
             Tag* tag;
 
-            for( Tagset::const_iterator iter = tags.begin(); iter != tags.end(); ++iter )
+            for( Tag* tag_ext : entry_ext->m_tags )
             {
-                tag = ( m_tags.find( ( *iter )->get_name() ) )->second;
+                tag = ( m_tags.find( tag_ext->get_name() ) )->second;
                 entry_new->add_tag( tag );
             }
 
@@ -2718,7 +2825,7 @@ Diary::import_entries( const Diary& diary,
 
         // add to untagged if that is the case:
         if( entry_new->get_tags().empty() )
-            m_untagged.insert( entry_new );
+            m_untagged.add_entry( entry_new );
     }
 
     return true;
@@ -2727,17 +2834,15 @@ Diary::import_entries( const Diary& diary,
 bool
 Diary::import_chapters( const Diary& diary )
 {
-    for( PoolCategoriesChapters::const_iterator i_cc = diary.m_chapter_categories.begin();
-         i_cc != diary.m_chapter_categories.end();
-         ++i_cc )
+    for( auto& kv_cc : diary.m_chapter_categories )
     {
-        CategoryChapters* cc( i_cc->second );
+        CategoryChapters* cc( kv_cc.second );
         CategoryChapters* cc_new = create_chapter_ctg(
                 create_unique_name_for_map( m_chapter_categories, cc->get_name() ) );
 
-        for( CategoryChapters::iterator i_c = cc->begin(); i_c != cc->end(); ++i_c )
+        for( auto& kv_chapter : *cc )
         {
-            Chapter* chapter( i_c->second );
+            Chapter* chapter( kv_chapter.second );
             cc_new->create_chapter( chapter->get_name(), chapter->get_date().m_date );
         }
     }
