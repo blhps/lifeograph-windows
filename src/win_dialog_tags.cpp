@@ -45,7 +45,7 @@ dialog_tags_proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 }
 
 DialogTags::DialogTags()
-:   m_tag_cur( NULL ), m_flag_filter( true )
+:   m_tag_cur( nullptr ), m_flag_filter( true )
 {
 
 }
@@ -232,7 +232,6 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                         m_flag_filter = true;
                     }
                 }
-                return FALSE;
             }
             else if( ( ( LPNMHDR ) lParam )->code == TVN_BEGINLABELEDIT )
             {
@@ -280,6 +279,7 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                         DiaryElement* elem = Diary::d->get_element( tvi.lParam );
                         if( elem && elem->get_type() == DiaryElement::ET_TAG )
                         {
+                            TreeView_SelectItem( m_list, tvi.hItem );
                             WAO_Menu menu;
                             menu.init();
                             menu.append( MF_STRING, IDMI_TAG_RENAME, L"Rename Tag" );
@@ -459,7 +459,7 @@ DialogTags::handle_tag_menu_result( int result, TVITEM tvi )
             TreeView_EditLabel( m_list, tvi.hItem );
             break;
         case IDMI_TAG_DISMISS:
-            if( MessageBoxA( m_hwnd, "Are you sure to delete the tag?", "Confirm",
+            if( MessageBoxA( m_hwnd, "Are you sure to dismiss the tag?", "Confirm",
                     MB_YESNO|MB_ICONWARNING ) == IDYES )
             {
                 if( Diary::d->get_filter_tag() == tag )
