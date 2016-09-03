@@ -191,8 +191,8 @@ FONT 8, "Ms Shell Dlg"
     RCWAOTBBUTTON( IDB_ELEM, 75, 0x0 )
     RCWAOTBBTNTXT( "", IDB_ELEM_TITLE, 91, 149, 0x0 )
     EDITTEXT     IDE_ELEM_DATE, 91, 3, 149, 14, ES_AUTOHSCROLL, WS_EX_LEFT
-    EDITTEXT     IDE_SEARCH, 250, 3, 80, 14, ES_AUTOHSCROLL, WS_EX_LEFT
-    RCWAOTBBUTTON( IDB_FILTER, 335, 0x0 )
+    RCWAOTBBUTTON( IDB_FILTER, 250, 0x0 )
+    EDITTEXT     IDE_SEARCH, 270, 3, 80, 14, ES_AUTOHSCROLL, WS_EX_LEFT
 }
 
 // ICONS ===========================================================================================
