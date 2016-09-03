@@ -959,7 +959,7 @@ WinAppWindow::login()
 //    m_view_login->handle_login();
 //    m_tag_view->handle_login();
 //    m_filter_view->handle_login();
-//    m_entry_view->handle_login();
+    m_entry_view->handle_login();
 //    m_diary_view->handle_login();
 //    m_chapter_view->handle_login();
 //    panel_diary->handle_login();

@@ -66,7 +66,8 @@ EntryView::sync()
 void
 EntryView::handle_login()
 {
-    m_richedit->handle_login();
+    //m_richedit->handle_login(); not used for now
+    SendMessage( m_richedit->m_hwnd, EM_SETREADONLY, ( WPARAM ) Diary::d->is_read_only(), 0 );
 }
 
 void

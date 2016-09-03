@@ -205,7 +205,7 @@ WinLogin::create_new_diary()
     ofn.lpstrFile = szFileName;
     ofn.nMaxFile = MAX_PATH;
     ofn.lpstrDefExt = "diary";
-    ofn.Flags = OFN_OVERWRITEPROMPT;
+    ofn.Flags = OFN_OVERWRITEPROMPT|OFN_HIDEREADONLY;
 
     if( GetSaveFileNameA( &ofn ) )
     {
@@ -244,12 +244,12 @@ WinLogin::add_existing_diary()
     ofn.lpstrFile = szFileName;
     ofn.nMaxFile = MAX_PATH;
     ofn.lpstrDefExt = "diary";
-    ofn.Flags = OFN_EXPLORER|OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
+    ofn.Flags = OFN_EXPLORER|OFN_FILEMUSTEXIST;
     
     if( GetOpenFileNameA( &ofn ) )
     {
         m_path_cur = szFileName;
-        if( open_selected_diary( false ) != LIFEO::SUCCESS )
+        if( open_selected_diary( ofn.Flags & OFN_READONLY ) != LIFEO::SUCCESS )
             MessageBoxA( WinAppWindow::p->get_hwnd(), "Load of file failed.", "",
                          MB_OK|MB_ICONERROR );
     }

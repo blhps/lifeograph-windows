@@ -155,7 +155,6 @@ RichEdit::RichEdit()
 void
 RichEdit::handle_login()
 {
-
 }
 
 void
