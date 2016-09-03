@@ -12,10 +12,7 @@ Comparison to Linux Version
 Lifeograph for Windows is currently in early development phase and lacks many
 features provided by the Linux version. Main missing features are:
 
-    * Chapter support
-    * Favorite entries
-    * Todo status for entries and chapters
-    * Filtering
+    * Statistical graphs
     * Printing
     * Links of any kind in entries
     * Spell checking
