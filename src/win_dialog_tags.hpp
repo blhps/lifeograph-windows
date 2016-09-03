@@ -52,6 +52,7 @@ class DialogTags
         void                        handle_entry_changed();
         void                        update_list();
         HTREEITEM                   add_list_elem( DiaryElement*, HTREEITEM, bool = false );
+        void                        handle_tag_menu_result( int, TVITEM );
 
         Diary*                      m_ptr2diary;
         Entry*                      m_ptr2entry;

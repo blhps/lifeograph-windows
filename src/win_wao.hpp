@@ -79,5 +79,18 @@ class WAO_InputDlg
         HWND                m_hwnd;
 };
 
+// MENU CLASS=======================================================================================
+class WAO_Menu
+{
+    public:
+        HMENU               m_hmenu;
+                            WAO_Menu();		// for only drop down menus now
+        HMENU               init();
+        bool                append( UINT, UINT, LPCTSTR );
+        int                 track( UINT, HWND, int=-1, int=-1 );
+        bool                set_default_item( UINT, UINT );
+        bool                is_active();
+        bool                destroy();
+};
 #endif
 

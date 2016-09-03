@@ -84,6 +84,8 @@
 #define IDMI_TEXT_TODO_DONE                     40063
 #define IDMI_TEXT_TODO_CANCELED                 40064
 #define IDMI_TEXT_BULLET                        40066
+#define IDMI_TAG_RENAME                         40080
+#define IDMI_TAG_DISMISS                        40081
 
 #define IDMI_QUIT_WO_SAVE                       40098
 #define IDMI_QUIT                               40099

@@ -29,6 +29,7 @@
 #include "helpers.hpp"
 #include "diary.hpp"	// for LIFEO::PASSPHRASE_MIN_SIZE
 #include "win_dialog_password.hpp"
+#include "win_wao.hpp"
 
 
 using namespace LIFEO;
@@ -231,8 +232,69 @@ DialogTags::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
                         m_flag_filter = true;
                     }
                 }
+                return FALSE;
+            }
+            else if( ( ( LPNMHDR ) lParam )->code == TVN_BEGINLABELEDIT )
+            {
+                LPNMTVDISPINFO ptvdi = ( LPNMTVDISPINFO ) lParam;
+                DiaryElement* elem = Diary::d->get_element( ptvdi->item.lParam );
+                // returning false does not work for some reason
+                if( !elem || elem->get_type() != DiaryElement::ET_TAG )
+                    TreeView_EndEditLabelNow( m_list, TRUE );
+            }
+            else if( ( ( LPNMHDR ) lParam )->code ==  TVN_ENDLABELEDIT )
+            {
+                LPNMTVDISPINFO ptvdi = ( LPNMTVDISPINFO ) lParam;
+                if( ptvdi->item.pszText == NULL )
+                    return FALSE;
+                    
+                Ustring name{ convert_utf16_to_8( ptvdi->item.pszText ) };
+                    
+                Tag* tag = Diary::d->get_tags()->get_tag( name );
+                if( tag )
+                    return FALSE;
+                tag = dynamic_cast< Tag* >( Diary::d->get_element( ptvdi->item.lParam ) );
+                Diary::d->get_tags()->rename( tag, name );
+                SetWindowText( m_edit, L"" );
+                return TRUE;
             }
             return FALSE;
+        case WM_CONTEXTMENU:
+            if( ( HWND ) wParam == m_list )
+            {
+                DWORD dwpos = GetMessagePos();
+                TVHITTESTINFO ht = { 0 };
+                ht.pt.x = GET_X_LPARAM( dwpos );
+                ht.pt.y = GET_Y_LPARAM( dwpos );
+                MapWindowPoints( HWND_DESKTOP, m_list, &ht.pt, 1 );
+
+                TreeView_HitTest( m_list, &ht );
+
+                if( ht.flags & TVHT_ONITEM )
+                {
+                    TVITEM tvi;
+                    tvi.mask        = TVIF_PARAM;
+                    tvi.hItem       = ht.hItem;
+                    if( TreeView_GetItem( m_list, &tvi ) )
+                    {
+                        DiaryElement* elem = Diary::d->get_element( tvi.lParam );
+                        if( elem && elem->get_type() == DiaryElement::ET_TAG )
+                        {
+                            WAO_Menu menu;
+                            menu.init();
+                            menu.append( MF_STRING, IDMI_TAG_RENAME, L"Rename Tag" );
+                            menu.append( MF_STRING, IDMI_TAG_DISMISS, L"Dismiss Tag" );
+                            //menu.append (MF_SEPARATOR, 0, 0);
+                            handle_tag_menu_result(
+                                    menu.track( TPM_RETURNCMD, m_list,
+                                            LOWORD( lParam ), HIWORD( lParam ) ),
+                                    tvi );
+                            DestroyMenu( menu.m_hmenu );
+                        }
+                    }
+                }
+            return FALSE;
+        }
         default:
             return FALSE;
     }
@@ -384,5 +446,29 @@ DialogTags::update_list()
     // UNTAGGED PSEUDO TAG
     if( m_nav.name.empty() )
         add_list_elem( Diary::d->get_untagged(), ( HTREEITEM ) TVI_ROOT );
+}
+
+void
+DialogTags::handle_tag_menu_result( int result, TVITEM tvi )
+{
+    Tag* tag = dynamic_cast< Tag* >( Diary::d->get_element( tvi.lParam ) );
+
+    switch( result )
+    {
+        case IDMI_TAG_RENAME:
+            TreeView_EditLabel( m_list, tvi.hItem );
+            break;
+        case IDMI_TAG_DISMISS:
+            if( MessageBoxA( m_hwnd, "Are you sure to delete the tag?", "Confirm",
+                    MB_YESNO|MB_ICONWARNING ) == IDYES )
+            {
+                if( Diary::d->get_filter_tag() == tag )
+                    Diary::d->set_filter_tag( nullptr );
+
+                Diary::d->dismiss_tag( tag, false );
+                SetWindowText( m_edit, L"" );
+            }
+            break;
+    }
 }
 

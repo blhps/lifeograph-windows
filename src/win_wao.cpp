@@ -393,3 +393,60 @@ WAO_InputDlg::proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
     }
 }
 
+// MENU ============================================================================================
+WAO_Menu::WAO_Menu()
+{
+    m_hmenu = NULL;
+}
+
+HMENU
+WAO_Menu::init()
+{
+    return( m_hmenu = CreatePopupMenu() );
+}
+// APPEND
+bool
+WAO_Menu::append( UINT flags, UINT newItm, LPCTSTR content )
+{
+    return AppendMenu( m_hmenu, flags, newItm, content );
+}
+// TRACK MENU
+int
+WAO_Menu::track( UINT flags, HWND hWOwn, int posX, int posY )
+{
+    //hMenuAct = hMenu;
+    //hMenu = NULL;	// to avoid recreation during append()
+    if( posX < 0 )
+    {
+        POINT pnt;
+        GetCursorPos (&pnt);
+        posX = pnt.x;
+        posY = pnt.y;
+    }
+    return TrackPopupMenu( m_hmenu, flags, posX, posY, 0, hWOwn, NULL );
+}
+// SET DEFAULT ITEM
+bool
+WAO_Menu::set_default_item( UINT itm, UINT byPos )
+{
+    return SetMenuDefaultItem( m_hmenu, itm, byPos );
+}
+// WHETHER THE MENU IS ACTIVE
+bool
+WAO_Menu::is_active()
+{
+    return( ( bool ) m_hmenu );
+}
+// DESTROY MENU IF IT IS ACTIVE
+bool
+WAO_Menu::destroy()
+{
+    if( m_hmenu )
+    {
+        DestroyMenu( m_hmenu );
+        m_hmenu = 0;
+        return true;        // it was active
+    }
+    else
+        return false;       // it was already inactive
+}
