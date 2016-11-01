@@ -39,7 +39,7 @@
 using namespace LIFEO;
 
 // STATIC MEMBERS
-const char                          Lifeograph::PROGRAM_VERSION_STRING[] = "0.4.0"
+const char                          Lifeograph::PROGRAM_VERSION_STRING[] = "0.4.1"
 #if LIFEOGRAPH_DEBUG_BUILD
         "\n" BUILD_TIMESTAMP
 #endif
