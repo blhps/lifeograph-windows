@@ -167,8 +167,8 @@ class Date
         static const unsigned long  TOPIC_MIN           = VISIBLE_FLAG|ORDINAL_FLAG;
         static const unsigned long  GROUP_MIN           = ORDINAL_FLAG;
 
-        static std::string          s_date_format_order;
-        static char                 s_date_format_separator;
+        static std::string          s_format_order;
+        static char                 s_format_separator;
 
         typedef unsigned long date_t;
 
@@ -228,10 +228,19 @@ class Date
         static unsigned int         get_year( const date_t d )
         { return ( ( d & YEAR_FILTER ) >> 19 ); }
 
+        int                         get_weekday() const;
+
         std::string                 get_year_str() const;
         Ustring                     get_month_str() const;
         //std::string                 get_day_str() const;
-        Ustring                     get_weekday_str() const;
+        Ustring                     get_weekday_str() const
+        {
+            struct tm ti;
+            ti.tm_wday = get_weekday();
+            char buf[ 32 ];
+            strftime( buf, 32, "%A", &ti );
+            return Ustring( buf );
+        }
 
         unsigned int                get_days_in_month() const;
 
@@ -242,10 +251,8 @@ class Date
                 return true;
             else if( ( year % 100 ) == 0 )
                 return false;
-            else if( ( year % 4 ) == 0 )
-                return true;
 
-            return false;
+            return( ( year % 4 ) == 0 );
         }
 
         unsigned int                get_month() const
@@ -318,12 +325,12 @@ class Date
         static Result               parse_string( Date::date_t*, const Ustring& );
 
         Ustring                     format_string() const
-        { return format_string( m_date, s_date_format_order, s_date_format_separator ); }
+        { return format_string( m_date, s_format_order, s_format_separator ); }
         Ustring                     format_string( const std::string& format,
-                                                   const char separator = s_date_format_separator )
+                                                   const char separator = s_format_separator )
         { return format_string( m_date, format, separator ); }
         static Ustring              format_string( const date_t date )
-        { return format_string( date, s_date_format_order, s_date_format_separator ); }
+        { return format_string( date, s_format_order, s_format_separator ); }
         static Ustring              format_string( const date_t, const std::string&, const char );
         static Ustring              format_string_dt( const time_t );
         static Ustring              format_string_d( const time_t );
@@ -345,8 +352,9 @@ class Date
         static bool                 is_hidden( const date_t d )
         { return( is_ordinal( d ) && !( d & VISIBLE_FLAG ) ); }
 
+        void                        forward_years( int years )
+        { m_date += make_year( years ); }
         void                        forward_months( int months );
-        void                        forward_month();
         void                        forward_day();
 
         void                        backward_ordinal_order()

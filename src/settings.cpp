@@ -220,8 +220,8 @@ Settings::reset()
 void
 Settings::update_date_format()
 {
-    Date::s_date_format_order = s_date_format_orders[ date_format_order ];
-    Date::s_date_format_separator = s_date_format_separators[ date_format_separator ];
+    Date::s_format_order = s_date_format_orders[ date_format_order ];
+    Date::s_format_separator = s_date_format_separators[ date_format_separator ];
 }
 
 // maybe later:

@@ -234,7 +234,7 @@ class Diary : public DiaryElement, public DiaryElementChart
         bool                    is_encrypted() const
         { return( ! m_passphrase.empty() ); }
 
-        ChartPoints*            create_chart_data() const;
+        ChartPoints*            create_chart_data() const override;
         void                    show() override;
 
         bool                    import_tag( Tag* );
@@ -286,8 +286,8 @@ class Diary : public DiaryElement, public DiaryElementChart
         void                    do_standard_checks_after_parse();
 
         bool                    create_db_body_text( std::stringstream& );
-        bool                    create_db_header_text( std::stringstream&, bool );
-        void                    create_db_tag_text( char, const Tag*, std::stringstream& );
+        //bool                    create_db_header_text( std::stringstream&, bool );
+        //void                    create_db_tag_text( char, const Tag*, std::stringstream& );
 
         void                    close_file();
         LIFEO::Result           read_plain();

@@ -48,8 +48,8 @@ Error::Error( const Ustring& error_message )
 }
 
 // DATE ============================================================================================
-std::string Date::s_date_format_order = "YMD";
-char        Date::s_date_format_separator = '.';
+std::string Date::s_format_order = "YMD";
+char        Date::s_format_separator = '.';
 
 Date::Date( const std::string& str_date )
 {
@@ -157,7 +157,7 @@ Date::parse_string( Date::date_t* date, const Ustring& str_date )
         {
             if( num[ 0 ] <= 12 && num[ 1 ] <= 12 ) // both DMY and MDY possible
             {
-                if( s_date_format_order[ 0 ] == 'M' )
+                if( s_format_order[ 0 ] == 'M' )
                 {
                     month = num[ 0 ];
                     day = num[ 1 ];
@@ -287,8 +287,8 @@ Date::get_month_str() const
 }
 #endif
 
-Ustring
-Date::get_weekday_str() const
+int
+Date::get_weekday() const
 {
     // from wikipedia: http://en.wikipedia.org/wiki/Calculating_the_day_of_the_week
     const unsigned int year = get_year();
@@ -298,18 +298,14 @@ Date::get_weekday_str() const
     y = y + floor( y / 4 );
 
     static const int t_m[] = { 0, 3, 3, 6, 1, 4, 6, 2, 5, 0, 3, 5 };
-    struct tm ti;
 
     int m = get_month() - 1;
     int d = ( c + y + t_m[ m ] + get_day() );
 
-    if( !( get_year() % 4 ) && m < 2 )  // leap year!
+    if( m < 2 && is_leap_year() )  // leap year!
         d += 6;
 
-    ti.tm_wday = ( d % 7 );
-    char buf[ 32 ];
-    strftime( buf, 32, "%A", &ti );
-    return Ustring( buf );
+    return( d % 7 );
 }
 
 unsigned int
@@ -345,25 +341,7 @@ Date::get_ctime( const Date::date_t d )
 void
 Date::forward_months( int months )
 {
-    months += ( ( m_date & MONTH_FILTER ) >> 15 ); // get month
-    m_date &= YEAR_FILTER;   // isolate year
-    const int mod_months = months % 12;
-    if( mod_months == 0 )
-    {
-        m_date += make_year( ( months / 12 ) - 1);
-        m_date |= 0x60000;  // make month 12
-    }
-    else
-    {
-        m_date += make_year( months / 12 );
-        m_date |= make_month( mod_months );
-    }
-}
-
-void
-Date::forward_month()
-{
-    int months = get_month() + 1;
+    months += get_month();
     m_date &= YEAR_FILTER;   // isolate year
     const int mod_months = months % 12;
     if( mod_months == 0 )
@@ -385,7 +363,7 @@ Date::forward_day()
     if( day >= get_days_in_month() )
     {
         set_day( 1 );
-        forward_month();
+        forward_months( 1 );
     }
     else
         set_day( day + 1 );

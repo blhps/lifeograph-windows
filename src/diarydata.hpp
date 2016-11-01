@@ -506,6 +506,8 @@ class DiaryElementChart
             m_chart_type = type;
         }
 
+        virtual ChartPoints*    create_chart_data() const = 0;
+
     protected:
         int                     m_chart_type;
 };
@@ -631,7 +633,7 @@ class Tag : public DiaryElementMapper< Entry, Value >, public DiaryElementChart
 
         Value                   get_value( Entry* ) const;
 
-        ChartPoints*            create_chart_data();
+        ChartPoints*            create_chart_data() const override;
 
         bool                    is_boolean() const
         { return( ( m_chart_type & ChartPoints::VALUE_TYPE_MASK ) == ChartPoints::BOOLEAN ); }
@@ -749,7 +751,7 @@ class Chapter : public DiaryElementReferrer< Entry >, public DiaryElementChart
         void                    set_time_span( int s )
         { m_time_span = s; }
 
-        ChartPoints*            create_chart_data() const;
+        ChartPoints*            create_chart_data() const override;
 
         void                    update_type();
 

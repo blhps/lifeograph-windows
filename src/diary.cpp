@@ -720,7 +720,7 @@ Diary::parse_db_body_text_1040( std::istream& stream )
                                 m_ptr2chapter_ctg_cur = ptr2chapter_ctg;
                             break;
                         case 'c':   // chapter color
-                            if( ptr2chapter_ctg == nullptr )
+                            if( ptr2chapter == nullptr )
                             {
                                 print_error( "No chapter defined" );
                                 break;
@@ -1375,6 +1375,262 @@ Diary::upgrade_entries()
     }
 }
 
+inline bool
+create_db_header_text( std::stringstream& output, bool encrypted )
+{
+    output << LIFEO::DB_FILE_HEADER;
+    output << "\nV " << LIFEO::DB_FILE_VERSION_INT;
+    output << ( encrypted ? "\nE yes" : "\nE no" );
+    output << "\n\n"; // end of header
+
+    return true;
+}
+
+inline void
+create_db_tag_text( const Tag* tag, std::stringstream& output )
+{
+    char type{ 'm' };
+
+    if( tag->get_type() == DiaryElement::ET_UNTAGGED )
+    {
+        output << "uc";
+        type = 'u';
+    }
+    else
+    {
+        output << "ID" << tag->get_id() << "\nt " << tag->get_name_std();
+        output << "\ntc";
+    }
+    output << tag->get_chart_type() << '\n';
+
+    if( ! tag->is_boolean() && ! tag->get_unit().empty() ) // never true for untagged
+        output << "tu" << tag->get_unit() << '\n';
+
+    if( tag->get_has_own_theme() )
+    {
+        Theme* theme( tag->get_theme() );
+
+#ifndef LIFEO_WINDOZE
+        output << type << 'f' << theme->font.to_string() << '\n';
+        output << type << 'b' << convert_gdkrgba_to_string( theme->color_base ) << '\n';
+        output << type << 't' << convert_gdkrgba_to_string( theme->color_text ) << '\n';
+        output << type << 'h' << convert_gdkrgba_to_string( theme->color_heading ) << '\n';
+        output << type << 's' << convert_gdkrgba_to_string( theme->color_subheading ) << '\n';
+        output << type << 'l' << convert_gdkrgba_to_string( theme->color_highlight ) << '\n';
+#else
+        output << type << 'f' << theme->font << '\n';
+        output << type << 'b' << theme->color_base << '\n';
+        output << type << 't' << theme->color_text << '\n';
+        output << type << 'h' << theme->color_heading << '\n';
+        output << type << 's' << theme->color_subheading << '\n';
+        output << type << 'l' << theme->color_highlight << '\n';
+#endif
+    }
+}
+
+inline void
+create_db_todo_status_text( const DiaryElement* elem, std::stringstream& output )
+{
+    switch( elem->get_todo_status() )
+    {
+        case ES::NOT_TODO:
+            output << 'n';
+            break;
+        case ES::TODO:
+            output << 't';
+            break;
+        case ES::PROGRESSED:
+            output << 'p';
+            break;
+        case ES::DONE:
+            output << 'd';
+            break;
+        case ES::CANCELED:
+            output << 'c';
+            break;
+    }
+}
+
+inline void
+create_db_chapterctg_text( char type, const CategoryChapters* ctg, std::stringstream& output )
+{
+    Chapter* chapter;
+
+    for( auto& kv_chapter : *ctg )
+    {
+        chapter = kv_chapter.second;
+        output << "ID" << chapter->get_id()
+               << "\nC" << type << kv_chapter.first // type + date
+               << '\t' << chapter->get_name_std()   // name
+               << "\nCp" << ( chapter->get_expanded() ? 'e' : '_' );
+        create_db_todo_status_text( chapter, output );
+        if( chapter->get_chart_type() & ChartPoints::YEARLY )
+            output << 'Y';
+        output << '\n';
+
+        if( chapter->get_color() != Color( "White" ) )
+            output << "Cc" <<
+#ifndef LIFEO_WINDOZE
+            convert_gdkrgba_to_string( chapter->get_color() )
+#else
+            chapter->get_color()
+#endif
+            << '\n';
+    }
+}
+
+bool
+Diary::create_db_body_text( std::stringstream& output )
+{
+    // OPTIONS
+    output << "O " << m_option_sorting_criteria;
+    if( m_chart_type & ChartPoints::YEARLY )
+        output << 'Y';
+    output << '\n';
+
+    if( !m_language.empty() )
+        output << "l " << m_language << '\n';
+
+    // STARTUP ACTION (HOME ITEM)
+    output << "S " << m_startup_elem_id << '\n';
+    output << "L " << m_last_elem_id << '\n';
+
+    // ROOT TAGS
+    for( auto& kv_tag : m_tags )
+    {
+        if( kv_tag.second->get_category() == NULL )
+            create_db_tag_text( kv_tag.second, output );
+    }
+    // CATEGORIZED TAGS
+    for( auto& kv_tag_ctg : m_tag_categories )
+    {
+        // tag category:
+        CategoryTags* ctg( kv_tag_ctg.second );
+        output << "ID" << ctg->get_id()
+               << "\nT" << ( ctg->get_expanded() ? 'e' : '_' )
+               << ctg->get_name_std() << '\n';
+        // tags in it:
+        for( Tag* tag : *ctg )
+        {
+            create_db_tag_text( tag, output );
+        }
+    }
+    // UNTAGGED THEME
+    create_db_tag_text( &m_untagged, output );
+
+    // TOPICS
+    create_db_chapterctg_text( 'O', m_topics, output );
+
+    // FREE CHAPTERS
+    create_db_chapterctg_text( 'G', m_groups, output );
+
+    // CHAPTERS
+    PRINT_DEBUG( "***CURRENT CHAPTER:", m_ptr2chapter_ctg_cur->get_name() );
+    for( auto& kv_cc : m_chapter_categories )
+    {
+        // chapter category:
+        CategoryChapters* ctg( kv_cc.second );
+        output << "ID" << ctg->get_id()
+               << "\nCC" << ( ctg == m_ptr2chapter_ctg_cur ? 'c' : '_' )
+               << ctg->get_name_std() << '\n';
+        // chapters in it:
+        create_db_chapterctg_text( 'T', ctg, output );
+    }
+
+    // FILTER
+    const ElemStatus fs( m_filter_default->get_status() );
+    output << "fs" << ( fs & ES::SHOW_TRASHED ? 'T' : '_' )
+                   << ( fs & ES::SHOW_NOT_TRASHED ? 't' : '_' )
+                   << ( fs & ES::SHOW_FAVORED ? 'F' : '_' )
+                   << ( fs & ES::SHOW_NOT_FAVORED ? 'f' : '_' )
+                   << ( fs & ES::SHOW_NOT_TODO ? 'N' : '_' )
+                   << ( fs & ES::SHOW_TODO ? 'T' : '_' )
+                   << ( fs & ES::SHOW_PROGRESSED ? 'P' : '_' )
+                   << ( fs & ES::SHOW_DONE ? 'D' : '_' )
+                   << ( fs & ES::SHOW_CANCELED ? 'C' : '_' )
+                   << '\n';
+    if( fs & ES::FILTER_TAG )
+        output << "ft" << m_filter_default->get_tag()->get_name_std() << '\n';
+    if( fs & ES::FILTER_DATE_BEGIN )
+        output << "fb" << m_filter_default->get_date_begin() << '\n';
+    if( fs & ES::FILTER_DATE_END )
+        output << "fe" << m_filter_default->get_date_end() << '\n';
+
+    // END OF SECTION
+    output << '\n';
+
+    // ENTRIES
+    for( auto& kv_entry : m_entries )
+    {
+        Entry* entry = kv_entry.second;
+
+        // purge empty entries:
+        if( entry->is_empty() ) continue;
+        // optionally only save filtered entries:
+        else if( entry->get_filtered_out() && m_flag_only_save_filtered ) continue;
+
+        // ENTRY DATE
+        output << "ID" << entry->get_id() << '\n'
+               << ( entry->is_trashed() ? 'e' : 'E' )
+               << ( entry->is_favored() ? 'f' : '_' )
+               << ( m_filter_default->is_entry_filtered( entry ) ? 'h' : '_' );
+        create_db_todo_status_text( entry, output );
+        output << entry->m_date.m_date << '\n';
+
+        output << "Dr" << entry->m_date_created << '\n';
+        output << "Dh" << entry->m_date_edited << '\n';
+        output << "Ds" << entry->m_date_status << '\n';
+
+        // TAGS
+        for( Tag* tag : entry->m_tags )
+        {
+            output << "T" << ( tag == entry->get_theme_tag() ? 'T' : '_' )
+                   << tag->get_name_and_value( entry, true, false ) << '\n';
+        }
+
+        // LOCATION
+        if( ! entry->m_location.empty() )
+            output << "L " << entry->m_location << '\n';
+
+        // LANGUAGE
+        if( entry->get_lang() != LANG_INHERIT_DIARY )
+            output << "l " << entry->get_lang() << '\n';
+
+        // CONTENT
+        if( entry->m_text.empty() )
+            output << "\n";
+        else
+        {
+            // NOTE: for some reason, implicit conversion from Glib:ustring...
+            // ...fails while substr()ing when LANG=C
+            // we might reconsider storing text of entries as std::string.
+            // for now we convert entry text to std::string here:
+            std::string             content( entry->m_text );
+            std::string::size_type  pt_start( 0 ), pt_end( 0 );
+
+            while( true )
+            {
+                pt_end = content.find( '\n', pt_start );
+                if( pt_end == std::string::npos )
+                {
+                    pt_end = content.size();
+                    output << "P " << content.substr( pt_start, content.size() - pt_start )
+                           << "\n\n";
+                    break; // end of while( true )
+                }
+                else
+                {
+                    pt_end++;
+                    output << "P " << content.substr( pt_start, pt_end - pt_start );
+                    pt_start = pt_end;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 LIFEO::Result
 Diary::write()
 {
@@ -1613,257 +1869,6 @@ Diary::write_encrypted( const std::string& path )
     file.close();
     buf.clear();
     return LIFEO::SUCCESS;
-}
-
-bool
-Diary::create_db_header_text( std::stringstream& output, bool encrypted )
-{
-    output << LIFEO::DB_FILE_HEADER;
-    output << "\nV " << LIFEO::DB_FILE_VERSION_INT;
-    output << ( encrypted ? "\nE yes" : "\nE no" );
-    output << "\n\n"; // end of header
-
-    return true;
-}
-
-inline void
-Diary::create_db_tag_text( char type, const Tag* tag, std::stringstream& output )
-{
-    if( type == 'm' )
-    {
-        output << "ID" << tag->get_id() << "\nt " << tag->get_name_std();
-        output << "\ntc";
-    }
-    else
-        output << "uc";
-
-    output << tag->get_chart_type() << '\n';
-
-    if( ! tag->is_boolean() && ! tag->get_unit().empty() )
-        output << "tu" << tag->get_unit() << '\n';
-
-    if( tag->get_has_own_theme() )
-    {
-        Theme* theme( tag->get_theme() );
-
-#ifndef LIFEO_WINDOZE
-        output << type << 'f' << theme->font.to_string() << '\n';
-        output << type << 'b' << convert_gdkrgba_to_string( theme->color_base ) << '\n';
-        output << type << 't' << convert_gdkrgba_to_string( theme->color_text ) << '\n';
-        output << type << 'h' << convert_gdkrgba_to_string( theme->color_heading ) << '\n';
-        output << type << 's' << convert_gdkrgba_to_string( theme->color_subheading ) << '\n';
-        output << type << 'l' << convert_gdkrgba_to_string( theme->color_highlight ) << '\n';
-#else
-        output << type << 'f' << theme->font << '\n';
-        output << type << 'b' << theme->color_base << '\n';
-        output << type << 't' << theme->color_text << '\n';
-        output << type << 'h' << theme->color_heading << '\n';
-        output << type << 's' << theme->color_subheading << '\n';
-        output << type << 'l' << theme->color_highlight << '\n';
-#endif
-    }
-}
-
-inline void
-create_db_todo_status_text( const DiaryElement* elem, std::stringstream& output )
-{
-    switch( elem->get_todo_status() )
-    {
-        case ES::NOT_TODO:
-            output << 'n';
-            break;
-        case ES::TODO:
-            output << 't';
-            break;
-        case ES::PROGRESSED:
-            output << 'p';
-            break;
-        case ES::DONE:
-            output << 'd';
-            break;
-        case ES::CANCELED:
-            output << 'c';
-            break;
-    }
-}
-
-inline void
-create_db_chapterctg_text( char type, const CategoryChapters* ctg, std::stringstream& output )
-{
-    Chapter* chapter;
-
-    for( auto& kv_chapter : *ctg )
-    {
-        chapter = kv_chapter.second;
-        output << "ID" << chapter->get_id()
-               << "\nC" << type << kv_chapter.first // type + date
-               << '\t' << chapter->get_name_std()   // name
-               << "\nCp" << ( chapter->get_expanded() ? 'e' : '_' );
-        create_db_todo_status_text( chapter, output );
-        if( chapter->get_chart_type() & ChartPoints::YEARLY )
-            output << 'Y';
-        output << '\n';
-
-        if( chapter->get_color() != Color( "White" ) )
-            output << "Cc" <<
-#ifndef LIFEO_WINDOZE
-            convert_gdkrgba_to_string( chapter->get_color() )
-#else
-            chapter->get_color()
-#endif
-            << '\n';
-    }
-}
-
-bool
-Diary::create_db_body_text( std::stringstream& output )
-{
-    // OPTIONS
-    output << "O " << m_option_sorting_criteria;
-    if( m_chart_type & ChartPoints::YEARLY )
-        output << 'Y';
-    output << '\n';
-
-    if( !m_language.empty() )
-        output << "l " << m_language << '\n';
-
-    // STARTUP ACTION (HOME ITEM)
-    output << "S " << m_startup_elem_id << '\n';
-    output << "L " << m_last_elem_id << '\n';
-
-    // ROOT TAGS
-    for( auto& kv_tag : m_tags )
-    {
-        if( kv_tag.second->get_category() == NULL )
-            create_db_tag_text( 'm', kv_tag.second, output );
-    }
-    // CATEGORIZED TAGS
-    for( auto& kv_tag_ctg : m_tag_categories )
-    {
-        // tag category:
-        CategoryTags* ctg( kv_tag_ctg.second );
-        output << "ID" << ctg->get_id()
-               << "\nT" << ( ctg->get_expanded() ? 'e' : '_' )
-               << ctg->get_name_std() << '\n';
-        // tags in it:
-        for( Tag* tag : *ctg )
-        {
-            create_db_tag_text( 'm', tag, output );
-        }
-    }
-    // UNTAGGED THEME
-    create_db_tag_text( 'u', &m_untagged, output );
-
-    // TOPICS
-    create_db_chapterctg_text( 'O', m_topics, output );
-
-    // FREE CHAPTERS
-    create_db_chapterctg_text( 'G', m_groups, output );
-
-    // CHAPTERS
-    for( auto& kv_cc : m_chapter_categories )
-    {
-        // chapter category:
-        CategoryChapters* ctg( kv_cc.second );
-        output << "ID" << ctg->get_id()
-               << "\nCC" << ( ctg == m_ptr2chapter_ctg_cur ? 'c' : '_' )
-               << ctg->get_name_std() << '\n';
-        // chapters in it:
-        create_db_chapterctg_text( 'T', ctg, output );
-    }
-
-    // FILTER
-    const ElemStatus fs( m_filter_default->get_status() );
-    output << "fs" << ( fs & ES::SHOW_TRASHED ? 'T' : '_' )
-                   << ( fs & ES::SHOW_NOT_TRASHED ? 't' : '_' )
-                   << ( fs & ES::SHOW_FAVORED ? 'F' : '_' )
-                   << ( fs & ES::SHOW_NOT_FAVORED ? 'f' : '_' )
-                   << ( fs & ES::SHOW_NOT_TODO ? 'N' : '_' )
-                   << ( fs & ES::SHOW_TODO ? 'T' : '_' )
-                   << ( fs & ES::SHOW_PROGRESSED ? 'P' : '_' )
-                   << ( fs & ES::SHOW_DONE ? 'D' : '_' )
-                   << ( fs & ES::SHOW_CANCELED ? 'C' : '_' )
-                   << '\n';
-    if( fs & ES::FILTER_TAG )
-        output << "ft" << m_filter_default->get_tag()->get_name_std() << '\n';
-    if( fs & ES::FILTER_DATE_BEGIN )
-        output << "fb" << m_filter_default->get_date_begin() << '\n';
-    if( fs & ES::FILTER_DATE_END )
-        output << "fe" << m_filter_default->get_date_end() << '\n';
-
-    // END OF SECTION
-    output << '\n';
-
-    // ENTRIES
-    for( auto& kv_entry : m_entries )
-    {
-        Entry* entry = kv_entry.second;
-
-        // purge empty entries:
-        if( entry->is_empty() ) continue;
-        // optionally only save filtered entries:
-        else if( entry->get_filtered_out() && m_flag_only_save_filtered ) continue;
-
-        // ENTRY DATE
-        output << "ID" << entry->get_id() << '\n'
-               << ( entry->is_trashed() ? 'e' : 'E' )
-               << ( entry->is_favored() ? 'f' : '_' )
-               << ( m_filter_default->is_entry_filtered( entry ) ? 'h' : '_' );
-        create_db_todo_status_text( entry, output );
-        output << entry->m_date.m_date << '\n';
-
-        output << "Dr" << entry->m_date_created << '\n';
-        output << "Dh" << entry->m_date_edited << '\n';
-        output << "Ds" << entry->m_date_status << '\n';
-
-        // TAGS
-        for( Tag* tag : entry->m_tags )
-        {
-            output << "T" << ( tag == entry->get_theme_tag() ? 'T' : '_' )
-                   << tag->get_name_and_value( entry, true, false ) << '\n';
-        }
-
-        // LOCATION
-        if( ! entry->m_location.empty() )
-            output << "L " << entry->m_location;
-
-        // LANGUAGE
-        if( entry->get_lang() != LANG_INHERIT_DIARY )
-            output << "l " << entry->get_lang() << '\n';
-
-        // CONTENT
-        if( entry->m_text.empty() )
-            output << "\n";
-        else
-        {
-            // NOTE: for some reason, implicit conversion from Glib:ustring...
-            // ...fails while substr()ing when LANG=C
-            // we might reconsider storing text of entries as std::string.
-            // for now we convert entry text to std::string here:
-            std::string             content( entry->m_text );
-            std::string::size_type  pt_start( 0 ), pt_end( 0 );
-
-            while( true )
-            {
-                pt_end = content.find( '\n', pt_start );
-                if( pt_end == std::string::npos )
-                {
-                    pt_end = content.size();
-                    output << "P " << content.substr( pt_start, content.size() - pt_start )
-                           << "\n\n";
-                    break; // end of while( true )
-                }
-                else
-                {
-                    pt_end++;
-                    output << "P " << content.substr( pt_start, pt_end - pt_start );
-                    pt_start = pt_end;
-                }
-            }
-        }
-    }
-
-    return true;
 }
 
 DiaryElement*

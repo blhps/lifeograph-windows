@@ -160,8 +160,8 @@ ChartPoints::add_plain( Date& d_last, const Date&& d )
         add( calculate_distance( d, d_last ), false, 0, 1 );
     else
     {
-        values.back() += 1;
-        Value v = values.back();
+        Value v = values.back() + 1;
+        values.back() = v;
         if( v < value_min )
             value_min = v;
         if( v > value_max )
@@ -478,13 +478,14 @@ Tag::get_value( Entry* entry ) const
 }
 
 ChartPoints*
-Tag::create_chart_data()
+Tag::create_chart_data() const
 {
     if( empty() )
         return nullptr;
 
     ChartPoints* cp{ new ChartPoints( m_chart_type ) };
-    cp->unit = m_unit;
+    if( ( m_chart_type & ChartPoints::BOOLEAN ) == 0 )
+        cp->unit = m_unit;
 
     // order from old to new: d/v_before > d/v_last > d/v
     Date d_before{ Date::NOT_SET }, d_last{ Date::NOT_SET },  d{ Date::NOT_SET };
