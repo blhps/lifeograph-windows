@@ -50,6 +50,11 @@
 
 #define IDI_TAG16                               220
 
+
+// ACCELERATORS
+#define IDA_C_D                                 801
+#define IDA_C_E                                 802
+
 // MENU ITEMS
 #define IDMI_DIARY_OPEN                         40000
 #define IDMI_DIARY_CREATE                       40001

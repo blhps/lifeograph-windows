@@ -201,3 +201,19 @@ IDBM_ENTRY16        BITMAP          "icons\\elem-16.bmp"
 IDB_ELEM            ICON            "icons\\entry-16.ico"
 IDB_FILTER          ICON            "icons\\filter-16.ico"
 
+// ACCELERATORS ====================================================================================
+LIFEOACCELERATORS ACCELERATORS
+{
+    //VK_ESCAPE,  IDA_C_S_ESC,     VIRTKEY, CONTROL, SHIFT
+    //VK_F1,      IDA_F1,      VIRTKEY
+    //VK_RETURN,  IDA_RET_C,  VIRTKEY, CONTROL            // Ctrl+Enter
+
+    // ALT +
+    //0x42,       IDA_A_B,      VIRTKEY, ALT              // Alt+B
+
+    // CTRL +
+    "D",        IDA_C_D,        VIRTKEY, CONTROL        // Ctrl+D
+    0x45,       IDA_C_E,        VIRTKEY, CONTROL        // Ctrl+E
+
+}
+

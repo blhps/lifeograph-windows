@@ -172,7 +172,7 @@ WinAppWindow::run()
 {
     WNDCLASSEX wc;
     HWND hwnd;
-    MSG Msg;
+    MSG msg;
 
     wc.cbSize        = sizeof( WNDCLASSEX );
     wc.style         = CS_DBLCLKS;
@@ -209,15 +209,20 @@ WinAppWindow::run()
         return 0;
     }
 
+    m_haccel = LoadAccelerators( Lifeograph::hInst, L"LIFEOACCELERATORS" );
+
     ShowWindow( hwnd, 1 );
     UpdateWindow( hwnd );
 
-    while( GetMessage( &Msg, NULL, 0, 0 ) > 0 )
+    while( GetMessage( &msg, NULL, 0, 0 ) > 0 )
     {
-        TranslateMessage( &Msg );
-        DispatchMessage( &Msg );
+        if( !TranslateAccelerator( hwnd, m_haccel, &msg ) )
+        {
+            TranslateMessage( &msg );
+            DispatchMessage( &msg );
+        }
     }
-    return Msg.wParam;
+    return msg.wParam;
 }
 
 LRESULT
@@ -449,6 +454,9 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                     break;
                 case IDMI_TEXT_BULLET:
                     m_entry_view->m_richedit->set_list_item_mark( '*' );
+                    break;
+                case IDA_C_E:
+                    show_today();
                     break;
             }
             break;

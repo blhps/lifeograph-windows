@@ -134,6 +134,7 @@ class WinAppWindow
         HWND                        m_list_edit_item;
 
         HMENU                       m_hmenu;
+        HACCEL                      m_haccel;
         
         Date::date_t                m_date_selected;
 };
