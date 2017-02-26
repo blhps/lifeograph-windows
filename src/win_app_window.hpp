@@ -78,6 +78,7 @@ class WinAppWindow
         void                        handle_search_string_changed();
         
         void                        show_today();
+        void                        add_todo_entry();
         
         void                        add_chapter( CategoryChapters*, const Date* );
 

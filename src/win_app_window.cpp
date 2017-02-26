@@ -455,6 +455,9 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                 case IDMI_TEXT_BULLET:
                     m_entry_view->m_richedit->set_list_item_mark( '*' );
                     break;
+                case IDA_C_D:
+                    add_todo_entry();
+                    break;
                 case IDA_C_E:
                     show_today();
                     break;
@@ -1381,6 +1384,9 @@ WinAppWindow::handle_calendar_doubleclick( const POINT& pt )
 void
 WinAppWindow::show_today()
 {
+    if( Lifeograph::p->loginstatus != Lifeograph::LOGGED_IN  )
+        return;
+
     Entry* entry_today = Diary::d->get_entry_today();
     bool flag_add = false;
 
@@ -1402,6 +1408,21 @@ WinAppWindow::show_today()
     }
 
     entry_today->show();
+}
+
+void
+WinAppWindow::add_todo_entry()
+{
+    if( Lifeograph::p->loginstatus != Lifeograph::LOGGED_IN || Diary::d->is_read_only() )
+        return;
+
+    Entry* entry = Diary::d->add_today();
+    if( entry )
+    {
+        entry->set_todo_status( ES::TODO );
+        update_entry_list();
+        entry->show();
+    }
 }
 
 void
