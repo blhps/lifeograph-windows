@@ -1,6 +1,6 @@
 /***********************************************************************************
 
-    Copyright (C) 2014-2015 Ahmet Öztürk (aoz_2@yahoo.com)
+    Copyright (C) 2014-2017 Ahmet Öztürk (aoz_2@yahoo.com)
 
     This file is part of Lifeograph.
 
@@ -48,6 +48,7 @@ class WinLogin
 
         void                        create_new_diary();
         void                        add_existing_diary();
+        HELPERS::Result             open_selected_diary( bool );
 
         static std::string          m_path_cur;
 
@@ -58,8 +59,7 @@ class WinLogin
         { open_selected_diary( true ); }
         void                        handle_button_edit()
         { open_selected_diary( false ); }
-        HELPERS::Result             open_selected_diary( bool );
-        void                        open_activated_diary();
+        //void                        open_activated_diary();
         void                        remove_selected_diary();
 
         void                        initialize();

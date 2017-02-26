@@ -1,6 +1,6 @@
 /***********************************************************************************
 
-    Copyright (C) 2014-2015 Ahmet Öztürk (aoz_2@yahoo.com)
+    Copyright (C) 2014-2017 Ahmet Öztürk (aoz_2@yahoo.com)
 
     This file is part of Lifeograph.
 

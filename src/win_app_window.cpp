@@ -1,6 +1,6 @@
 /***********************************************************************************
 
-    Copyright (C) 2014-2016 Ahmet Ozturk (aoz_2@yahoo.com)
+    Copyright (C) 2014-2017 Ahmet Ozturk (aoz_2@yahoo.com)
 
     This file is part of Lifeograph.
 
@@ -462,6 +462,23 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
             if( wParam == MK_LBUTTON )
                 m_entry_view->m_tag_widget->handle_click( LOWORD( lParam ), HIWORD( lParam ) );
             break;
+        case WM_DROPFILES:
+        {
+            if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN )
+                if( ! finish_editing() )
+                    break;
+                    
+            char szFileName[ MAX_PATH ];
+            DragQueryFileA( ( HDROP ) wParam, 0, szFileName, MAX_PATH );
+            DragFinish( ( HDROP ) wParam );
+
+            m_login->m_path_cur = szFileName;
+            if( m_login->open_selected_diary( false ) != LIFEO::SUCCESS )
+                MessageBoxA( WinAppWindow::p->get_hwnd(), "Load of file failed.", "",
+                             MB_OK|MB_ICONERROR );
+
+            break;
+		}
         case WM_CLOSE:
             if( Lifeograph::p->loginstatus == Lifeograph::LOGGED_IN )
                 if( ! finish_editing( ! lParam ) )
