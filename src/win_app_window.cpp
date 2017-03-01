@@ -194,7 +194,7 @@ WinAppWindow::run()
         return 0;
     }
 
-    hwnd = CreateWindowEx( WS_EX_WINDOWEDGE,
+    hwnd = CreateWindowEx( WS_EX_ACCEPTFILES|WS_EX_WINDOWEDGE,
                            L"WindowClass",
                            L"Lifeograph",
                            WS_OVERLAPPEDWINDOW,
@@ -1430,7 +1430,7 @@ WinAppWindow::show_about()
 {
     Ustring about_txt = "Lifeograph for Windows ";
     about_txt += Lifeograph::PROGRAM_VERSION_STRING;
-    about_txt += "\n\nCopyright (C) 2014-2016 Ahmet Öztürk\n"
+    about_txt += "\n\nCopyright (C) 2014-2017 Ahmet Öztürk\n"
                  "Lifeograph is licensed under GNU Public License v3\n\n"
                  "http://lifeograph.sourceforge.net",
     MessageBoxA( NULL, about_txt.c_str(), "About...", MB_OK );
