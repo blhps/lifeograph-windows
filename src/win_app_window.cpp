@@ -461,6 +461,11 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                 case IDA_C_E:
                     show_today();
                     break;
+                case IDA_C_T:
+                    if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN &&
+                        m_entry_view->get_element() != nullptr )
+                        start_tag_dialog( "" );
+                    break;
             }
             break;
         case WM_NOTIFY:

@@ -218,7 +218,7 @@ EntryView::show( Entry& entry )
 void
 EntryView::clear()
 {
-    m_ptr2elem = NULL;
+    m_ptr2elem = nullptr;
     m_richedit->set_richtext( NULL );
     m_tag_widget->set_entry( NULL );
     m_tag_widget->update();

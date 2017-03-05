@@ -214,6 +214,7 @@ LIFEOACCELERATORS ACCELERATORS
     // CTRL +
     "D",        IDA_C_D,        VIRTKEY, CONTROL        // Ctrl+D
     "E",        IDA_C_E,        VIRTKEY, CONTROL        // Ctrl+E
+    "T",        IDA_C_T,        VIRTKEY, CONTROL        // Ctrl+T
 
 }
 

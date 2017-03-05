@@ -54,6 +54,7 @@
 // ACCELERATORS
 #define IDA_C_D                                 801
 #define IDA_C_E                                 802
+#define IDA_C_T                                 825
 
 // MENU ITEMS
 #define IDMI_DIARY_OPEN                         40000
