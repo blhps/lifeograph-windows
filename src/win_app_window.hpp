@@ -118,6 +118,7 @@ class WinAppWindow
     //protected:
         int                         m_seconds_remaining;
         int                         m_auto_logout_status; // reflects the result of all factors
+        int                         m_backup_timer_id;
 
         HWND                        m_hwnd;
 

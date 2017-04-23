@@ -490,11 +490,14 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
 
             m_login->m_path_cur = szFileName;
             if( m_login->open_selected_diary( false ) != LIFEO::SUCCESS )
-                MessageBoxA( WinAppWindow::p->get_hwnd(), "Load of file failed.", "",
-                             MB_OK|MB_ICONERROR );
+                MessageBoxA( m_hwnd, "Load of file failed.", "", MB_OK|MB_ICONERROR );
 
             break;
-		}
+        }
+        case WM_TIMER:
+            if( wParam == m_backup_timer_id )
+                write_backup();
+            break;
         case WM_CLOSE:
             if( Lifeograph::p->loginstatus == Lifeograph::LOGGED_IN )
                 if( ! finish_editing( ! lParam ) )
@@ -937,6 +940,9 @@ WinAppWindow::finish_editing( bool opt_save )
         }
     }
 
+    if( ! Diary::d->is_read_only() )
+        KillTimer( m_hwnd, m_backup_timer_id );
+
     // CLEARING
     // TODO: m_loginstatus = LOGGING_OUT_IN_PROGRESS;
 
@@ -1004,6 +1010,9 @@ WinAppWindow::login()
     Lifeograph::m_internaloperation--;
 
     Lifeograph::loginstatus = Lifeograph::LOGGED_IN;
+    
+    if( ! Diary::d->is_read_only() )
+        m_backup_timer_id = SetTimer( m_hwnd, ID_TIMER_BACKUP, BACKUP_INTERVAL * 1000, nullptr );
 
     update_title();
 
@@ -1439,6 +1448,15 @@ WinAppWindow::show_about()
                  "Lifeograph is licensed under GNU Public License v3\n\n"
                  "http://lifeograph.sourceforge.net",
     MessageBoxA( NULL, about_txt.c_str(), "About...", MB_OK );
+}
+
+bool
+WinAppWindow::write_backup()
+{
+    m_entry_view->sync();
+
+    Result result{ Diary::d->write( Diary::d->get_path() + LOCK_SUFFIX ) };
+    return( result == SUCCESS );
 }
 
 void
