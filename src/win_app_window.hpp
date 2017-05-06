@@ -72,6 +72,7 @@ class WinAppWindow
         void                        fill_monthdaystate( int, int, MONTHDAYSTATE[], int );
         void                        update_calendar();
         void                        update_title();
+        void                        update_elem_icon();
         
         void                        handle_calendar_doubleclick( const POINT& );
         

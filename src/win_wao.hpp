@@ -55,12 +55,16 @@
 #define WAO_TBBN_RPWTIME    800    // ms
 #define WAO_TBBN_RPTTIME    100    // less this value, greater repeat speed
 
+#define WAO_PROP_ICON "WAO_PROP_ICON"
+
 
 bool WAO_init ();		// WAO INITIALIZATION
 
 BOOL CALLBACK WAO_toolbar_proc( HWND, UINT, WPARAM, LPARAM );
 
 LRESULT CALLBACK WAO_advanced_edit_proc( HWND, UINT, WPARAM, LPARAM, UINT_PTR, DWORD_PTR );
+
+BOOL WAO_set_icon( HWND, HICON );
 
 class WAO_InputDlg
 {

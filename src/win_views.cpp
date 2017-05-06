@@ -103,7 +103,7 @@ EntryView::set_todo_status( ElemStatus status )
     m_ptr2elem->set_todo_status( status );
     m_ptr2elem->set_date_status( time( NULL ) );
 
-    //WinAppWindow::p->panel_main->set_icon( m_ptr2elem->get_icon32() );
+    WinAppWindow::p->update_elem_icon();
     WinAppWindow::p->update_list_elem( m_ptr2elem );
 }
 
@@ -205,6 +205,7 @@ EntryView::show( Entry& entry )
     m_tag_widget->update_full();
     WinAppWindow::p->select_list_elem( m_ptr2elem );
 
+    WinAppWindow::p->update_elem_icon();
     ShowWindow( WinAppWindow::p->m_button_elem, SW_SHOW );
 
     ShowWindow( WinAppWindow::p->m_button_title, SW_SHOW );

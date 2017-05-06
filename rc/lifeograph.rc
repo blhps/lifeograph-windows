@@ -198,8 +198,12 @@ FONT 8, "Ms Shell Dlg"
 // ICONS ===========================================================================================
 IDBM_ENTRY16        BITMAP          "icons\\elem-16.bmp"
 
-IDB_ELEM            ICON            "icons\\entry-16.ico"
-IDB_FILTER          ICON            "icons\\filter-16.ico"
+IDI_ENTRY16         ICON            "icons\\entry-16.ico"
+IDI_TODO_OPEN16     ICON            "icons\\todo_open-16.ico"
+IDI_TODO_PROG16     ICON            "icons\\todo_progressed-16.ico"
+IDI_TODO_DONE16     ICON            "icons\\todo_done-16.ico"
+IDI_TODO_CANC16     ICON            "icons\\todo_canceled-16.ico"
+IDI_FILTER16        ICON            "icons\\filter-16.ico"
 
 // ACCELERATORS ====================================================================================
 LIFEOACCELERATORS ACCELERATORS

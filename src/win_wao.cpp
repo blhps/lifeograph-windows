@@ -154,8 +154,7 @@ waoWC_button0Proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             // drawing icon
             if( GetWindowLong( hwnd, GWL_STYLE ) & BS_ICON ) // maybe later bitmap too
             {
-                HICON hIco = LoadIcon( GetModuleHandle( NULL ),
-                                       MAKEINTRESOURCE( GetWindowLong( hwnd, GWL_ID ) ) );
+                HICON hIco = ( HICON ) GetPropA( hwnd, WAO_PROP_ICON );
 
                 DrawIconEx( paintStruct.hdc,
                             ( rcWnd.right - rcWnd.left - 16 ) / 2,
@@ -345,6 +344,14 @@ BOOL CALLBACK
 WAO_toolbar_proc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
     return FALSE;
+}
+
+BOOL
+WAO_set_icon( HWND hwnd, HICON hIcon )
+{
+    BOOL retv = SetPropA( hwnd, WAO_PROP_ICON, hIcon );
+    InvalidateRect( hwnd, NULL, TRUE );
+    return retv;
 }
 
 // INPUT DIALOG ====================================================================================

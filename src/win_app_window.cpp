@@ -532,6 +532,9 @@ WinAppWindow::proc_toolbar( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
             m_button_filter = GetDlgItem( hwnd, IDB_FILTER );
             m_button_about = GetDlgItem( hwnd, IDB_ABOUT );
             SetWindowSubclass( m_edit_date, WAO_advanced_edit_proc, 0, 0 );
+            
+            WAO_set_icon( m_button_filter,
+                          LoadIcon( GetModuleHandle( NULL ), MAKEINTRESOURCE( IDI_FILTER16 ) ) );
 
             ShowWindow( m_button_today, SW_HIDE );
             ShowWindow( m_button_elem, SW_HIDE );
@@ -1057,6 +1060,33 @@ WinAppWindow::update_title()
     }
 
     SetWindowTextA( m_hwnd, title.c_str() );
+}
+
+void
+WinAppWindow::update_elem_icon()
+{
+    int id = 1;
+    
+    switch( m_entry_view->get_element()->get_icon() )
+    {
+        case 1:
+            id = IDI_ENTRY16;
+            break;
+        case 2:
+            id = IDI_TODO_OPEN16;
+            break;
+        case 3:
+            id = IDI_TODO_PROG16;
+            break;
+        case 4:
+            id = IDI_TODO_DONE16;
+            break;
+        case 5:
+            id = IDI_TODO_CANC16;
+            break;
+    }
+    HICON ico = LoadIcon( GetModuleHandle( NULL ), MAKEINTRESOURCE( id ) );
+    WAO_set_icon( m_button_elem, ico );
 }
 
 void
