@@ -174,7 +174,10 @@ class RichEdit : public EntryParser
         void                        toggle_italic();
         void                        toggle_highlight();
         void                        toggle_strikethrough();
-
+        
+        void                        calculate_para_bounds( const Wstring&,
+                                                           Wstring::size_type&,
+                                                           Wstring::size_type& );
         bool                        calculate_multi_para_bounds( Wstring::size_type&,
                                                                  Wstring::size_type& );
         void                        handle_indent();

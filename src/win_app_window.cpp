@@ -466,6 +466,16 @@ WinAppWindow::proc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
                         m_entry_view->get_element() != nullptr )
                         start_tag_dialog( "" );
                     break;
+                case IDA_A_UP:
+                    if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN &&
+                        m_entry_view->get_element() != nullptr )
+                        m_entry_view->m_richedit->move_line_up();
+                    break;
+                case IDA_A_DOWN:
+                    if( Lifeograph::loginstatus == Lifeograph::LOGGED_IN &&
+                        m_entry_view->get_element() != nullptr )
+                        m_entry_view->m_richedit->move_line_down();
+                    break;
             }
             break;
         case WM_NOTIFY:

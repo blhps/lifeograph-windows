@@ -212,13 +212,13 @@ LIFEOACCELERATORS ACCELERATORS
     //VK_F1,      IDA_F1,      VIRTKEY
     //VK_RETURN,  IDA_RET_C,  VIRTKEY, CONTROL            // Ctrl+Enter
 
-    // ALT +
-    //0x42,       IDA_A_B,      VIRTKEY, ALT              // Alt+B
-
     // CTRL +
     "D",        IDA_C_D,        VIRTKEY, CONTROL        // Ctrl+D
     "E",        IDA_C_E,        VIRTKEY, CONTROL        // Ctrl+E
     "T",        IDA_C_T,        VIRTKEY, CONTROL        // Ctrl+T
-
+    
+    // ALT +
+    VK_UP,      IDA_A_UP,       VIRTKEY, ALT            // Alt+UP
+    VK_DOWN,    IDA_A_DOWN,     VIRTKEY, ALT            // Alt+DOWN
 }
 

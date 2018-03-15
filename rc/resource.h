@@ -58,6 +58,11 @@
 #define IDA_C_E                                 802
 #define IDA_C_T                                 825
 
+#define IDA_A_I                                 908
+#define IDA_A_U                                 915
+#define IDA_A_UP                                951
+#define IDA_A_DOWN                              952
+
 // MENU ITEMS
 #define IDMI_DIARY_OPEN                         40000
 #define IDMI_DIARY_CREATE                       40001

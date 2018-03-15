@@ -1068,23 +1068,6 @@ void
 RichEdit::set_comment_visibility( bool visible )
 {
     m_format_comment->property_invisible() = visible;
-}
-
-void
-RichEdit::calculate_para_bounds( LONG& iter_begin, LONG& iter_end )
-{
-    Wstring text( get_text() );
-    
-    text.find_first_of( '\r',  )
-    if( ! iter_begin.backward_find_char( s_predicate_nl ) )
-        iter_begin.set_offset( 0 );
-
-    if( iter_end.ends_line() )
-        iter_end++;
-    else if( iter_end.forward_find_char( s_predicate_nl ) )
-        iter_end++;
-    else
-        iter_end.forward_to_end();
 }*/
 
 /*bool
@@ -1197,9 +1180,28 @@ TextbufferDiary::handle_unindent()
             ++iter;
     }
 }
-
-
 */
+
+void
+RichEdit::calculate_para_bounds( const Wstring& text,
+                                 Wstring::size_type& i_bgn,
+                                 Wstring::size_type& i_end )
+{
+    if( i_bgn > 0 )
+    {
+        i_bgn = text.find_last_of( L'\r', i_bgn - 1 );
+        if( i_bgn == Wstring::npos )
+            i_bgn = 0;
+        else
+            i_bgn++;
+    }
+    if( text[ i_end ] != L'\r' )
+    {
+        i_end = text.find_first_of( L'\r', i_end );
+        if( i_end == Wstring::npos )
+            i_end = text.size();
+    }
+}
 
 bool
 RichEdit::calculate_multi_para_bounds( Wstring::size_type& iter_begin,
@@ -1384,83 +1386,65 @@ TextbufferDiary::remove_empty_line_above()
     iter_begin--;
     if( iter_begin.get_char() == '\n' )
         erase( iter_begin, iter );
-}
-
-void
-TextbufferDiary::move_line_up()
-{
-    if( ! m_ptr2textview->has_focus() )
-        return;
-
-    Gtk::TextIter iter( get_iter_at_mark( get_insert() ) );
-    if( iter.get_line() < 2 )
-        return;
-
-    if( iter.backward_line() )
-    {
-        int offset( iter.get_offset() );
-
-        iter.forward_line();
-        iter--;
-
-        Gtk::TextIter iter_end( get_iter_at_mark( get_insert() ) );
-        if( !iter_end.ends_line() )
-            iter_end.forward_to_line_end();
-
-        Glib::ustring text( get_text( iter, iter_end ) );
-
-        // image will vanish by itself:
-        if( get_iter_at_offset( iter.get_offset() + 1 ).has_tag( m_format_image ) )
-            iter_end--;
-
-        erase( iter, iter_end );
-
-        iter = get_iter_at_offset( offset - 1 );
-
-        insert( iter, text );
-
-        place_cursor( get_iter_at_offset( offset ) );
-    }
-}
-
-void
-TextbufferDiary::move_line_down()
-{
-    if( ! m_ptr2textview->has_focus() )
-        return;
-
-    Gtk::TextIter iter( get_iter_at_mark( get_insert() ) );
-
-    if( iter.backward_line() )
-    {
-        iter.forward_line();
-        iter--;
-
-        Gtk::TextIter iter_end( get_iter_at_mark( get_insert() ) );
-        if( !iter_end.ends_line() )
-            if( !iter_end.forward_to_line_end() )
-                return;
-
-        int offset( iter.get_offset() + 1 );
-
-        Glib::ustring text( get_text( iter, iter_end ) );
-
-        // image will vanish by itself:
-        if( get_iter_at_offset( iter.get_offset() + 1 ).has_tag( m_format_image )  )
-            iter_end--;
-
-        erase( iter, iter_end );
-
-        iter = get_iter_at_offset( offset );
-        if( !iter.ends_line() )
-            iter.forward_to_line_end();
-        offset = iter.get_offset();
-
-        insert( iter, text );
-
-        place_cursor( get_iter_at_offset( offset + 1 ) );
-    }
 }*/
+
+void
+RichEdit::move_line_up()
+{
+    if( GetFocus() != m_hwnd )
+        return;
+
+    Wstring full_text( get_text() );
+    CHARRANGE cr;
+    SendMessage( m_hwnd, EM_EXGETSEL, 0, ( LPARAM ) &cr );
+
+    Wstring::size_type i_bgn{ cr.cpMin }, i_end{ cr.cpMin };
+    calculate_para_bounds( full_text, i_bgn, i_end );
+    
+    if( i_bgn < 2 )
+        return;
+    
+    Wstring::size_type i_bgn_prev_line{ i_bgn - 1 }, i_end_prev_line{ i_bgn - 1 };
+    calculate_para_bounds( full_text, i_bgn_prev_line, i_end_prev_line );
+
+    Wstring new_text = full_text.substr( i_bgn, i_end - i_bgn + 1 ) +
+                       full_text.substr( i_bgn_prev_line, i_end_prev_line - i_bgn_prev_line );
+    CHARRANGE range = { ( LONG ) i_bgn_prev_line, ( LONG ) i_end };
+    SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &range );
+    SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) new_text.c_str() );
+    
+    range.cpMin = range.cpMax = cr.cpMax - i_end_prev_line + i_bgn_prev_line - 1;
+    SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &range );
+}
+
+void
+RichEdit::move_line_down()
+{
+    if( GetFocus() != m_hwnd )
+        return;
+
+    Wstring full_text( get_text() );
+    CHARRANGE cr;
+    SendMessage( m_hwnd, EM_EXGETSEL, 0, ( LPARAM ) &cr );
+
+    Wstring::size_type i_bgn{ cr.cpMin }, i_end{ cr.cpMin };
+    calculate_para_bounds( full_text, i_bgn, i_end );
+
+    if( i_end >= full_text.size() - 1 )
+        return;
+
+    Wstring::size_type i_bgn_next_line{ i_end + 1 }, i_end_next_line{ i_end + 1 };
+    calculate_para_bounds( full_text, i_bgn_next_line, i_end_next_line );
+
+    Wstring new_text = full_text.substr( i_bgn_next_line, i_end_next_line - i_bgn_next_line + 1 ) +
+                       full_text.substr( i_bgn, i_end - i_bgn );
+    CHARRANGE range = { ( LONG ) i_bgn, ( LONG ) i_end_next_line };
+    SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &range );
+    SendMessage( m_hwnd, EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) new_text.c_str() );
+
+    range.cpMin = range.cpMax = cr.cpMax + i_end_next_line - i_bgn_next_line + 1;
+    SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &range );
+}
 
 void
 RichEdit::insert_link( DiaryElement* element )
