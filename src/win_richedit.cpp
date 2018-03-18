@@ -1195,11 +1195,11 @@ RichEdit::calculate_para_bounds( const Wstring& text,
         else
             i_bgn++;
     }
-    if( text[ i_end ] != L'\r' )
+    if( text[ i_end ] != L'\r' ) // not used actually
     {
         i_end = text.find_first_of( L'\r', i_end );
         if( i_end == Wstring::npos )
-            i_end = text.size();
+            i_end = text.size() - 1;
     }
 }
 
@@ -1394,7 +1394,10 @@ RichEdit::move_line_up()
     if( GetFocus() != m_hwnd )
         return;
 
-    Wstring full_text( get_text() );
+    Wstring full_text{ get_text() };
+    if( full_text[ full_text.size() - 1 ] != L'\r' )
+        full_text += L'\r';
+
     CHARRANGE cr;
     SendMessage( m_hwnd, EM_EXGETSEL, 0, ( LPARAM ) &cr );
 
@@ -1403,11 +1406,12 @@ RichEdit::move_line_up()
     
     if( i_bgn < 2 )
         return;
-    
+
     Wstring::size_type i_bgn_prev_line{ i_bgn - 1 }, i_end_prev_line{ i_bgn - 1 };
     calculate_para_bounds( full_text, i_bgn_prev_line, i_end_prev_line );
 
-    Wstring new_text = full_text.substr( i_bgn, i_end - i_bgn + 1 ) +
+    Wstring new_text = full_text.substr( i_bgn, i_end - i_bgn ) +
+                       L'\r' +
                        full_text.substr( i_bgn_prev_line, i_end_prev_line - i_bgn_prev_line );
     CHARRANGE range = { ( LONG ) i_bgn_prev_line, ( LONG ) i_end };
     SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &range );
@@ -1423,7 +1427,10 @@ RichEdit::move_line_down()
     if( GetFocus() != m_hwnd )
         return;
 
-    Wstring full_text( get_text() );
+    Wstring full_text{ get_text() };
+    if( full_text[ full_text.size() - 1 ] != L'\r' )
+        full_text += L'\r';
+
     CHARRANGE cr;
     SendMessage( m_hwnd, EM_EXGETSEL, 0, ( LPARAM ) &cr );
 
@@ -1436,7 +1443,8 @@ RichEdit::move_line_down()
     Wstring::size_type i_bgn_next_line{ i_end + 1 }, i_end_next_line{ i_end + 1 };
     calculate_para_bounds( full_text, i_bgn_next_line, i_end_next_line );
 
-    Wstring new_text = full_text.substr( i_bgn_next_line, i_end_next_line - i_bgn_next_line + 1 ) +
+    Wstring new_text = full_text.substr( i_bgn_next_line, i_end_next_line - i_bgn_next_line ) +
+                       L'\r' +
                        full_text.substr( i_bgn, i_end - i_bgn );
     CHARRANGE range = { ( LONG ) i_bgn, ( LONG ) i_end_next_line };
     SendMessage( m_hwnd, EM_EXSETSEL, 0, ( LPARAM ) &range );
